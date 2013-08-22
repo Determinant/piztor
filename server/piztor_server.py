@@ -26,7 +26,7 @@ class DataManager(object):
     pass
 
 class UserManager(DataManager):
-    def handle(self, opt_type, data):
+    def authentication_handle(self, opt_type, data):
         print "Parsing User Data"
         pos = -1
         for i in xrange(0, len(data)):
@@ -45,7 +45,7 @@ class UserManager(DataManager):
         
 
 class MesgManager(DataManager):
-    def handle(self, opt_type, data):
+    def mesg_sending_handle(self, opt_type, data):
         print "Parsing Mesg Data"
         try:
             if len(data) < 8:
@@ -58,7 +58,7 @@ class MesgManager(DataManager):
             raise ReqInvalidError()
 
 class LocationManager(DataManager):
-    def handle(self, opt_type, data):
+    def location_update_handle(self, opt_type, data):
         print "Parsing Loc Data"
         try:
             if len(data) < 8:
@@ -73,9 +73,13 @@ class LocationManager(DataManager):
 
 class PiztorServer():
 
-    mgr_map = [ UserManager(),
-                MesgManager(),
-                LocationManager() ]
+    user_mgr = UserManager()
+    mesg_mgr = MesgManager()
+    location_mgr = LocationManager()
+
+    mgr_map = [ user_mgr.authentication_handle, 
+                mesg_mgr.mesg_sending_handle, 
+                location_mgr.location_update_handle ] 
 
     class GenericHandler(SocketServer.StreamRequestHandler):
 
@@ -101,8 +105,7 @@ class PiztorServer():
             if len(data) < 1: 
                 raise ReqInvalidError()
             opt_id = struct.unpack("!B", data[0])[0]
-            reply = PiztorServer.mgr_map[opt_id].handle(
-                    opt_id, data[1:])
+            reply = PiztorServer.mgr_map[opt_id](opt_id, data[1:])
             sock.sendall(reply)
             sock.close()
 
