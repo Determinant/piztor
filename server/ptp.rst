@@ -35,7 +35,7 @@ Piztor Transmission Protocol v0.1
     
        +--1b---+-----4b-----+
        | 0x00  | USER_TOKEN |
-       +-uchar-+----uint----+
+       +-uchar-+-----int----+
 
 - Message Sending 
 
@@ -45,7 +45,7 @@ Piztor Transmission Protocol v0.1
     
         +--1b---+------4b------+------4b-----+
         | 0x01  | SENDER_TOKEN | RECEIVER_ID |
-        +-uchar-+-----uint-----+----uint-----+
+        +-uchar-+------int-----+-----int-----+
 
   - Response
         
@@ -63,7 +63,7 @@ Piztor Transmission Protocol v0.1
     
         +--1b---+------4b------+-----8b-----+------8b-----+
         | 0x02  | SENDER_TOKEN |  LATITUDE  |  LONGITUDE  |
-        +-uchar-+-----uint-----+---double---+---double----+
+        +-uchar-+------int-----+---double---+---double----+
 
   - Response
 
@@ -81,15 +81,15 @@ Piztor Transmission Protocol v0.1
     
         +--1b---+-----4b-------+------4b-----+
         | 0x03  | SENDER_TOKEN |  GROUP_ID   |
-        +-uchar-+----uint------+----uint-----+
+        +-uchar-+-----int------+-----int-----+
 
   - Response
 
     ::
 
-        +--1b---+-----20b--------+-----+
-        | 0x03  | LOCATION_ENTRY | ... |
-        +-uchar-+----------------+-----+
+        +--1b---+-----4b----+------20b-------+-----+
+        | 0x03  | ENTRY_CNT | LOCATION_ENTRY | ... |
+        +-uchar-+---int-----+----------------+-----+
         
     Location Entry:
 
@@ -97,5 +97,5 @@ Piztor Transmission Protocol v0.1
 
         +---4b----+----8b----+-----8b----+
         | USER_ID | LATITUDE | LONGITUDE |
-        +--uint---+--double--+--double---+
+        +---int---+--double--+--double---+
 
