@@ -12,10 +12,10 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #data += "\0"
 #data += "world"
 
-#data = pack("!Bll", 1, 1234, 5678)
-#data += "hello, world!"
+data = pack("!BLL", 1, 1234, 5678)
+data += "hello, world!"
 
-data = pack("!Bldd", 2, 1234, 123.123, 12323.23222)
+#data = pack("!BLdd", 2, 1234, 123.123, 12323.23222)
 print data
 
 try:

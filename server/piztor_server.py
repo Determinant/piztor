@@ -41,7 +41,7 @@ class UserManager(DataManager):
         username = data[0:pos]  
         password = data[pos + 1:]
         print (username, password)
-        return struct.pack("!Bl", 0, 1234)
+        return struct.pack("!BL", 0, 1234)
         
 
 class MesgManager(DataManager):
@@ -50,7 +50,7 @@ class MesgManager(DataManager):
         try:
             if len(data) < 8:
                 raise ReqInvalidError()
-            sender_token, recv_id = struct.unpack("!ll", data[:8])
+            sender_token, recv_id = struct.unpack("!LL", data[:8])
             msg = data[8:]
             print (sender_token, recv_id, msg)
             return struct.pack("!B", 1)
@@ -63,7 +63,7 @@ class LocationManager(DataManager):
         try:
             if len(data) < 8:
                 raise ReqInvalidError()
-            sender_token, lat, lont = struct.unpack("!ldd", data)
+            sender_token, lat, lont = struct.unpack("!Ldd", data)
             print (sender_token, lat, lont)
             return struct.pack("!B", 2)
         except struct.error:
