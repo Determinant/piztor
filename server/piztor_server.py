@@ -2,7 +2,8 @@ import sqlalchemy
 import SocketServer, socket, select
 import struct
 
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine
+from sqlalchemy import Column, Integer, String, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -29,29 +30,27 @@ class ReqInvalidError(ConnectionError):
 
 class TokenInvalidError(ConnectionError):
     def __init__(self):
-        super(ReqInvalidError, self).__init__("Invalid token")
+        super(TokenInvalidError, self).__init__("Invalid token")
 
 class DataManager(object):
-    pass
+    def __init__(self, piz_srv):
+        self.piz_srv = piz_srv
 
 class UserManager(DataManager):
+
     class User(Base):
         __tablename__ = 'users'
         id = Column(Integer, primary_key = True)
         username = Column(String)
         password = Column(String)
 
-    def get_uid_by_token(self, token):
+    def get_user_by_token(self, token):
         try:
-            return self.active_sessions[token]
+            return self.piz_srv.active_sessions[token]
         except:
             raise TokenInvalidError()
 
-    def __init__(self):
-        Base.metadata.create_all(engine)
-        self.active_sessions = dict()
-
-    def authentication_handle(self, opt_type, data, srv):
+    def authentication_handle(self, opt_type, data):
         print "Parsing User Data"
         pos = -1
         for i in xrange(0, len(data)):
@@ -70,16 +69,21 @@ class UserManager(DataManager):
         print (username, password)
         
         session = Session()
-        q = session.query(User).filter(User.username == username)
+        q = session.query(UserManager.User). \
+            filter(UserManager.User.username == username)
         entry = q.first()
         if entry.password != password:  # Auth failed
-            return struct.pack("!BL"
-        
-        return struct.pack("!BL", 0, 1234)
+            print "Login failed!"
+            return struct.pack("!BlB", 0, 0, 1)
+        else:                           # Succeeded
+            print "Logged in sucessfully!"
+            token = entry.id
+            self.piz_srv.active_sessions[token] = entry
+            return struct.pack("!BlB", 0, token, 0)
         
 
 class MesgManager(DataManager):
-    def mesg_sending_handle(self, opt_type, data, srv):
+    def mesg_sending_handle(self, opt_type, data):
         print "Parsing Mesg Data"
         try:
             if len(data) < 8:
@@ -92,28 +96,39 @@ class MesgManager(DataManager):
             raise ReqInvalidError()
 
 class LocationManager(DataManager):
-    def location_update_handle(self, opt_type, data, srv):
+
+    class LocationInfo(Base):
+        __tablename__ = "location_info"
+        uid = Column(Integer, primary_key = True)
+        lat = Column(Float(precesion = 64))
+        lng = Column(Float(precesion = 64))
+        # More: last_update
+
+    def location_update_handle(self, opt_type, data):
         print "Parsing Loc Data"
         try:
             if len(data) < 8:
                 raise ReqInvalidError()
-            sender_token, lat, lont = struct.unpack("!Ldd", data)
-            print (sender_token, lat, lont)
-            return struct.pack("!B", 2)
-        except struct.error:
-            raise ReqInvalidError()
+            sender_token, lat, lng = struct.unpack("!Ldd", data)
+            print "Updateing location data with following info:"
+            print (sender_token, lat, lng)
 
+            user = self.piz_srv. \
+                    user_mgr.get_user_by_token(sender_token)
+            session = Session()
+            LInfo = LocationManager.LocationInfo
+            q = session.query(LInfo).filter(LInfo.uid == user.id)
+            entry = q.first()
+            entry.lat = lat
+            entry.lng = lng
+            session.commit()
+            return struct.pack("!B", 2)
+        except struct.error, TokenInvalidError:
+            raise ReqInvalidError()
 
 
 class PiztorServer():
 
-    user_mgr = UserManager()
-    mesg_mgr = MesgManager()
-    location_mgr = LocationManager()
-
-    mgr_map = [ user_mgr.authentication_handle, 
-                mesg_mgr.mesg_sending_handle, 
-                location_mgr.location_update_handle ] 
 
     class GenericHandler(SocketServer.StreamRequestHandler):
 
@@ -139,15 +154,27 @@ class PiztorServer():
             if len(data) < 1: 
                 raise ReqInvalidError()
             opt_id = struct.unpack("!B", data[0])[0]
-            reply = PiztorServer.mgr_map[opt_id](opt_id, data[1:], self)
+            reply = self.piz_srv.mgr_map[opt_id](opt_id, data[1:])
             sock.sendall(reply)
             sock.close()
 
     def __init__(self, host, port):
+        PiztorServer.GenericHandler.piz_srv = self
         srv = SocketServer.TCPServer((host, port), 
                                     PiztorServer.GenericHandler)
         srv.timeout = 2
         self.server = srv
+
+        self.user_mgr = UserManager(self)
+        self.mesg_mgr = MesgManager(self)
+        self.location_mgr = LocationManager(self)
+    
+        self.mgr_map = [ self.user_mgr.authentication_handle, 
+                    self.mesg_mgr.mesg_sending_handle, 
+                    self.location_mgr.location_update_handle ] 
+    
+        Base.metadata.create_all(engine)
+        self.active_sessions = dict()
 
 
     def run(self):

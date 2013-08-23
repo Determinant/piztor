@@ -3,29 +3,33 @@ import sys
 from struct import *
 
 HOST, PORT = "localhost", 9999
-data = ""
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def gen_auth(username, password):
+    data = pack("!B", 0)
+    data += username
+    data += "\0"
+    data += password
+    return data
 
-#data = pack("!B", 0)
-#data += "hello"
-#data += "\0"
-#data += "world"
+def gen_update_location(token, lat, lont):
+    return pack("!BLdd", 2, token, lat, lont)
 
-data = pack("!BLL", 1, 1234, 5678)
-data += "hello, world!"
+def send(data):
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((HOST, PORT))
+        sock.sendall(data)
+        sock.shutdown(socket.SHUT_WR)
+        received = sock.recv(1024)
+    finally:
+        print "adf"
+        sock.close()
 
-#data = pack("!BLdd", 2, 1234, 123.123, 12323.23222)
-print data
+    print "Sent:  {}".format(data)
+    print "Received: {}".format(received)
+    return received
 
-try:
-
-    sock.connect((HOST, PORT))
-    sock.sendall(data)
-    sock.shutdown(socket.SHUT_WR)
-    received = sock.recv(1024)
-finally:
-    sock.close()
-
-print "Sent:  {}".format(data)
-print "Received: {}".format(received[0])
+rec = send(gen_auth("hello", "world"))
+opt, token, status = unpack("!BLB", rec)
+token = 1
+send(gen_update_location(token, 23.33, -54.44))
