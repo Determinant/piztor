@@ -1,0 +1,76 @@
+package com.example.piztor;
+
+import java.io.PrintStream;
+
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.Menu;
+
+public class Running extends Activity {
+	PrintStream cout = System.out;
+	MyView v;
+	Bitmap b;
+	Canvas c;
+	Controller controller;
+	Tracker tr;
+	Handler handle = new Handler() {
+		public void handleMessage(Message msg) {
+			//switch (msg.what) {
+			//case 1:{
+				flushLocation();
+				//v.invalidate();
+			//}
+				//break;
+				//default:{
+					v.cnt = msg.what;
+					v.invalidate();
+//				}
+//					
+			//}
+			super.handleMessage(msg);
+		}
+	};
+
+	void flushLocation() {
+		v.changMyLocation(tr.myTracker.location.getLongitude(),
+				tr.myTracker.location.getLatitude());
+	}
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		b = Bitmap.createBitmap(720, 1280, Bitmap.Config.ARGB_8888);
+		c = new Canvas(b);
+		controller = new Controller();
+		controller.setRun(this);
+		setContentView(R.layout.activity_running);
+		cout.println("running is created!!!");
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		v = (MyView) findViewById(R.id.view);
+		v.setup(c, b, -1, -1);
+		tr = new Tracker(controller, Running.this, handle);
+		//runOnUiThread(tr);
+		new Thread(tr).run();
+	}
+
+	@Override
+	protected void onStop() {
+		
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.running, menu);
+		return true;
+	}
+
+}
