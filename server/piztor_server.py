@@ -1,6 +1,7 @@
 import sqlalchemy
 import SocketServer, socket, select
 import struct
+import os
 
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Float
@@ -45,6 +46,7 @@ class UserManager(DataManager):
     class User(Base):
         __tablename__ = 'users'
         id = Column(Integer, primary_key = True)
+        gid = Column(Integer)
         username = Column(String)
         password = Column(String)
         token = Column(Integer)
@@ -114,12 +116,12 @@ class LocationManager(DataManager):
         # More: last_update
 
     def location_update_handle(self, opt_type, data):
-        print "Parsing Loc Data"
+        print "Parsing a Location Update"
         try:
             if len(data) < 8:
                 raise ReqInvalidError()
             sender_token, lat, lng = struct.unpack("!Ldd", data)
-            print "Updateing location data with following info:"
+            print "Updating location data with following info:"
             print (sender_token, lat, lng)
 
             user = self.piz_srv. \
@@ -139,6 +141,27 @@ class LocationManager(DataManager):
         except struct.error:
             raise ReqInvalidError()
 
+    def location_request_handle(self, opt_type, data):
+        print "Parsing a Location Request"
+        try:
+            if len(data) != 8:
+                raise ReqInvalidError()
+            sender_token, gid = struct.unpack("!LL", data)
+            print "Requesting location data with following info:"
+            print (sender_token, gid)
+            session = Session()
+            UInfo = UserManager.User
+            LInfo = LocationManager.LocationInfo
+            user_list = session.query(UInfo).filter(UInfo.gid == gid).all()
+            reply = struct.pack("!BL", 3, len(user_list))
+            for user in user_list:
+                loc = session.query(LInfo).filter(LInfo.uid == user.id).first()
+                reply += struct.pack("!Ldd", user.id, loc.lat, loc.lng)
+            print get_hex(reply)
+            return reply
+        except struct.error:
+            raise ReqInvalidError()
+
 class PiztorServer():
 
 
@@ -146,34 +169,42 @@ class PiztorServer():
 
         def handle(self):
             sock = self.request
-            sock.setblocking(0)
+            sock.settimeout(10)
+#           sock.setblocking(0)
             data = ""
-            while True:
-                ready = select.select([sock], [], [], 10)
-                if not ready[0]:
-                    raise ReqReadError()
-                buff = sock.recv(4096)
-                if len(buff) == 0:
-                    break   # terminated
-                else:
-                    data += buff
-            sock.shutdown(socket.SHUT_RD)
+            try:
+                while True:
+#                   ready = select.select([sock], [], [], 10)
+#                   if not ready[0]:
+#                       raise ReqReadError()
+                    buff = sock.recv(4096)
+                    if len(buff) == 0:
+                        break   # terminated
+                    else:
+                        data += buff
+                sock.shutdown(socket.SHUT_RD)
+    
+                print "Got the data:" + get_hex(data)
+    
+                if len(data) < 1: 
+                    print "invalid length"
+                    raise ReqInvalidError()
+                opt_id = struct.unpack("!B", data[0])[0]
+                print opt_id
+                reply = self.piz_srv.mgr_map[opt_id](opt_id, data[1:])
+                sock.sendall(reply)
+            finally:
+                sock.close()
 
-            print "Got the data:" + get_hex(data)
-            print "===="
-
-            if len(data) < 1: 
-                raise ReqInvalidError()
-            opt_id = struct.unpack("!B", data[0])[0]
-            reply = self.piz_srv.mgr_map[opt_id](opt_id, data[1:])
-            sock.sendall(reply)
-            sock.close()
+    class ForkingEchoServer(SocketServer.ForkingMixIn, SocketServer.TCPServer):
+        pass
 
     def __init__(self, host, port):
         PiztorServer.GenericHandler.piz_srv = self
-        srv = SocketServer.TCPServer((host, port), 
-                                    PiztorServer.GenericHandler)
-        srv.timeout = 2
+        srv = PiztorServer.ForkingEchoServer((host, port), 
+                                            PiztorServer.GenericHandler)
+        srv.request_queue_size = 100
+#        srv.timeout = 2
         self.server = srv
 
         self.user_mgr = UserManager(self)
@@ -182,7 +213,8 @@ class PiztorServer():
     
         self.mgr_map = [ self.user_mgr.authentication_handle, 
                     self.mesg_mgr.mesg_sending_handle, 
-                    self.location_mgr.location_update_handle ] 
+                    self.location_mgr.location_update_handle,
+                    self.location_mgr.location_request_handle] 
     
         Base.metadata.create_all(engine)
 
@@ -197,5 +229,5 @@ class PiztorServer():
 
 if __name__ == "__main__":
     
-    ps = PiztorServer("localhost", 9999)
+    ps = PiztorServer("192.168.1.101", 9990)
     ps.run()
