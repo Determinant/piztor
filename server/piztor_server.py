@@ -1,9 +1,14 @@
 import sqlalchemy
-import SocketServer
-import socket
-import select
-import time
+import SocketServer, socket, select
 import struct
+
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+engine = create_engine('sqlite:///t.sqlite', echo = True)
+Base = declarative_base()
+Session = sessionmaker(bind=engine)
 
 class PiztorError(Exception):
     def __init__(self, msg):
@@ -22,10 +27,30 @@ class ReqInvalidError(ConnectionError):
     def __init__(self):
         super(ReqInvalidError, self).__init__("Invalid request")
 
+class TokenInvalidError(ConnectionError):
+    def __init__(self):
+        super(ReqInvalidError, self).__init__("Invalid token")
+
 class DataManager(object):
     pass
 
 class UserManager(DataManager):
+    class User(Base):
+        __tablename__ = 'users'
+        id = Column(Integer, primary_key = True)
+        username = Column(String)
+        password = Column(String)
+
+    def get_uid_by_token(self, token):
+        try:
+            return self.active_sessions[token]
+        except:
+            raise TokenInvalidError()
+
+    def __init__(self):
+        Base.metadata.create_all(engine)
+        self.active_sessions = dict()
+
     def authentication_handle(self, opt_type, data):
         print "Parsing User Data"
         pos = -1
@@ -40,7 +65,10 @@ class UserManager(DataManager):
             raise ReqInvalidError()
         username = data[0:pos]  
         password = data[pos + 1:]
+
+        print "Trying to login with following info:"
         print (username, password)
+        
         return struct.pack("!BL", 0, 1234)
         
 
@@ -105,7 +133,7 @@ class PiztorServer():
             if len(data) < 1: 
                 raise ReqInvalidError()
             opt_id = struct.unpack("!B", data[0])[0]
-            reply = PiztorServer.mgr_map[opt_id](opt_id, data[1:])
+            reply = PiztorServer.mgr_map[opt_id](opt_id, data[1:], self)
             sock.sendall(reply)
             sock.close()
 
@@ -125,5 +153,6 @@ class PiztorServer():
             print "Server shutdown"
 
 if __name__ == "__main__":
+    
     ps = PiztorServer("localhost", 9999)
     ps.run()
