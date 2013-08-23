@@ -7,6 +7,6 @@ public class Myrespond{
 	public String wrong;
 	Myrespond(){
 		wrong = null;
-		contain.clear();
+		contain = new Vector<Object>();
 	}
 }
