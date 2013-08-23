@@ -40,7 +40,7 @@ Piztor Transmission Protocol v0.1
     STATUS:
     
     - 0x00 for success
-    - 0x01 for already logged in (kicked another online device)
+    - 0x01 for failure
 
 - Message Sending 
 

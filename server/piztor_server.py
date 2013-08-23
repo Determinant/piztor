@@ -43,10 +43,15 @@ class UserManager(DataManager):
         id = Column(Integer, primary_key = True)
         username = Column(String)
         password = Column(String)
+        token = Column(Integer)
 
     def get_user_by_token(self, token):
         try:
-            return self.piz_srv.active_sessions[token]
+            session = Session()
+            User = UserManager.User
+            q = session.query(User).filter(User.token == token)
+            entry = q.first() 
+            return entry
         except:
             raise TokenInvalidError()
 
@@ -77,8 +82,7 @@ class UserManager(DataManager):
             return struct.pack("!BlB", 0, 0, 1)
         else:                           # Succeeded
             print "Logged in sucessfully!"
-            token = entry.id
-            self.piz_srv.active_sessions[token] = entry
+            entry.token = randint(0, 2147483647)
             return struct.pack("!BlB", 0, token, 0)
         
 
@@ -122,10 +126,11 @@ class LocationManager(DataManager):
             entry.lat = lat
             entry.lng = lng
             session.commit()
-            return struct.pack("!B", 2)
-        except struct.error, TokenInvalidError:
+            return struct.pack("!BB", 2, 0)
+        except TokenInvalidError:
+            return struct.pack("!BB", 2, 1)
+        except struct.error:
             raise ReqInvalidError()
-
 
 class PiztorServer():
 
@@ -174,7 +179,6 @@ class PiztorServer():
                     self.location_mgr.location_update_handle ] 
     
         Base.metadata.create_all(engine)
-        self.active_sessions = dict()
 
 
     def run(self):
