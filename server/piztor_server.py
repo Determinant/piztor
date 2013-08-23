@@ -6,10 +6,14 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from random import randint
 
 engine = create_engine('sqlite:///t.sqlite', echo = True)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
+
+def get_hex(data):
+    return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
 class PiztorError(Exception):
     def __init__(self, msg):
@@ -46,14 +50,12 @@ class UserManager(DataManager):
         token = Column(Integer)
 
     def get_user_by_token(self, token):
-        try:
-            session = Session()
-            User = UserManager.User
-            q = session.query(User).filter(User.token == token)
-            entry = q.first() 
-            return entry
-        except:
+        session = Session()
+        User = UserManager.User
+        entries = session.query(User).filter(User.token == token).all()
+        if len(entries) == 0:
             raise TokenInvalidError()
+        return entries[0]
 
     def authentication_handle(self, opt_type, data):
         print "Parsing User Data"
@@ -74,16 +76,19 @@ class UserManager(DataManager):
         print (username, password)
         
         session = Session()
-        q = session.query(UserManager.User). \
-            filter(UserManager.User.username == username)
-        entry = q.first()
+        entries = session.query(UserManager.User). \
+            filter(UserManager.User.username == username).all()
+        if len(entries) == 0:
+            return struct.pack("!BLB", 0, 0, 1)
+        entry = entries[0]
         if entry.password != password:  # Auth failed
             print "Login failed!"
-            return struct.pack("!BlB", 0, 0, 1)
+            return struct.pack("!BLB", 0, 0, 1)
         else:                           # Succeeded
             print "Logged in sucessfully!"
             entry.token = randint(0, 2147483647)
-            return struct.pack("!BlB", 0, token, 0)
+            session.commit()
+            return struct.pack("!BLB", 0, entry.token, 0)
         
 
 class MesgManager(DataManager):
@@ -126,8 +131,10 @@ class LocationManager(DataManager):
             entry.lat = lat
             entry.lng = lng
             session.commit()
+            print "Location update succeeded!"
             return struct.pack("!BB", 2, 0)
         except TokenInvalidError:
+            print "Location update failed!"
             return struct.pack("!BB", 2, 1)
         except struct.error:
             raise ReqInvalidError()
@@ -142,7 +149,7 @@ class PiztorServer():
             sock.setblocking(0)
             data = ""
             while True:
-                ready = select.select([sock], [], [], 1)
+                ready = select.select([sock], [], [], 10)
                 if not ready[0]:
                     raise ReqReadError()
                 buff = sock.recv(4096)
@@ -152,8 +159,7 @@ class PiztorServer():
                     data += buff
             sock.shutdown(socket.SHUT_RD)
 
-            print "Got the data:"
-            print data
+            print "Got the data:" + get_hex(data)
             print "===="
 
             if len(data) < 1: 

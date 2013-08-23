@@ -1,6 +1,11 @@
 import socket
 import sys
 from struct import *
+from random import random
+from time import sleep
+
+def get_hex(data):
+    return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
 HOST, PORT = "localhost", 9999
 
@@ -18,6 +23,7 @@ def send(data):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((HOST, PORT))
+        print "sent."
         sock.sendall(data)
         sock.shutdown(socket.SHUT_WR)
         received = sock.recv(1024)
@@ -25,11 +31,16 @@ def send(data):
         print "adf"
         sock.close()
 
-    print "Sent:  {}".format(data)
-    print "Received: {}".format(received)
+    print "Sent".format(get_hex(data))
+    print "Received: {}".format(get_hex(data))
     return received
 
 rec = send(gen_auth("hello", "world"))
 opt, token, status = unpack("!BLB", rec)
-token = 1
-send(gen_update_location(token, 23.33, -54.44))
+print "status:" + str(status)
+
+for i in range(10):
+    rec = send(gen_update_location(token, random(), random()))
+    opc, status = unpack("!BB", rec)
+    print "status:" + str(status)
+    sleep(10)
