@@ -71,7 +71,9 @@ public class Transam implements Runnable {
          	handler.sendMessage(msg); 
 			client.closeSocket();	
 			}catch (UnknownHostException e){
+				e.printStackTrace();
 			}catch (IOException e){
+				e.printStackTrace();
 			}
 			 
 		}

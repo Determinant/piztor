@@ -29,7 +29,9 @@ public class Running extends Activity {
 	protected void onStart() {
 		super.onStart();
 		v = (MyView) findViewById(R.id.view);
-		v.setup(c, b, 31, 121);
+		v.setup(c, b, -1, -1);
+		Tracker tr = new Tracker(controller, Running.this);
+		new Thread(tr).run();
 	}
 	
 	@Override

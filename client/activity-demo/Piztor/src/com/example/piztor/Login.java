@@ -2,13 +2,15 @@ package com.example.piztor;
 
 public class Login {
 	MainActivity main;
+	int tk;
 	
 	Login(MainActivity main) {
 		this.main = main;
 	}
 	
 	void success(int token) {
-		main.start();
+		//main.start();
+		tk = token;
 		System.out.println("token!");
 	}
 	

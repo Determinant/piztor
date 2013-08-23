@@ -16,6 +16,8 @@ public class MainActivity extends Activity {
 	Button b;
 	EditText username, password, ip, port;
 	Login login;
+	Controller c;
+	boolean flag = false;
 	public final static String SER_KEY = "CONTROL";
 
 	@Override
@@ -23,17 +25,12 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		login = new Login(this);
+		c = new Controller();
 		b = (Button) findViewById(R.id.login);
+		
 		b.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				cout.println(username.getText().toString());
-				cout.println(password.getText().toString());
-				cout.println(ip.getText().toString());
-				cout.println(port.getText().toString());
-				ip.setText("192.168.1.102");
-				port.setText("9990");
-				username.setText("hello");
-				password.setText("world");
+				if(flag==false){
 				 Vector<Object> r = new Vector<Object>();
 				 r.add(0);
 				 r.add(username.getText().toString());
@@ -42,6 +39,21 @@ public class MainActivity extends Activity {
 				 .parseInt(port.getText().toString()), new Myrequest(r),
 				 login);
 				 new Thread(t).run();
+				 flag = true;
+				}
+				else{
+					 Vector<Object> r = new Vector<Object>();
+					 r.add(2);
+					 r.add(login.tk);
+					 double lot = 123.456;
+					 double lat = 654.321;
+					 r.add(lot);
+					 r.add(lat);
+					 Transam t = new Transam(ip.getText().toString(), Integer
+					 .parseInt(port.getText().toString()), new Myrequest(r),
+					 c);
+					 new Thread(t).run();
+				}
 			}
 		});
 		username = (EditText) findViewById(R.id.username);
@@ -60,6 +72,10 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
+		ip.setText("192.168.1.101");
+		port.setText("9990");
+		username.setText("hello");
+		password.setText("world");
 		cout.println("onStart!");
 	}
 

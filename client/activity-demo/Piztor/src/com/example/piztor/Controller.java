@@ -1,7 +1,5 @@
 package com.example.piztor;
 
-import java.io.Serializable;
-import android.content.Intent;
 
 public class Controller {
 	String userToken;
@@ -25,6 +23,7 @@ public class Controller {
 	}
 
 	void recieveLocation(double x, double y) {
-		run.v.drawLocation(x, y);
+		System.out.println(x + "  xxxx " + y);
+		run.v.changMyLocation(x, y);
 	}
 }

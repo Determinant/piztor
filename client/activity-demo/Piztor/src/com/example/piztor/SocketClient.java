@@ -36,8 +36,7 @@ public class SocketClient {
 			case 0:
 				String id = (String) req.contain.get(1);
 				String pass = (String) req.contain.get(2);
-				out.writeUTF(id);
-				out.writeUTF(pass);
+				out.writeBytes(id + "\0" + pass);
 				break;
 			case 1:
 				int tk1 = (Integer) req.contain.get(1);
@@ -45,7 +44,7 @@ public class SocketClient {
 				String mess = (String) req.contain.get(3);
 				out.writeInt(tk1);
 				out.writeInt(acc);
-				out.writeUTF(mess);
+				out.writeBytes(mess);
 				break;
 			case 2:
 				int tk2 = (Integer) req.contain.get(1);
@@ -74,6 +73,7 @@ public class SocketClient {
 				r.contain.add(0);
 				r.contain.add(id);
 				r.contain.add(status);
+				System.out.println(id);
 				break;
 			case 1:
 				r.contain.add(1);
@@ -89,11 +89,10 @@ public class SocketClient {
 				r.contain.add(n);
 				for (int i = 1; i <= n; i++) {
 					int tid = in.readInt();
-					double lot = in.readDouble();
 					double lat = in.readDouble();
-					r.contain.add(tid);
-					r.contain.add(lot);
-					r.contain.add(lat);
+					double lot = in.readDouble();
+					Rmsg a = new Rmsg(tid,lat,lot);
+					r.contain.add(a);
 				}
 				break;
 			}
