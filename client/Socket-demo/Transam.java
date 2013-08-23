@@ -12,6 +12,7 @@ import android.os.Message;
 public class Transam implements Runnable {
 	public Timer timer;
 	public boolean flag = true;
+	public boolean reqlog = false;
 	public int cnt = 4;
 	public int port;
 	public String ip;
@@ -19,6 +20,16 @@ public class Transam implements Runnable {
 	Myrequest req;
 	Myrespond res;
 	Controller core;
+	Login log;
+	
+	
+	Transam(String i,int p,Myrequest r,Login l){
+		port = p;
+		ip = i;
+		req = r;
+		log = l;
+		reqlog = true;
+	}
 	
 	Transam(String i,int p,Myrequest r,Controller c){
 		port = p;
@@ -43,8 +54,19 @@ public class Transam implements Runnable {
 		public void run() {
 			try{
         	SocketClient client = new SocketClient(ip,port);
-        	res = client.sendMsg(req); 
+        	res = client.sendMsg(req);
+        	if(!reqlog){
         	core.recieveInfo(res);
+        	}
+        	else{
+        		if((Integer) res.contain.get(2)==0){
+        		int t = (Integer) res.contain.get(1);
+        		log.success(t);
+        		}
+        		else{
+        			log.failed();
+        		}
+        	}
         	Message msg = new Message();
          	msg.what = 1;
          	handler.sendMessage(msg); 
@@ -63,10 +85,15 @@ public class Transam implements Runnable {
     	case 1:       	 
     	flag = true;
     	break; 
-    	case 2:     
+    	case 2:
+    	if(!reqlog){
     	res = new Myrespond();
     	res.wrong = msg.obj.toString();    	
      	core.recieveInfo(res);
+    	}
+    	else{
+    		log.failed();
+    	}
         break;
     	case 3:
     	final thd t = new thd();
