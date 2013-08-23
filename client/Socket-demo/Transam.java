@@ -10,7 +10,6 @@ import android.os.Handler;
 import android.os.Message;
 
 public class Transam implements Runnable {
-	public static String outmsg = "";
 	public Timer timer;
 	public boolean flag = true;
 	public int cnt = 4;
@@ -44,7 +43,7 @@ public class Transam implements Runnable {
 		public void run() {
 			try{
         	SocketClient client = new SocketClient(ip,port);
-        	Myrespond res = client.sendMsg(req); 
+        	res = client.sendMsg(req); 
         	core.recieveInfo(res);
         	Message msg = new Message();
          	msg.what = 1;
@@ -65,6 +64,7 @@ public class Transam implements Runnable {
     	flag = true;
     	break; 
     	case 2:     
+    	res = new Myrespond();
     	res.wrong = msg.obj.toString();    	
      	core.recieveInfo(res);
         break;
