@@ -37,7 +37,7 @@ Piztor Transmission Protocol v0.1
        | 0x00  | USER_TOKEN |  STATUS |
        +-uchar-+-----int----+--uchar--+
 
-    STATUS:
+    ``STATUS`` :
     
     - 0x00 for success
     - 0x01 for failure
@@ -60,7 +60,7 @@ Piztor Transmission Protocol v0.1
         | 0x01  | STATUS |
         +-uchar-+--uchar-+
 
-    STATUS:
+    ``STATUS`` :
 
     - 0x00 for success
     - 0x01 for invalid token
@@ -80,10 +80,10 @@ Piztor Transmission Protocol v0.1
     ::
 
         +--1b---+---1b---+
-        | 0x01  | STATUS |
+        | 0x02  | STATUS |
         +-uchar-+--uchar-+
 
-    STATUS:
+    ``STATUS`` :
 
     - 0x00 for success
     - 0x01 for invalid token
@@ -106,7 +106,7 @@ Piztor Transmission Protocol v0.1
         | 0x03  | ENTRY_CNT | LOCATION_ENTRY | ... |
         +-uchar-+---int-----+----------------+-----+
         
-    Location Entry:
+    ``LOCATION_ENTRY`` :
 
     :: 
 

@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from random import randint
 
-engine = create_engine('sqlite:///t.sqlite', echo = True)
+engine = create_engine('sqlite:///t.sqlite', echo = False)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 
