@@ -51,7 +51,7 @@ class UserManager(DataManager):
         Base.metadata.create_all(engine)
         self.active_sessions = dict()
 
-    def authentication_handle(self, opt_type, data):
+    def authentication_handle(self, opt_type, data, srv):
         print "Parsing User Data"
         pos = -1
         for i in xrange(0, len(data)):
@@ -69,11 +69,17 @@ class UserManager(DataManager):
         print "Trying to login with following info:"
         print (username, password)
         
+        session = Session()
+        q = session.query(User).filter(User.username == username)
+        entry = q.first()
+        if entry.password != password:  # Auth failed
+            return struct.pack("!BL"
+        
         return struct.pack("!BL", 0, 1234)
         
 
 class MesgManager(DataManager):
-    def mesg_sending_handle(self, opt_type, data):
+    def mesg_sending_handle(self, opt_type, data, srv):
         print "Parsing Mesg Data"
         try:
             if len(data) < 8:
@@ -86,7 +92,7 @@ class MesgManager(DataManager):
             raise ReqInvalidError()
 
 class LocationManager(DataManager):
-    def location_update_handle(self, opt_type, data):
+    def location_update_handle(self, opt_type, data, srv):
         print "Parsing Loc Data"
         try:
             if len(data) < 8:

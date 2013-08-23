@@ -33,9 +33,9 @@ Piztor Transmission Protocol v0.1
 
     ::
     
-       +--1b---+-----4b-----+----1b----+
-       | 0x00  | USER_TOKEN | RESERVED |
-       +-uchar-+-----int----+---uchar--+
+       +--1b---+-----4b-----+---1b---+
+       | 0x00  | USER_TOKEN | STATUS |
+       +-uchar-+-----int----+--uchar-+
 
 - Message Sending 
 
