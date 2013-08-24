@@ -1,62 +1,55 @@
-package com.example.piztor;
+package com.macaroon.piztor;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Vector;
+
+import android.os.Handler;
+import android.os.Message;
 
 public class SocketClient {
-	static PrintStream cout = System.out;
 	static Socket client;
 
 	public SocketClient(String site, int port) throws UnknownHostException,
 			IOException {
 		try {
-			cout.println(site + "   " + port);
 			client = new Socket(site, port);
-			cout.println("connected successfully!!!");
 		} catch (UnknownHostException e) {
-			cout.println("unknownhostexception!!");
 			throw e;
 		} catch (IOException e) {
-			cout.println("IOException!!");
 			throw e;
 		}
 	}
 
-	public Myrespond sendMsg(Myrequest req) throws IOException {
+	public void sendMsg(Req req,Handler recall) throws IOException {
 		try {
 			DataOutputStream out = new DataOutputStream(
 					client.getOutputStream());
-			int tmp = (Integer) req.contain.get(0);
+			int tmp = req.type;
 			out.writeByte(tmp);
 			switch (tmp) {
 			case 0:
-				String id = (String) req.contain.get(1);
-				String pass = (String) req.contain.get(2);
-				out.writeBytes(id + "\0" + pass);
-				break;
-			case 1:
-				int tk1 = (Integer) req.contain.get(1);
-				int acc = (Integer) req.contain.get(2);
-				String mess = (String) req.contain.get(3);
-				out.writeInt(tk1);
-				out.writeInt(acc);
-				out.writeBytes(mess);
+				Reqlogin rau = (Reqlogin) req;
+				String id = rau.user;
+				String pa = rau.pass;
+				out.writeBytes(id + "\0" + pa);
 				break;
 			case 2:
-				int tk2 = (Integer) req.contain.get(1);
-				double slot = (Double) req.contain.get(2);
-				double slat = (Double) req.contain.get(3);
+				Requpdate rup = (Requpdate) req;
+				int tk2 = rup.token;
+				double slat = rup.lat;
+				double slot = rup.lot;
 				out.writeInt(tk2);
-				out.writeDouble(slot);
 				out.writeDouble(slat);
+				out.writeDouble(slot);
 				break;
 			case 3:
-				int tk3 = (Integer) req.contain.get(1);
-				int gid = (Integer) req.contain.get(2);
+				Reqlocation ras = (Reqlocation) req;
+				int tk3 = ras.token;
+				int gid = ras.gid;
 				out.writeInt(tk3);
 				out.writeInt(gid);
 				break;
@@ -64,39 +57,40 @@ public class SocketClient {
 			out.flush();
 			client.shutdownOutput();
 			DataInputStream in = new DataInputStream(client.getInputStream());
+			Message msg = new Message();
 			int type = in.readUnsignedByte();
-			Myrespond r = new Myrespond();
 			switch (type) {
 			case 0:
 				int id = in.readInt();
 				int status = in.readUnsignedByte();
-				r.contain.add(0);
-				r.contain.add(id);
-				r.contain.add(status);
-				System.out.println(id);
-				break;
-			case 1:
-				r.contain.add(1);
-				// reserved
+				Reslogin rchklogin = new Reslogin(id,status);
+				msg.obj = rchklogin;
+				msg.what = 0;
+				recall.sendMessage(msg);
 				break;
 			case 2:
-				r.contain.add(2);
-				// reserved
+				int status1 = in.readUnsignedByte();
+				Resupdate rchkupd = new Resupdate(status1);
+				msg.obj = rchkupd;
+				msg.what = 1;
+				recall.sendMessage(msg);
 				break;
 			case 3:
 				int n = in.readInt();
-				r.contain.add(3);
-				r.contain.add(n);
+				Vector<Rlocation> tmpv = new Vector<Rlocation>();
 				for (int i = 1; i <= n; i++) {
 					int tid = in.readInt();
 					double lat = in.readDouble();
 					double lot = in.readDouble();
-					Rmsg a = new Rmsg(tid,lat,lot);
-					r.contain.add(a);
+					tmpv.add(new Rlocation(tid,lat,lot));
 				}
+				Reslocation rlocin = new Reslocation(n,tmpv);
+				msg.obj = rlocin;
+				msg.what = 3;
+				recall.sendMessage(msg);
 				break;
 			}
-			return r;
+
 		} catch (IOException e) {
 			throw e;
 		}
