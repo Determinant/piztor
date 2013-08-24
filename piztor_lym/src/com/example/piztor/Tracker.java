@@ -8,6 +8,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.os.SystemClock;
 
 
 public class Tracker implements Runnable {
@@ -42,7 +43,12 @@ public class Tracker implements Runnable {
 			Log.d("Location", "Fetching location.....");
 			if (myTracker.canGetLocation()) {
 				double latitude = myTracker.getLatitude();
-				double longitude = myTracker.getLongitude();			
+				double longitude = myTracker.getLongitude();	
+				
+				Log.d("TTTTTTTTTTTTTTTTTTTTTTTime","TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTime");
+				System.out.println("GPSTIME" + myTracker.location.getTime());
+				System.out.println("SYSTIME" + SystemClock.elapsedRealtime());
+				
 				if(myTracker.isGPSFix()) {
 					message.what = 1;
 				} else {
