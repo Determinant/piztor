@@ -15,7 +15,7 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
 
-public class GPSTracker extends Service implements LocationListener {
+public class GPSTracker extends Service implements LocationListener, GpsStatus.Listener {
 
 	private final Context mContext;
 
@@ -162,7 +162,7 @@ public class GPSTracker extends Service implements LocationListener {
 	}
 
 	public boolean isGPSFix() {
-		return this.isGPSFix;
+		return (this.isGPSFix && location != null);
 	}
 
 	/**
@@ -225,7 +225,7 @@ public class GPSTracker extends Service implements LocationListener {
 		return null;
 	}
 
-
+	@Override
 	public void onGpsStatusChanged(int event) {
 		switch (event) {
 			case GpsStatus.GPS_EVENT_SATELLITE_STATUS:
