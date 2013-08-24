@@ -12,7 +12,7 @@ public class Transam implements Runnable {
 	public Timer timer;
 	public boolean flag = true;
 	public boolean reqlog = false;
-	public int cnt = 4;
+	public int cnt = 2;
 	public int port;
 	public String ip;
 	Thread thread;
@@ -45,7 +45,7 @@ public class Transam implements Runnable {
     	thread.start();
     	timer = new Timer();
     	TimerTask task = new Timertk();
-    	timer.schedule(task,2000,2000);
+    	timer.schedule(task,5000,5000);
 	}
 	
 	class thd implements Runnable {

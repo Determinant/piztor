@@ -43,12 +43,9 @@ public class MainActivity extends Activity {
 				}
 				else{
 					 Vector<Object> r = new Vector<Object>();
-					 r.add(2);
+					 r.add(3);
 					 r.add(login.tk);
-					 double lot = 123.456;
-					 double lat = 654.321;
-					 r.add(lot);
-					 r.add(lat);
+					 r.add(1);
 					 Transam t = new Transam(ip.getText().toString(), Integer
 					 .parseInt(port.getText().toString()), new Myrequest(r),
 					 c);
@@ -72,7 +69,7 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		ip.setText("192.168.1.101");
+		ip.setText("69.85.86.42");
 		port.setText("9990");
 		username.setText("hello");
 		password.setText("world");
