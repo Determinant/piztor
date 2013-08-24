@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	android:background="@drawable/topbar_background"
+	android:orientation="horizontal" >
+
+	<RelativeLayout
+		android:id="@+id/main_title"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentTop="true" >
+
+		<include layout="@layout/settings_head" />
+	</RelativeLayout>
+
+	<LinearLayout
+		android:layout_width="fill_parent"
+		android:layout_height="match_parent"
+		android:layout_marginTop="48dip"
+		android:orientation="vertical" >
+
+		<TextView
+			android:id="@+id/GPS_refreshrate_text"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="GPS refresh rate"
+			android:layout_gravity="center"
+			android:layout_marginTop="10dip"
+			android:textSize="20dip"
+			android:textColor="@android:color/white" />
+
+		<SeekBar
+			android:id="@+id/GPS_refreshrate"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content" />
+
+
+		<!-- LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			-->
+			<!-- TextView 
+				android:id="@+id/GPS_min_text"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_alignParentLeft="true"
+				android:layout_marginLeft="10dip"
+				android:text="1s"
+				android:textSize="10dip"
+				android:textColor="@android:color/white"/-->
+
+			<!--  -->TextView
+			android:id="@+id/GPS_max_text"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_alignParentRight="true"
+			android:text="30s"
+			android:textColor="@android:color/white"
+			android:textSize="10dip" /-->
+
+			<!-- /LinearLayout --> <!-- end of gps text -->
+
+		<ImageView
+		    android:id="@+id/imageView1"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:src="@drawable/horizontal_line" />
+
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_marginTop="10dip">
+
+			<TextView
+			    android:id="@+id/textView1"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:layout_marginLeft="10dip"
+			    android:textSize="20dip"
+				android:textColor="@android:color/white"
+			    android:text="Show sex: " />
+
+			<CheckBox
+			    android:id="@+id/show_male"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="male" 
+			    android:textColor="@android:color/white"/>
+			
+
+			<CheckBox
+			    android:id="@+id/show_female"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="female" 
+			    android:textColor="@android:color/white"/>
+
+		</LinearLayout>
+
+		<ImageView
+		    android:id="@+id/imageView2"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:src="@drawable/horizontal_line" />
+
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content" 
+		    android:layout_marginTop="10dip">
+
+			<TextView
+			    android:id="@+id/show_team_text"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:layout_marginLeft="10dip"
+			    android:textSize="20dip"
+				android:textColor="@android:color/white"
+			    android:text="Show team: " />
+
+			<RadioButton
+			    android:id="@+id/show_team_mine"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="only mine" 
+			    android:textSize="20dip"
+				android:textColor="@android:color/white"/>
+
+			<RadioButton
+			    android:id="@+id/show_team_all"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="all" 
+			    android:textSize="20dip"
+				android:textColor="@android:color/white"/>
+
+		</LinearLayout>
+
+		<ImageView
+		    android:id="@+id/imageView3"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:src="@drawable/horizontal_line" />
+
+		</LinearLayout> <!-- end of main settings part -->
+	</RelativeLayout>
