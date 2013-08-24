@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="fill_parent"
 	android:layout_height="48dip"
-	android:background="@drawable/topbar_background"
+	android:background="@android:color/black"
 	android:id="@+id/titile_layout" >
 
 	<TextView
