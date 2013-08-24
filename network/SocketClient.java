@@ -32,13 +32,13 @@ public class SocketClient {
 			out.writeByte(tmp);
 			switch (tmp) {
 			case 0:
-				Reqlogin rau = (Reqlogin) req;
+				ReqLogin rau = (ReqLogin) req;
 				String id = rau.user;
 				String pa = rau.pass;
 				out.writeBytes(id + "\0" + pa);
 				break;
 			case 2:
-				Requpdate rup = (Requpdate) req;
+				ReqUpdate rup = (ReqUpdate) req;
 				int tk2 = rup.token;
 				double slat = rup.lat;
 				double slot = rup.lot;
@@ -47,7 +47,7 @@ public class SocketClient {
 				out.writeDouble(slot);
 				break;
 			case 3:
-				Reqlocation ras = (Reqlocation) req;
+				ReqLocation ras = (ReqLocation) req;
 				int tk3 = ras.token;
 				int gid = ras.gid;
 				out.writeInt(tk3);
@@ -63,14 +63,14 @@ public class SocketClient {
 			case 0:
 				int id = in.readInt();
 				int status = in.readUnsignedByte();
-				Reslogin rchklogin = new Reslogin(id,status);
+				ResLogin rchklogin = new ResLogin(id,status);
 				msg.obj = rchklogin;
 				msg.what = 0;
 				recall.sendMessage(msg);
 				break;
 			case 2:
 				int status1 = in.readUnsignedByte();
-				Resupdate rchkupd = new Resupdate(status1);
+				ResUpdate rchkupd = new ResUpdate(status1);
 				msg.obj = rchkupd;
 				msg.what = 1;
 				recall.sendMessage(msg);
@@ -84,7 +84,7 @@ public class SocketClient {
 					double lot = in.readDouble();
 					tmpv.add(new Rlocation(tid,lat,lot));
 				}
-				Reslocation rlocin = new Reslocation(n,tmpv);
+				ResLocation rlocin = new ResLocation(n,tmpv);
 				msg.obj = rlocin;
 				msg.what = 3;
 				recall.sendMessage(msg);
