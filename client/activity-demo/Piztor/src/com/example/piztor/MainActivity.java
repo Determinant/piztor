@@ -1,6 +1,7 @@
 package com.example.piztor;
 
 import java.io.PrintStream;
+import java.net.Socket;
 import java.util.Vector;
 
 import android.app.Activity;
@@ -14,7 +15,7 @@ import android.widget.EditText;
 public class MainActivity extends Activity {
 	PrintStream cout = System.out;
 	Button b;
-	EditText username, password, ip, port;
+	EditText username, password;
 	Login login;
 	public final static String SER_KEY = "CONTROL";
 
@@ -24,42 +25,34 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		login = new Login(this);
 		b = (Button) findViewById(R.id.login);
+
 		b.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				cout.println(username.getText().toString());
 				cout.println(password.getText().toString());
-				cout.println(ip.getText().toString());
-				cout.println(port.getText().toString());
-				ip.setText("192.168.1.102");
-				port.setText("9990");
-				username.setText("hello");
-				password.setText("world");
-				 Vector<Object> r = new Vector<Object>();
-				 r.add(0);
-				 r.add(username.getText().toString());
-				 r.add(password.getText().toString());
-				 Transam t = new Transam(ip.getText().toString(), Integer
-				 .parseInt(port.getText().toString()), new Myrequest(r),
-				 login);
-				 new Thread(t).run();
+				Transam t = new Transam(UserStatus.ip, UserStatus.port,
+						Myrequest.login(username.getText().toString(), password
+								.getText().toString()), login);
+				new Thread(t).run();
+				// start();
 			}
 		});
 		username = (EditText) findViewById(R.id.username);
 		password = (EditText) findViewById(R.id.password);
-		ip = (EditText) findViewById(R.id.ip);
-		port = (EditText) findViewById(R.id.port);
 		cout.println("onCreate!");
 	}
 
 	void start() {
 		Intent i = new Intent();
-		i.setClass(MainActivity.this, Running.class);
+		i.setClass(this, Running.class);
 		startActivity(i);
 	}
 
 	@Override
 	protected void onStart() {
 		super.onStart();
+		username.setText("hello");
+		password.setText("world");
 		cout.println("onStart!");
 	}
 

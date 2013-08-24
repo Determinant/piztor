@@ -8,6 +8,7 @@ public class Login {
 	}
 	
 	void success(int token) {
+		UserStatus.token = token;
 		main.start();
 		System.out.println("token!");
 	}
