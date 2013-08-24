@@ -168,8 +168,9 @@ class PiztorServer():
     class GenericHandler(SocketServer.StreamRequestHandler):
 
         def handle(self):
+            print self.piz_srv
             sock = self.request
-            sock.settimeout(10)
+            sock.settimeout(100)
 #           sock.setblocking(0)
             data = ""
             try:
@@ -229,5 +230,5 @@ class PiztorServer():
 
 if __name__ == "__main__":
     
-    ps = PiztorServer("192.168.1.101", 9990)
+    ps = PiztorServer("localhost", 9990)
     ps.run()

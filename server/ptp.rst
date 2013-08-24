@@ -42,29 +42,6 @@ Piztor Transmission Protocol v0.1
     - 0x00 for success
     - 0x01 for failure
 
-- Message Sending 
-
-  - Request
-
-    ::
-    
-        +--1b---+------4b------+------4b-----+-----?b-----+
-        | 0x01  | SENDER_TOKEN | RECEIVER_ID |  MSG_BODY  |
-        +-uchar-+------int-----+-----int-----+------------+
-
-  - Response
-        
-    ::
-
-        +--1b---+---1b---+
-        | 0x01  | STATUS |
-        +-uchar-+--uchar-+
-
-    ``STATUS`` :
-
-    - 0x00 for success
-    - 0x01 for invalid token
-
 - Location Update
 
   - Request

@@ -7,7 +7,7 @@ from time import sleep
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
-HOST, PORT = "192.168.1.101", 9990
+HOST, PORT = "localhost", 9990
 
 def gen_auth(username, password):
     data = pack("!B", 0)
@@ -30,7 +30,7 @@ def send(data):
         sock.sendall(data)
         print get_hex(data)
 #        print "Client " + str(sys.argv[1]) + ": sent"
-        sock.shutdown(socket.SHUT_WR)
+#        sock.shutdown(socket.SHUT_WR)
 #        print "Client " + str(sys.argv[1]) + ": shutdown"
         received = sock.recv(1024)
     finally:
