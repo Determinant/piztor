@@ -47,8 +47,7 @@
                                 android:layout_weight="0.75"
                     android:id="@+id/user_id"
                     android:singleLine="true">
-                    <requestFocus/>,
-                </EditText >    
+                    <requestFocus/>
             </TableRow>
 
             <TableRow>
