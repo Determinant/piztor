@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.os.Handler;
 
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
@@ -13,7 +14,17 @@ public class AppMgr {
 	} 
 	static ActivityStatus status;
 	static PiztorAct nowAct;
-
+	//TODO fix
+	static Handler fromTransam, fromGPS;
+	static Transam transam = null;
+	static Tracker tracker = null;
+	static Thread tTransam, tGPS;
+	//Event
+	
+	final static int noToken = 101;
+	final static int loginSuccess = 102;
+	
+	
 	static HashMap<Class<?>, HashMap<Integer, Class<?>>> mp;
 
 	static void setStatus(ActivityStatus st) {
@@ -21,8 +32,12 @@ public class AppMgr {
 	}
 
 	static void trigger(int event) {
-		
 		Intent i = new Intent();
+		System.out.println(nowAct.id + " : " + event);
+		if (mp.get(nowAct.getClass()) == null)
+			System.out.println("first");
+		else if (mp.get(nowAct.getClass()) == null)
+			System.out.println("second");
 		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
 		nowAct.startActivity(i);
 	}
@@ -55,8 +70,20 @@ public class AppMgr {
 
 	static void init() {
 		mp = new HashMap<Class<?>, HashMap<Integer, Class<?>>>();
+		fromTransam = new Handler();
+		transam = new Transam(UserInfo.ip, UserInfo.port, fromTransam);
+		fromGPS = new Handler();
+		tracker = new Tracker(nowAct.getApplicationContext(), fromGPS);
+		tTransam = new Thread(transam);
+		tTransam.start();
+		tGPS = new Thread(tracker);
+		tGPS.start();
+		System.out.println("!!!!!!");
 		addStatus(InitAct.class);
-		
+		addStatus(Login.class);
+		addStatus(Main.class);
+		addTransition(InitAct.class, noToken, Login.class);
+		addTransition(Login.class, loginSuccess, Main.class);
 	}
 
 }

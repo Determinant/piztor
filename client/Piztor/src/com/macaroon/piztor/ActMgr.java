@@ -21,8 +21,7 @@ public class ActMgr {
 	}
 
 	void trigger(int event) {
-		for (Integer i : mp.get(nowStatus).keySet())
-			System.out.println(i);
+		System.out.println(act.id + " : " + event);
 		if (mp.get(nowStatus).containsKey(event)) {
 			nowStatus.leave(event);
 			nowStatus = mp.get(nowStatus).get(event);
