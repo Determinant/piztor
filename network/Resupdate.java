@@ -8,6 +8,6 @@ package com.macaroon.piztor;
 public class ResUpdate extends Res{
 	
 	ResUpdate(int status){
-		super(2,status);	//for type 2
+		super(1,status);	//for type 1
 	}
 }

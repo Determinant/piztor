@@ -14,18 +14,37 @@ import android.os.Message;
 
 //------------------------------------------------//
 //												  //
-//				return msg type					  //
+//				*return msg type*			      //
 //				0   for   login					  //
-//              2   for   updateLocation		  //
-//              3   for   locationRequest		  //
+//              1   for   updateLocation		  //
+//              2   for   locationRequest		  //
 //											      //
-//		----------I'm the divisior---------	      //
+//     ----------I'm the division line--------    //
+//                                                //
+//           100  for   timeOut				      //
+//           101  for   conection failed          //
+//           102  for   reconnect                 //
+//           103  for   IOexception			      //
+//           104  for   UnknownHostException	  //
+//                                                //
+//    ----------I'm the division line--------     //
+//                                                //
+//				 *Request form*					  //
+//        login -- username & password			  //
+//update -- token & username & latitude & longitude//
+//	  getlocation -- token & username & groupid   //
 //												  //
-//			   100  for   timeOut				  //
-//			   101  for   conection failed        //
-//			   102  for   reconnect               //
-//			   103  for   IOexception			  //
-//			   104  for   UnknownHostException	  //
+//    ----------I'm the division line--------     //
+//                                                //
+//               *Respond form*					  //
+//        login -- status & userid & token        //
+//			  update -- status                    //
+//     getlocation -- status & entrynumber & data //
+//       entry  -- userid & latitude & longitude  //
+//                                                //
+//          status -- 0 for success               //
+//					  1 for failed/invalid        //				
+//												  //
 //------------------------------------------------//
 
 public class Transam implements Runnable {

@@ -9,7 +9,7 @@ public class ReqLogin extends Req{
 	String pass;	//password
 	
 	ReqLogin(String u,String p,long time,long alive){
-		super(0,"",time,alive);	//for type 0
+		super(0,"","",time,alive);	//for type 0
 		user = u;
 		pass = p;
 	}
