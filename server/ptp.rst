@@ -20,6 +20,7 @@ Piztor Transmission Protocol v0.2
         +--int---+-uchar--+-----------------+
 
     Notice that in following sections, ``LENGTH`` part is left out for clarity.
+    TODO: All secure requests should have username or uid provided.
 
 - Authentication 
 
