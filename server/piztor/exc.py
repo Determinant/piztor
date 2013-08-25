@@ -1,6 +1,9 @@
 class PiztorError(Exception):
     pass
 
+class DBCurruptedError(PiztorError):
+    pass
+
 class ConnectionError(PiztorError):
     pass
 
@@ -10,5 +13,5 @@ class ReqReadError(ConnectionError):
 class BadReqError(ConnectionError):
     pass
 
-class InvalidTokenError(ConnectionError):
+class BadTokenError(ConnectionError):
     pass

@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 
 Base = declarative_base()
+
 _SALT_LEN = 16
 _TOKEN_LEN = 16
 

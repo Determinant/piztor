@@ -33,9 +33,9 @@ Piztor Transmission Protocol v0.1
 
     ::
     
-       +--1b---+-----4b-----+---1b----+
-       | 0x00  | USER_TOKEN |  STATUS |
-       +-uchar-+-----int----+--uchar--+
+       +--1b---+---1b---+---4b----+----16b-----+
+       | 0x00  | STATUS | USER_ID | USER_TOKEN |
+       +-uchar-+--uchar-+---int---+----raw-----+
 
     ``STATUS`` :
     
@@ -48,9 +48,9 @@ Piztor Transmission Protocol v0.1
 
     ::
     
-        +--1b---+------4b------+-----8b-----+------8b-----+
-        | 0x02  | SENDER_TOKEN |  LATITUDE  |  LONGITUDE  |
-        +-uchar-+------int-----+---double---+---double----+
+        +--1b---+-----16b------+-----8b-----+------8b-----+
+        | 0x02  |  USER_TOKEN  |  LATITUDE  |  LONGITUDE  |
+        +-uchar-+------raw-----+---double---+---double----+
 
   - Response
 
@@ -71,17 +71,17 @@ Piztor Transmission Protocol v0.1
 
     ::
     
-        +--1b---+-----4b-------+------4b-----+
-        | 0x03  | SENDER_TOKEN |  GROUP_ID   |
-        +-uchar-+-----int------+-----int-----+
+        +--1b---+-----16b------+------4b-----+
+        | 0x03  |  USER_TOKEN  |  GROUP_ID   |
+        +-uchar-+-----raw------+-----int-----+
 
   - Response
 
     ::
 
-        +--1b---+-----4b----+------20b-------+-----+
-        | 0x03  | ENTRY_CNT | LOCATION_ENTRY | ... |
-        +-uchar-+---int-----+----------------+-----+
+        +--1b---+---1b---+-----4b----+------20b-------+-----+
+        | 0x03  | STATUS | ENTRY_CNT | LOCATION_ENTRY | ... |
+        +-uchar-+-uchar--+----int----+----------------+-----+
         
     ``LOCATION_ENTRY`` :
 
