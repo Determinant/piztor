@@ -44,8 +44,9 @@
 
                 <EditText  
                     android:layout_width="0dp"
-                                android:layout_weight="0.75"
+                    android:layout_weight="0.75"
                     android:id="@+id/user_id"
+                    android:textColor="@android:color/white"
                     android:singleLine="true">
                     <requestFocus/>
                 </EditText >    
@@ -67,6 +68,7 @@
                     android:layout_weight="0.75"
                     android:id="@+id/user_pass"           
                     android:password="true"
+                    android:textColor="@android:color/white"
                     android:singleLine="true"/>
              </TableRow>     
         </TableLayout>
