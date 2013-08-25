@@ -73,6 +73,20 @@ public class SocketClient {
 				out.writeByte(0);
 				out.writeInt(gid);
 				break;
+			case 3:
+				ReqUserinfo rus = (ReqUserinfo) req;
+				String tk3 = rus.token;
+				String name3 = rus.uname;
+				len = 4+1+32+name3.length()+1+4;				
+				out.writeInt(len);
+				out.writeByte(tmp);				
+				int usid = rus.uid;
+				byte[] b3 = hexStringToBytes(tk3);						
+				out.write(b3);
+				out.writeBytes(name3);
+				out.writeByte(0);
+				out.writeInt(usid);
+				break;
 			}
 			out.flush();
 			DataInputStream in = new DataInputStream(client.getInputStream());
@@ -118,6 +132,35 @@ public class SocketClient {
 				ResLocation rlocin = new ResLocation(n,status2,tmpv);
 				msg.obj = rlocin;
 				msg.what = 2;
+				recall.sendMessage(msg);
+				break;
+			case 3:
+				int status3 = in.readUnsignedByte();
+				Vector<RUserinfo> tmpu = new Vector<RUserinfo>();
+				while(outlen>0){
+					RUserinfo r;
+					int typ = in.readUnsignedByte();
+					outlen-=1;
+					switch(typ){
+					case 0:
+						int gid = in.readInt();
+						in.readByte();
+						r = new RKeyGroupID(gid);
+						outlen-=5;
+						tmpu.add(r);
+						break;
+					case 1:
+						boolean  s = in.readBoolean();
+						in.readByte();
+						r = new RKeyGender(s);
+						outlen-=2;
+						tmpu.add(r);
+						break;
+					}
+				}
+				ResUserinfo resus = new ResUserinfo(status3,tmpu);
+				msg.obj = resus;
+				msg.what = 3;
 				recall.sendMessage(msg);
 				break;
 			}

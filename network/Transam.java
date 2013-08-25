@@ -18,6 +18,7 @@ import android.os.Message;
 //				0   for   login					  //
 //              1   for   updateLocation		  //
 //              2   for   locationRequest		  //
+//			    3   for   userinfo				  //
 //											      //
 //     ----------I'm the division line--------    //
 //                                                //
@@ -33,6 +34,7 @@ import android.os.Message;
 //        login -- username & password			  //
 //update -- token & username & latitude & longitude//
 //	  getlocation -- token & username & groupid   //
+//    getuserinfo -- token & userinfo & userid    //
 //												  //
 //    ----------I'm the division line--------     //
 //                                                //
@@ -42,6 +44,10 @@ import android.os.Message;
 //     getlocation -- status & entrynumber & data //
 //       entry  -- userid & latitude & longitude  //
 //                                                //
+//  getuserinfo -- status & RUserinfo(base class) //
+//		      RKeyGender -- gender                //
+//            RKeyGroupID -- groupid              //
+//												  //
 //          status -- 0 for success               //
 //					  1 for failed/invalid        //				
 //												  //
