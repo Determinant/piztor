@@ -12,6 +12,8 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
+//       Piztor Transmission Protocol v0.3a       //
+
 //------------------------------------------------//
 //												  //
 //				*return msg type*			      //
