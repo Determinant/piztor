@@ -1,0 +1,114 @@
+package com.macaroon.piztor;
+
+import android.annotation.SuppressLint;
+import android.location.Location;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.Menu;
+import android.widget.ImageButton;
+
+public class Main extends PiztorAct {
+
+	final static int SearchButtonPress = 1;
+	final static int FetchButtonPress = 2;
+	final static int FocuseButtonPress = 3;
+	final static int SuccessFetch = 4;
+	final static int FailedFetch = 5;
+	ActMgr actMgr;
+	ImageButton btnSearch, btnFetch, btnFocus, btnSettings;
+	@SuppressLint("HandlerLeak")
+	Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message m) {
+			if (m.what != 0) {
+				Location l = (Location) m.obj;
+				if (l == null)
+					System.out.println("fuck!!!");
+				ReqUpdate r = new ReqUpdate(UserInfo.token, l.getLatitude(),
+						l.getLongitude(), System.currentTimeMillis(), 1000);
+				AppMgr.transam.send(r);
+			}
+		}
+	};
+
+	class StartStatus extends ActStatus {
+
+		@Override
+		void enter(int e) {
+		}
+
+		@Override
+		void leave(int e) {
+		}
+		
+	}
+	
+	class FetchStatus extends ActStatus {
+
+		@Override
+		void enter(int e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		void leave(int e) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+	}
+	
+	class FocusStatus extends ActStatus {
+
+		@Override
+		void enter(int e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		void leave(int e) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+	}
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		id = "Main";
+		super.onCreate(savedInstanceState);
+		AppMgr.tracker.setHandler(handler);
+		ActStatus[] r = new ActStatus[3];
+		r[0] = new StartStatus();
+		r[1] = new FetchStatus();
+		r[2] = new FocusStatus();
+		actMgr = new ActMgr(this, r[0], r);
+		actMgr.add(r[0], FocuseButtonPress, r[2]);
+		actMgr.add(r[0], FetchButtonPress, r[1]);
+		actMgr.add(r[1], FetchButtonPress, r[0]);
+		actMgr.add(r[1], FailedFetch, r[0]);
+		actMgr.add(r[2], FocuseButtonPress, r[0]);
+		setContentView(R.layout.activity_main);
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		btnFetch = (ImageButton) findViewById(R.id.footbar_btn_fetch);
+		btnFocus = (ImageButton) findViewById(R.id.footbar_btn_focus);
+		btnSearch = (ImageButton) findViewById(R.id.footbar_btn_search);
+		btnSettings = (ImageButton) findViewById(R.id.footbar_btn_settings);
+		
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+
+}

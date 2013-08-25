@@ -1,0 +1,7 @@
+package com.macaroon.piztor;
+
+public class UserInfo {
+	static String ip = "123.123.123.123";
+	static int port = 9990;
+	static int token = -1;
+}

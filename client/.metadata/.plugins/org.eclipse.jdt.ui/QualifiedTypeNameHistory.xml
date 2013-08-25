@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="com.macaroon.piztor.CannotFindThisClass"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.PiztorExcepiton"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.InitAct"/>
+<fullyQualifiedTypeName name="android.widget.EditText"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.R.id"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.Transam"/>
+<fullyQualifiedTypeName name="android.view.View.OnClickListener"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.ActMgr"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.EmptyStatus"/>
+<fullyQualifiedTypeName name="android.os.Handler"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.ResLogin"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.UserInfo"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.Login"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.ActStatus"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.AppMgr"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.ReqLogin"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.Login.LoginStatus"/>
+<fullyQualifiedTypeName name="com.macaroon.piztor.PiztorAct"/>
+</qualifiedTypeNameHistroy>

@@ -1,0 +1,23 @@
+package com.macaroon.piztor;
+
+import java.util.HashMap;
+import java.util.Vector;
+
+public class Infomation {
+	static String ip = "69.85.86.42";
+	static int port = 9990;
+	static int token = -1;
+	static int myId = -1;
+
+	class UserInfo {
+		int id;
+		double lat, lot;
+	}
+
+	class Group {
+		int id;
+		Vector<UserInfo> v;
+	}
+	
+//	static HashMap<Integer, Group> mp;
+}
