@@ -230,5 +230,5 @@ class PiztorServer():
 
 if __name__ == "__main__":
     
-    ps = PiztorServer("localhost", 9990)
+    ps = PiztorServer("localhost", 9999)
     ps.run()
