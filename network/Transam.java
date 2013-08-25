@@ -45,8 +45,8 @@ import android.os.Message;
 //       entry  -- userid & latitude & longitude  //
 //                                                //
 //  getuserinfo -- status & RUserinfo(base class) //
-//		      RKeyGender -- gender                //
-//            RKeyGroupID -- groupid              //
+//		    0  RKeyGroupID -- groupid             //
+//          1  RKeyGender -- gender               //
 //												  //
 //          status -- 0 for success               //
 //					  1 for failed/invalid        //				
