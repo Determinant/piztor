@@ -2,6 +2,7 @@ from twisted.internet.protocol import Protocol
 from twisted.internet.protocol import Factory
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet import reactor
+from twisted.protocols.policies import TimeoutMixin
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -45,8 +46,8 @@ class _SectionSize:
 
 class _OptCode:
     user_auth = 0x00
-    location_update = 0x02
-    location_request= 0x03
+    location_update = 0x01
+    location_request= 0x02
 
 class _StatusCode:
     sucess = 0x00
@@ -265,17 +266,23 @@ handlers = [UserAuthHandler,
 def check_header(header):
     return 0 <= header < len(handlers)
 
-class PTP(Protocol):
+class PTP(Protocol, TimeoutMixin):
 
-    def __init__(self):
+    def __init__(self, factory):
         self.buff = bytes()
         self.length = -1
+        self.factory = factory
+
+    def timeoutConnection(self):
+        logger.info("The connection times out")
 
     def connectionMade(self):
         logger.info("A new connection is made")
+        self.setTimeout(self.factory.timeout)
 
     def dataReceived(self, data):
         self.buff += data
+        self.resetTimeout()
         print len(self.buff)
         if len(self.buff) > 4:
             try:
@@ -286,6 +293,8 @@ class PTP(Protocol):
                 logger.warning("Invalid request header")
                 raise BadReqError("Malformed request header")
         print self.length
+        if self.length == -1:
+            return
         if len(self.buff) == self.length:
             h = handlers[self.optcode]()
             reply = h.handle(self.buff[5:])
@@ -299,12 +308,13 @@ class PTP(Protocol):
 
     def connectionLost(self, reason):
         logger.info("The connection is lost")
+        self.setTimeout(None)
 
 class PTPFactory(Factory):
-    def __init__(self):
-        pass
+    def __init__(self, timeout = 10):
+        self.timeout = timeout
     def buildProtocol(self, addr):
-        return PTP()
+        return PTP(self)
 
 endpoint = TCP4ServerEndpoint(reactor, 9990)
 endpoint.listen(PTPFactory())

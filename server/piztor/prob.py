@@ -45,6 +45,11 @@ def send(data):
         sock.close()
     return received
 
+from sys import argv
+
+if len(argv) == 2:
+    host = argv[1]
+
 username = "hello"
 password = "world"
 gid = 1
