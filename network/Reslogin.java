@@ -6,9 +6,9 @@ package com.macaroon.piztor;
 //--------------------------------------//
 
 public class ResLogin extends Res{
-	int t;	//user token
+	String t;	//user token
 	
-	ResLogin(int token,int status){
+	ResLogin(String token,int status){
 		super(0,status);	//for type 0
 		t = token;
 	}

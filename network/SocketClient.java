@@ -39,29 +39,30 @@ public class SocketClient {
 				break;
 			case 2:
 				ReqUpdate rup = (ReqUpdate) req;
-				int tk2 = rup.token;
+				String tk2 = rup.token;
 				double slat = rup.lat;
 				double slot = rup.lot;
-				out.writeInt(tk2);
+				out.writeBytes(tk2);
 				out.writeDouble(slat);
 				out.writeDouble(slot);
 				break;
 			case 3:
 				ReqLocation ras = (ReqLocation) req;
-				int tk3 = ras.token;
+				String tk3 = ras.token;
 				int gid = ras.gid;
-				out.writeInt(tk3);
+				out.writeBytes(tk3);
 				out.writeInt(gid);
 				break;
 			}
 			out.flush();
-			client.shutdownOutput();
 			DataInputStream in = new DataInputStream(client.getInputStream());
 			Message msg = new Message();
 			int type = in.readUnsignedByte();
 			switch (type) {
 			case 0:
-				int id = in.readInt();
+				byte[] buffer = new byte[16];
+				in.read(buffer);
+				String id = new String(buffer);
 				int status = in.readUnsignedByte();
 				ResLogin rchklogin = new ResLogin(id,status);
 				msg.obj = rchklogin;
@@ -96,11 +97,12 @@ public class SocketClient {
 		}
 	}
 
-	public void closeSocket() {
+	public void closeSocket() throws IOException{
 		try {
 			client.close();
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw e;
 		}
 	}
 

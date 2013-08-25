@@ -1,6 +1,7 @@
 package com.macaroon.piztor;
 
 import java.io.IOException;
+
 import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -10,6 +11,22 @@ import java.util.TimerTask;
 import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
+
+//------------------------------------------------//
+//												  //
+//				return msg type					  //
+//				0   for   login					  //
+//              2   for   updateLocation		  //
+//              3   for   locationRequest		  //
+//											      //
+//		----------I'm the divisior---------	      //
+//												  //
+//			   100  for   timeOut				  //
+//			   101  for   conection failed        //
+//			   102  for   reconnect               //
+//			   103  for   IOexception			  //
+//			   104  for   UnknownHostException	  //
+//------------------------------------------------//
 
 public class Transam implements Runnable {
 	public Timer timer;
@@ -36,6 +53,11 @@ public class Transam implements Runnable {
 	public void send(Req r){
 		reqtask.offer(r);
 		
+	}
+	
+	public void sethandler(Handler Recall){
+		recall = Recall;
+		reqtask.clear();
 	}
 
 	public void run() {								//start the main timer
@@ -87,10 +109,16 @@ public class Transam implements Runnable {
 				client.closeSocket();
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
-				System.out.println("UnknownHostException");
+				Message msg = new Message();
+				msg.obj = "UnknownHostException";
+				msg.what = 104;
+				recall.sendMessage(msg);
 			} catch (IOException e) {
 				e.printStackTrace();
-				System.out.println("IOException");
+				Message msg = new Message();
+				msg.obj = "IOException";
+				msg.what = 103;
+				recall.sendMessage(msg);
 			}
 
 		}
@@ -117,6 +145,13 @@ public class Transam implements Runnable {
 		public void run() {
 			if (flag == false && cnt > 0) {
 				cnt--;
+				Message msg = new Message();
+				msg.obj = "Reconnect for rest " + cnt + " times";
+				msg.what = 102;
+				recall.sendMessage(msg);
+				Message m = new Message();
+				msg.what = 2;
+				handler.sendMessage(m);
 			} else if (cnt == 0) {
 				Message msg = new Message();
 				msg.obj = "connecting failed";
