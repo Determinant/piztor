@@ -125,9 +125,9 @@ Piztor Transmission Protocol v0.3a
     
     ::
 
-        +----1b----+-----?b-----+
-        | INFO_KEY | INFO_VALUE |
-        +--uchar---+------------+
+        +----1b----+-----?b-----+---1b----+
+        | INFO_KEY | INFO_VALUE | PADDING |
+        +--uchar---+------------+---------+
 
     ``INFO_KEY`` :
 
