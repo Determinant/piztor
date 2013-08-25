@@ -1,8 +1,6 @@
 package com.macaroon.piztor;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.Menu;
 
 public class InitAct extends PiztorAct {
@@ -18,7 +16,7 @@ public class InitAct extends PiztorAct {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		if (UserInfo.token == -1)
+		if (Infomation.token == -1)
 			AppMgr.trigger(AppMgr.noToken);
 		else {
 			//TODO jump to main

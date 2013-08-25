@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 
 @SuppressLint("UseSparseArrays")
 public class ActMgr {
+	final static int Create = -1;
 	// event
 	PiztorAct act;
 	ActStatus nowStatus;
@@ -14,6 +15,7 @@ public class ActMgr {
 	ActMgr(PiztorAct act, ActStatus nowStatus, ActStatus[] r) {
 		this.act = act;
 		this.nowStatus = nowStatus;
+		nowStatus.enter(Create);
 		mp = new HashMap<ActStatus, HashMap<Integer, ActStatus>>();
 		for (int i = 0; i < r.length; i++) {
 			mp.put(r[i], new HashMap<Integer, ActStatus>());
@@ -28,6 +30,9 @@ public class ActMgr {
 			nowStatus.enter(event);
 		} else if (AppMgr.mp.get(act.getClass()).containsKey(event)) {
 			AppMgr.trigger(event);
+		} else {
+			System.out.println("can not trigger the event at " + act.id + " : "
+					+ event);
 		}
 	}
 

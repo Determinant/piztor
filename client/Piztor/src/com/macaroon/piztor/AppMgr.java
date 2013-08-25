@@ -71,7 +71,7 @@ public class AppMgr {
 	static void init() {
 		mp = new HashMap<Class<?>, HashMap<Integer, Class<?>>>();
 		fromTransam = new Handler();
-		transam = new Transam(UserInfo.ip, UserInfo.port, fromTransam);
+		transam = new Transam(Infomation.ip, Infomation.port, fromTransam);
 		fromGPS = new Handler();
 		tracker = new Tracker(nowAct.getApplicationContext(), fromGPS);
 		tTransam = new Thread(transam);
