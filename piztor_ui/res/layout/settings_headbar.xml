@@ -3,10 +3,10 @@
     android:layout_width="fill_parent"
     android:layout_height="48dip"
     android:background="@drawable/topbar_background"
-    android:id="@+id/titile_layout_ry" >
+    android:id="@+id/settings_headbar_layout" >
 
 	<ImageButton 
-        android:id="@+id/title_set_bn"
+        android:id="@+id/settings_btn_back"
         android:layout_width="40dip"
         android:layout_height="40dip"
         android:layout_marginLeft="5dip"
@@ -15,7 +15,7 @@
         android:background="@drawable/navigation_back"/>
 	
     <TextView 
-        android:id="@+id/title_logo_img"
+        android:id="@+id/settings_headbar_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="30dip"
@@ -23,7 +23,7 @@
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
         android:layout_marginRight="40dip"
-        android:text="Settings "/>
+        android:text="@string/settings"/>
     
 
 </RelativeLayout>

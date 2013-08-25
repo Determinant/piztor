@@ -6,12 +6,12 @@
 	android:orientation="horizontal" >
 
 	<RelativeLayout
-		android:id="@+id/main_title"
+		android:id="@+id/settings_headbar_layout"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_alignParentTop="true" >
 
-		<include layout="@layout/settings_head" />
+		<include layout="@layout/settings_headbar" />
 	</RelativeLayout>
 
 	<LinearLayout
@@ -21,7 +21,7 @@
 		android:orientation="vertical" >
 
 		<TextView
-			android:id="@+id/GPS_refreshrate_text"
+			android:id="@+id/settings_GPSrefreshrate_text"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:text="GPS refresh rate"
@@ -31,7 +31,7 @@
 			android:textColor="@android:color/white" />
 
 		<SeekBar
-			android:id="@+id/GPS_refreshrate"
+			android:id="@+id/settings_GPSrefreshrate"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content" />
 
@@ -51,7 +51,7 @@
 				android:textSize="10dip"
 				android:textColor="@android:color/white"/-->
 
-			<!--  -->TextView
+			<!--TextView
 			android:id="@+id/GPS_max_text"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
@@ -63,85 +63,87 @@
 			<!-- /LinearLayout --> <!-- end of gps text -->
 
 		<ImageView
-		    android:id="@+id/login_bottom_img"
+		    android:id="@+id/settings_seperator1"
 		    android:layout_width="wrap_content"
 		    android:layout_height="wrap_content"
 		    android:src="@drawable/horizontal_line" />
 
 		<LinearLayout
 		    android:layout_width="match_parent"
-		    android:layout_height="wrap_content"
+			android:layout_height="wrap_content"
+			android:id="@+id/settings_sex_layout"
 		    android:layout_marginTop="10dip">
 
 			<TextView
-			    android:id="@+id/textView1"
+			    android:id="@+id/settings_sex_text"
 			    android:layout_width="wrap_content"
 			    android:layout_height="wrap_content"
 			    android:layout_marginLeft="10dip"
 			    android:textSize="20dip"
 				android:textColor="@android:color/white"
-			    android:text="Show sex: " />
+			    android:text="@string/show_sex" />
 
 			<CheckBox
-			    android:id="@+id/show_male"
+			    android:id="@+id/settings_show_male"
 			    android:layout_width="wrap_content"
 			    android:layout_height="wrap_content"
-			    android:text="male" 
+			    android:text="@string/male" 
 			    android:textColor="@android:color/white"/>
 			
 
 			<CheckBox
-			    android:id="@+id/show_female"
+			    android:id="@+id/settings_show_female"
 			    android:layout_width="wrap_content"
 			    android:layout_height="wrap_content"
-			    android:text="female" 
+			    android:text="@string/female" 
 			    android:textColor="@android:color/white"/>
 
 		</LinearLayout>
 
 		<ImageView
-		    android:id="@+id/imageView2"
+		    android:id="@+id/settings_seperator2"
 		    android:layout_width="wrap_content"
 		    android:layout_height="wrap_content"
 		    android:src="@drawable/horizontal_line" />
 
 		<LinearLayout
 		    android:layout_width="match_parent"
-		    android:layout_height="wrap_content" 
+			android:layout_height="wrap_content"
+			android:id="@+id/settings_team_layout"
 		    android:layout_marginTop="10dip">
 
 			<TextView
-			    android:id="@+id/show_team_text"
+			    android:id="@+id/settings_team_text"
 			    android:layout_width="wrap_content"
 			    android:layout_height="wrap_content"
 			    android:layout_marginLeft="10dip"
 			    android:textSize="20dip"
 				android:textColor="@android:color/white"
-			    android:text="Show team: " />
+			    android:text="@string/show_team" />
 
 			<RadioButton
-			    android:id="@+id/show_team_mine"
+			    android:id="@+id/settings_team_mine"
 			    android:layout_width="wrap_content"
 			    android:layout_height="wrap_content"
-			    android:text="only mine" 
+			    android:text="@string/mine" 
 			    android:textSize="20dip"
 				android:textColor="@android:color/white"/>
 
 			<RadioButton
-			    android:id="@+id/show_team_all"
+			    android:id="@+id/settings_team_all"
 			    android:layout_width="wrap_content"
 			    android:layout_height="wrap_content"
-			    android:text="all" 
+			    android:text="@string/all" 
 			    android:textSize="20dip"
 				android:textColor="@android:color/white"/>
 
 		</LinearLayout>
 
 		<ImageView
-		    android:id="@+id/imageView3"
+		    android:id="@+id/settings_seperator3"
 		    android:layout_width="wrap_content"
 		    android:layout_height="wrap_content"
 		    android:src="@drawable/horizontal_line" />
 
-		</LinearLayout> <!-- end of main settings part -->
+		</LinearLayout>
 	</RelativeLayout>

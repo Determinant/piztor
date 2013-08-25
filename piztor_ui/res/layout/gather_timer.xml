@@ -3,10 +3,10 @@
 	android:layout_width="fill_parent"
 	android:layout_height="48dip"
 	android:background="@android:color/black"
-	android:id="@+id/titile_layout" >
+	android:id="@+id/gather_timer_layout" >
 
 	<TextView
-		android:id="@+id/textTimer"
+		android:id="@+id/gather_timer"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_centerHorizontal="true"

@@ -8,16 +8,16 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_alignParentTop="true"
-		android:id="@+id/main_title"
+		android:id="@+id/main_headbar_layout"
 		>
-		<include layout="@layout/main_title"/>
+		<include layout="@layout/main_headbar"/>
 	</RelativeLayout>
 	<LinearLayout
-		android:id="@+id/footbar_layout_ly" 
+		android:id="@+id/main_footbar_layout" 
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_alignParentBottom="true"
 		>
-		<include layout="@layout/main_footbar"></include>
+		<include layout="@layout/main_footbar"/>
 	</LinearLayout>
 </RelativeLayout>
