@@ -5,9 +5,10 @@ from model import *
 path = "piztor.sqlite"
 
 class UserData:
-    def __init__(self, username, password, sex):
+    def __init__(self, username, password, gid, sex):
         self.username = username
         self.password = password
+        self.gid = gid
         self.sex = sex
 
 def create_database():
@@ -20,7 +21,7 @@ def import_user_data(data):
     Session = sessionmaker(bind = engine)
     session = Session()
     for user in data: 
-        um = UserModel(username = user.username, sex = user.sex)
+        um = UserModel(username = user.username, gid = user.gid, sex = user.sex)
         um.auth = UserAuth(user.password)
         um.location = LocationInfo(lat = 0, lng = 0)
         session.add(um)
@@ -38,7 +39,7 @@ if __name__ == '__main__':
         while True:
             line = f.readline().split()
             if len(line) == 0: break
-            data.append(UserData(line[0], line[1], line[2]))
+            data.append(UserData(line[0], line[1], line[2], line[3]))
 
     create_database()
     import_user_data(data)

@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 
 Base = declarative_base()
+
 _SALT_LEN = 16
 _TOKEN_LEN = 16
 
@@ -15,6 +16,7 @@ class UserModel(Base):
     __tablename__ = _TableName.UserModel
 
     id = Column(Integer, primary_key = True)
+    gid = Column(Integer)
     username = Column(String)
     sex = Column(Boolean)
     location = None
@@ -23,7 +25,7 @@ class UserModel(Base):
 class LocationInfo(Base):
     __tablename__ = _TableName.LocationInfo
 
-    uid = Column(Integer, ForeignKey('users.id'), primary_key = True)
+    uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'), primary_key = True)
     lat = Column(Float(precesion = 64))
     lng = Column(Float(precesion = 64))
     user = relationship("UserModel", uselist = False, 
@@ -47,7 +49,7 @@ def _random_binary_string(length):
 class UserAuth(Base):
     __tablename__ = _TableName.UserAuth
 
-    uid = Column(Integer, ForeignKey('users.id'), primary_key = True)
+    uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'), primary_key = True)
     password = Column(LargeBinary)
     salt = Column(LargeBinary)
     token = Column(LargeBinary)
