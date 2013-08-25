@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v0.1
+Piztor Transmission Protocol v0.2
 ---------------------------------
 
 - General 
@@ -7,17 +7,19 @@ Piztor Transmission Protocol v0.1
 
     ::
     
-        +---1b---+-------?b--------+
-        | OPT ID |  SPECIFIC DATA  |
-        +-uchar--+-----------------+
+        +---4b---+---1b---+-------?b--------+
+        | LENGTH | OPT ID |  SPECIFIC DATA  |
+        +--int---+-uchar--+-----------------+
 
   - Response
 
     ::
     
-        +---1b---+------?b---------+
-        | OPT ID |  SPECIFIC DATA  |
-        +-uchar--+-----------------+
+        +---4b---+---1b---+------?b---------+
+        | LENGTH | OPT ID |  SPECIFIC DATA  |
+        +--int---+-uchar--+-----------------+
+
+    Notice that in following sections, ``LENGTH`` part is left out for clarity.
 
 - Authentication 
 
