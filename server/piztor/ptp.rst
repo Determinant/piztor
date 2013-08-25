@@ -110,7 +110,7 @@ Piztor Transmission Protocol v0.3a
     ::
 
         +--1b---+------?b------+------4b-----+
-        | 0x02  |  AUTH_HEAD   |   USER_ID   |
+        | 0x03  |  AUTH_HEAD   |   USER_ID   |
         +-uchar-+--------------+-----int-----+
 
   - Response 

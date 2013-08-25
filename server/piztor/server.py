@@ -258,6 +258,50 @@ class LocationRequestHandler(RequestHandler):
             reply += struct.pack("!Ldd", user.id, loc.lat, loc.lng)
 
         return reply
+
+class UserInfoRequestHandler(RequestHandler):
+
+    def handle(self, tr_data):
+        logger.info("Reading user info request data...")
+
+        try:
+            token, = struct.unpack("!32s", tr_data[:32])
+            username, tail = RequestHandler.trunc_padding(tr_data[32:])
+            if username is None:
+                raise struct.error
+            uid, = struct.unpack("!L", tail)
+        except struct.error:
+            raise BadReqError("Location request: Malformed request body")
+
+        logger.info("Trying to request locatin with " \
+                    "(token = {0}, gid = {1})" \
+            .format(get_hex(token), gid))
+
+        session = self.Session()
+        uauth = RequestHandler.get_uauth(token, username, session)
+        # Auth failure
+        if uauth is None:
+            logger.warning("Authentication failure")
+            return struct.pack("!LBBL", LocationRequestHandler \
+                                            ._location_request_response_size(0),
+                                        _OptCode.location_request,
+                                        _StatusCode.failure,
+                                       0)
+
+        ulist = session.query(UserModel).filter(UserModel.gid == gid).all()
+        reply = struct.pack(
+                "!LBBL", 
+                LocationRequestHandler._location_request_response_size(len(ulist)),
+                _OptCode.location_request, 
+                _StatusCode.sucess,
+                len(ulist))
+
+        for user in ulist:
+            loc = user.location
+            reply += struct.pack("!Ldd", user.id, loc.lat, loc.lng)
+
+        return reply
+
         
 handlers = [UserAuthHandler,
             LocationUpdateHandler,
