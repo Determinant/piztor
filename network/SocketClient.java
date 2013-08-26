@@ -5,9 +5,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Locale;
 import java.util.Vector;
 
-import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
@@ -36,12 +36,13 @@ public class SocketClient {
 				ReqLogin rau = (ReqLogin) req;
 				String id = rau.user;
 				String pa = rau.pass;
-				len = 4+1+id.length()+1+pa.length();				
+				len = 4+1+id.length()+1+pa.length()+1;				
 				out.writeInt(len);
 				out.writeByte(tmp);				
 				out.writeBytes(id);
 				out.writeByte(0);
 				out.writeBytes(pa);
+				out.writeByte(0);
 				break;
 			case 1:
 				ReqUpdate rup = (ReqUpdate) req;
@@ -136,29 +137,24 @@ public class SocketClient {
 				break;
 			case 3:
 				int status3 = in.readUnsignedByte();
-				Vector<RUserinfo> tmpu = new Vector<RUserinfo>();
+				ReqUserinfo rus = (ReqUserinfo) req;
+				int u = rus.uid;
+				int g = 0,s = 0;
 				while(outlen>0){
-					RUserinfo r;
 					int typ = in.readUnsignedByte();
 					outlen-=1;
 					switch(typ){
 					case 0:
-						int gid = in.readInt();
-						in.readByte();
-						r = new RKeyGroupID(gid);
-						outlen-=5;
-						tmpu.add(r);
+						g = in.readInt();
+						outlen-=4;
 						break;
 					case 1:
-						boolean  s = in.readBoolean();
-						in.readByte();
-						r = new RKeyGender(s);
-						outlen-=2;
-						tmpu.add(r);
+						s = in.readByte();
+						outlen-=1;
 						break;
 					}
 				}
-				ResUserinfo resus = new ResUserinfo(status3,tmpu);
+				ResUserinfo resus = new ResUserinfo(status3,u,g,s);
 				msg.obj = resus;
 				msg.what = 3;
 				recall.sendMessage(msg);
@@ -179,12 +175,11 @@ public class SocketClient {
 		}
 	}
 	
-	@SuppressLint("DefaultLocale")
 	private static byte[] hexStringToBytes(String hexString) {
 		if (hexString == null || hexString.equals("")) {
 			return null;
 		}
-		hexString = hexString.toUpperCase();
+		hexString = hexString.toUpperCase(Locale.CHINA);
 		int length = hexString.length() / 2;
 		char[] hexChars = hexString.toCharArray();
 		byte[] d = new byte[length];

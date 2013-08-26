@@ -1,16 +1,20 @@
 package com.macaroon.piztor;
 
-import java.util.Vector;
 
 //--------------------------------------//
 //			Respond to User Info	    //
 //--------------------------------------//
 
 public class ResUserinfo extends Res{
-	Vector<RUserinfo> l;	//user info
+	int uid;		//userid
+	int gid;		//groupid
+	int sex;		//type 0 for female,type 1 for male
 	
-	ResUserinfo(int status,Vector<RUserinfo> userinfo){
+	
+	ResUserinfo(int status,int u,int g,int s){
 		super(3,status);	//for type 3
-		l = userinfo;
+		uid = u;
+		gid = g;
+		sex =s;
 	}
 }
