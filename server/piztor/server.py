@@ -139,7 +139,7 @@ class UserAuthHandler(RequestHandler):
             logger.info("Logged in sucessfully: {0}".format(username))
             uauth.regen_token()
             session.commit()
-            logger.info("new token generated: " + get_hex(uauth.token))
+            logger.info("New token generated: " + get_hex(uauth.token))
             return struct.pack("!LBBL32s", UserAuthHandler._response_size,
                                            _OptCode.user_auth,
                                            _StatusCode.sucess,
@@ -333,7 +333,7 @@ class PTP(Protocol, TimeoutMixin):
     def dataReceived(self, data):
         self.buff += data
         self.resetTimeout()
-        print len(self.buff)
+        logger.info("Buffer length is now: %d", len(self.buff))
         if len(self.buff) > 4:
             try:
                 self.length, self.optcode = struct.unpack("!LB", self.buff[:5])
@@ -342,9 +342,7 @@ class PTP(Protocol, TimeoutMixin):
             except struct.error:
                 logger.warning("Invalid request header")
                 raise BadReqError("Malformed request header")
-        print self.length
-        if self.length == -1:
-            return
+        if self.length == -1: return
         if len(self.buff) == self.length:
             h = handlers[self.optcode]()
             reply = h.handle(self.buff[5:])
@@ -366,6 +364,6 @@ class PTPFactory(Factory):
     def buildProtocol(self, addr):
         return PTP(self)
 
-endpoint = TCP4ServerEndpoint(reactor, 9990)
+endpoint = TCP4ServerEndpoint(reactor, 2222)
 endpoint.listen(PTPFactory())
 reactor.run()
