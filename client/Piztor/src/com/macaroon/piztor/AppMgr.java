@@ -9,22 +9,23 @@ import android.os.Handler;
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
 	// Status
-	public enum  ActivityStatus{
+	public enum ActivityStatus {
 		create, start, resume, restart, stop, pause, destroy
-	} 
+	}
+
 	static ActivityStatus status;
 	static PiztorAct nowAct;
-	//TODO fix
+	// TODO fix
 	static Handler fromTransam, fromGPS;
 	static Transam transam = null;
 	static Tracker tracker = null;
 	static Thread tTransam, tGPS;
-	//Event
-	
+	// Event
+
 	final static int noToken = 101;
 	final static int loginSuccess = 102;
-	
-	
+	final static int errorToken = 103;
+	final static int hasToken = 104;
 	static HashMap<Class<?>, HashMap<Integer, Class<?>>> mp;
 
 	static void setStatus(ActivityStatus st) {
@@ -39,6 +40,8 @@ public class AppMgr {
 		else if (mp.get(nowAct.getClass()) == null)
 			System.out.println("second");
 		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
+		if (event == errorToken)
+			UserInfo.token = null;
 		nowAct.startActivity(i);
 	}
 
@@ -84,6 +87,10 @@ public class AppMgr {
 		addStatus(Main.class);
 		addTransition(InitAct.class, noToken, Login.class);
 		addTransition(Login.class, loginSuccess, Main.class);
+		addTransition(Main.class, errorToken, Login.class);
+		addTransition(Settings.class, errorToken, Login.class);
+		addTransition(InitAct.class, hasToken, Main.class);
+		addTransition(InitAct.class, errorToken, Login.class);
 	}
 
 }

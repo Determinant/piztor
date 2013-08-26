@@ -20,13 +20,15 @@ public class Login extends PiztorAct {
 	Handler hand = new Handler() {
 		@Override
 		public void handleMessage(Message m) {
-			System.out.println(m.what);
+			System.out.println("receive what : " + m.what);
 			if (m.what == 0) {
 				ResLogin res = (ResLogin) m.obj;
 				UserInfo.token = res.t;
+				UserInfo.id = res.uid;
 				UserInfo.username = edtUser.getText().toString();
+				System.out.println(res.s + "   :!!!    " + res.t);
 				actMgr.trigger(AppMgr.loginSuccess);
-			} else if (m.what == 101) {
+			} else {
 				actMgr.trigger(loginFailed);
 			}
 		}
@@ -51,7 +53,7 @@ public class Login extends PiztorAct {
 			String pass = edtPass.getText().toString();
 			long nowtime = System.currentTimeMillis();
 			System.out.println(user + " : " + pass + "\n");
-			AppMgr.transam.send(new ReqLogin(user, pass, nowtime, 1000));
+			AppMgr.transam.send(new ReqLogin(user, pass, nowtime, 10000));
 		}
 
 		@Override

@@ -22,6 +22,7 @@ public class InitAct extends PiztorAct {
 			AppMgr.trigger(AppMgr.noToken);
 		else {
 			//TODO jump to main
+			AppMgr.trigger(AppMgr.hasToken);
 		}
 	}
 
