@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="40dip"
+	android:background="@drawable/topbar_background"
+	android:id="@+id/main_headbar_layout" >
+
+	<ImageView 
+		android:id="@+id/headbar_logo"
+		android:layout_width="34dip"
+		android:layout_height="34dip"
+		android:layout_alignParentLeft="true"
+		android:layout_centerVertical="true"
+		android:layout_marginLeft="5dip"
+		android:layout_alignParentTop="true"
+		android:background="@drawable/title_logo"/>
+
+	<TextView
+		android:id="@+id/headbar_appname"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_centerVertical="true"
+		android:layout_marginLeft="8dip"
+		android:textSize="26dip"
+		android:textColor="@android:color/white"
+		android:layout_toRightOf="@+id/headbar_logo"
+		android:text="@string/app_name" />
+
+</RelativeLayout>
