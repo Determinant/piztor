@@ -18,12 +18,6 @@ from model import *
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
-def print_datagram(data):
-    print "=================================="
-    print "Received datagram:"
-    print get_hex(data)
-    print "=================================="
-
 db_path = "piztor.sqlite"
 FORMAT = "%(asctime)-15s %(message)s"
 logging.basicConfig(format = FORMAT)
@@ -93,12 +87,20 @@ class RequestHandler(object):
 
 class UserAuthHandler(RequestHandler):
 
-    _user_auth_response_size = \
+    _response_size = \
             _SectionSize.LENGTH + \
             _SectionSize.OPT_ID + \
             _SectionSize.STATUS + \
             _SectionSize.USER_ID + \
             _SectionSize.USER_TOKEN
+
+    _failed_response = \
+            struct.pack("!LBBL32s", _response_size,
+                                    _OptCode.user_auth, 
+                                    _StatusCode.failure,
+                                    0,
+                                    bytes('\x00' * 32))
+
 
     def handle(self, tr_data):
         logger.info("Reading auth data...")
@@ -122,12 +124,7 @@ class UserAuthHandler(RequestHandler):
                 .filter(UserModel.username == username).one()
         except NoResultFound:
             logger.info("No such user: {0}".format(username))
-            return struct.pack("!LBBL32s",  UserAuthHandler \
-                                                ._user_auth_response_size,
-                                            _OptCode.user_auth, 
-                                            _StatusCode.failure,
-                                            0,
-                                            bytes('\x00' * 32))
+            return UserAuthHandler._failed_response
 
         except MultipleResultsFound:
             raise DBCorruptedError()
@@ -137,33 +134,22 @@ class UserAuthHandler(RequestHandler):
             raise DBCorruptedError()
         if not uauth.check_password(password):
             logger.info("Incorrect password: {0}".format(password))
-            return struct.pack("!LBBL32s",  UserAuthHandler \
-                                                ._user_auth_response_size,
-                                            _OptCode.user_auth,
-                                            _StatusCode.failure,
-                                            0,
-                                            bytes('\x00' * 32))
+            return UserAuthHandler._failed_response
         else:
             logger.info("Logged in sucessfully: {0}".format(username))
             uauth.regen_token()
             session.commit()
-            print "new token generated: " + get_hex(uauth.token)
-            return struct.pack("!LBBL32s", UserAuthHandler \
-                                                ._user_auth_response_size,
-                                            _OptCode.user_auth,
-                                            _StatusCode.sucess,
-                                            user.id,
-                                            uauth.token)
+            logger.info("new token generated: " + get_hex(uauth.token))
+            return struct.pack("!LBBL32s", UserAuthHandler._response_size,
+                                           _OptCode.user_auth,
+                                           _StatusCode.sucess,
+                                           user.id,
+                                           uauth.token)
 
 
 class LocationUpdateHandler(RequestHandler):
 
-#    _location_update_size = \
-#            _SectionSize.AUTH_HEAD + \
-#            _SectionSize.LATITUDE + \
-#            _SectionSize.LONGITUDE
-
-    _location_update_response_size = \
+    _response_size = \
             _SectionSize.LENGTH + \
             _SectionSize.OPT_ID + \
             _SectionSize.STATUS
@@ -189,8 +175,7 @@ class LocationUpdateHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBB",  LocationUpdateHandler \
-                                            ._location_update_response_size,
+            return struct.pack("!LBB",  LocationUpdateHandler._response_size,
                                         _OptCode.location_update,
                                         _StatusCode.failure)
 
@@ -200,19 +185,14 @@ class LocationUpdateHandler(RequestHandler):
         session.commit()
 
         logger.info("Location is updated sucessfully")
-        return struct.pack("!LBB",  LocationUpdateHandler \
-                                        ._location_update_response_size,
+        return struct.pack("!LBB",  LocationUpdateHandler._response_size,
                                     _OptCode.location_update,
                                     _StatusCode.sucess)
 
 class LocationRequestHandler(RequestHandler):
 
-#    _location_request_size = \
-#            _SectionSize.AUTH_HEAD + \
-#            _SectionSize.GROUP_ID
-
     @classmethod
-    def _location_request_response_size(cls, item_num):
+    def _response_size(cls, item_num):
         return _SectionSize.LENGTH + \
                 _SectionSize.OPT_ID + \
                 _SectionSize.STATUS + \
@@ -239,15 +219,14 @@ class LocationRequestHandler(RequestHandler):
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBB", LocationRequestHandler \
-                                            ._location_request_response_size(0),
+            return struct.pack("!LBB", LocationRequestHandler._response_size(0),
                                         _OptCode.location_request,
                                         _StatusCode.failure)
 
         ulist = session.query(UserModel).filter(UserModel.gid == gid).all()
         reply = struct.pack(
                 "!LBB", 
-                LocationRequestHandler._location_request_response_size(len(ulist)),
+                LocationRequestHandler._response_size(len(ulist)),
                 _OptCode.location_request, 
                 _StatusCode.sucess)
 
@@ -275,7 +254,6 @@ class UserInfoRequestHandler(RequestHandler):
         struct.pack("!LBB", _failed_response_size,
                             _OptCode.user_info_request,
                             _StatusCode.failure)
-
 
     _code_map = {0x00 : ('gid', pack_int),
                 0x01 : ('sex', pack_bool)}
