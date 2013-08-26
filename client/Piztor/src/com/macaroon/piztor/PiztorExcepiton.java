@@ -5,6 +5,3 @@ class PiztorExcepiton extends Exception{
 
 }
 
-class ClassCannotFind extends PiztorExcepiton {
-	//private class 
-}

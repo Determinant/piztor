@@ -1,28 +1,31 @@
 package com.macaroon.piztor;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
 public class Login extends PiztorAct {
-	
-	
+
 	ActMgr actMgr;
 	Button btnLogin;
 	EditText edtUser, edtPass;
 
 	int loginButtonClick = 1, retryButtonClick = 2, loginFailed = 3;
-	
+
+	@SuppressLint("HandlerLeak")
 	Handler hand = new Handler() {
 		@Override
 		public void handleMessage(Message m) {
 			System.out.println("receive what : " + m.what);
 			if (m.what == -1) {
-				((Exception)m.obj).printStackTrace();
+				((Exception) m.obj).printStackTrace();
+				actMgr.trigger(loginFailed);
 				return;
 			}
 			if (m.what == 0) {
@@ -37,7 +40,7 @@ public class Login extends PiztorAct {
 			}
 		}
 	};
-	
+
 	class StartStatus extends ActStatus {
 
 		@Override
@@ -48,7 +51,7 @@ public class Login extends PiztorAct {
 		void leave(int e) {
 		}
 	}
-	
+
 	class LoginStatus extends ActStatus {
 
 		@Override
@@ -62,9 +65,9 @@ public class Login extends PiztorAct {
 
 		@Override
 		void leave(int e) {
-			
+
 		}
-		
+
 	}
 
 	@Override
@@ -98,7 +101,16 @@ public class Login extends PiztorAct {
 	@Override
 	protected void onResume() {
 		super.onResume();
-	
+
+	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		 if (keyCode == KeyEvent.KEYCODE_BACK) {
+			 AppMgr.exit();
+			 return true;
+		 }
+		 return super.onKeyDown(keyCode, event);
 	}
 
 	@Override

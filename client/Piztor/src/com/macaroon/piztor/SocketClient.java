@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Vector;
@@ -14,21 +15,22 @@ import android.os.Message;
 public class SocketClient {
 	static Socket client;
 
-	public SocketClient(String site, int port) throws UnknownHostException,
+	public SocketClient(String site, int port, int retime) throws UnknownHostException,
 			IOException {
 		try {
 			client = new Socket(site, port);
-			client.setSoTimeout(1000);
+			client.setSoTimeout(retime);
 		} catch (UnknownHostException e) {
+			e.printStackTrace();
 			throw e;
 		} catch (IOException e) {
+			e.printStackTrace();
 			throw e;
 		}
 	}
 
-	public void sendMsg(Req req,Handler recall) throws IOException {
+	public int sendMsg(Req req,Handler recall) throws IOException,SocketTimeoutException {
 		try {
-			
 			DataOutputStream out = new DataOutputStream(
 					client.getOutputStream());
 			int tmp = req.type;
@@ -163,10 +165,14 @@ public class SocketClient {
 				recall.sendMessage(msg);
 				break;
 			}
+			return 0;
 
+		} catch (SocketTimeoutException e){
+			System.out.println("Time out!");
+			return 1;			
 		} catch (IOException e) {
 			throw e;
-		}
+		} 
 	}
 
 	public void closeSocket() throws IOException{

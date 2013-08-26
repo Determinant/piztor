@@ -2,13 +2,12 @@ package com.macaroon.piztor;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Vector;
-
 import android.annotation.SuppressLint;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ImageButton;
@@ -41,6 +40,7 @@ public class Main extends PiztorAct {
 		}
 	};
 
+	@SuppressLint("HandlerLeak")
 	Handler fromTransam = new Handler() {
 		@Override
 		public void handleMessage(Message m) {
@@ -224,14 +224,29 @@ public class Main extends PiztorAct {
 				actMgr.trigger(FocuseButtonPress);
 			}
 		});
+		btnSettings.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				actMgr.trigger(AppMgr.toSettings);
+			}
+		});
 		autodate.schedule(new AutoUpdate(), 0, 5000);
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		 if (keyCode == KeyEvent.KEYCODE_BACK) {
+			 AppMgr.exit();
+			 return true;
+		 }
+		 return super.onKeyDown(keyCode, event);
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
+		return false;
 	}
 
 }
