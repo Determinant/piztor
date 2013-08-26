@@ -216,7 +216,6 @@ class LocationRequestHandler(RequestHandler):
         return _SectionSize.LENGTH + \
                 _SectionSize.OPT_ID + \
                 _SectionSize.STATUS + \
-                _SectionSize.ENTRY_CNT + \
                 _SectionSize.LOCATION_ENTRY * item_num
 
     def handle(self, tr_data):
@@ -240,25 +239,30 @@ class LocationRequestHandler(RequestHandler):
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBBL", LocationRequestHandler \
+            return struct.pack("!LBB", LocationRequestHandler \
                                             ._location_request_response_size(0),
                                         _OptCode.location_request,
-                                        _StatusCode.failure,
-                                       0)
+                                        _StatusCode.failure)
 
         ulist = session.query(UserModel).filter(UserModel.gid == gid).all()
         reply = struct.pack(
-                "!LBBL", 
+                "!LBB", 
                 LocationRequestHandler._location_request_response_size(len(ulist)),
                 _OptCode.location_request, 
-                _StatusCode.sucess,
-                len(ulist))
+                _StatusCode.sucess)
 
         for user in ulist:
             loc = user.location
             reply += struct.pack("!Ldd", user.id, loc.lat, loc.lng)
 
         return reply
+
+def pack_int(val):
+    return struct.pack("!L", val)
+
+def pack_bool(val):
+    return struct.pack("!B", 0x01 if val else 0x00)
+
 
 class UserInfoRequestHandler(RequestHandler):
 
@@ -272,24 +276,16 @@ class UserInfoRequestHandler(RequestHandler):
                             _OptCode.user_info_request,
                             _StatusCode.failure)
 
-    @classmethod
-    def pack_int(cls, val):
-        return struct.pack("!L", val)
-
-    @classmethod
-    def pack_bool(cls, val):
-        return struct.pack("!B", 0x01 if val else 0x00)
 
     _code_map = {0x00 : ('gid', pack_int),
                 0x01 : ('sex', pack_bool)}
 
     @classmethod
     def pack_entry(cls, user, entry_code):
-        attr, pack_method = _code_map(entry_code)
+        attr, pack_method = cls._code_map[entry_code]
         info_key = entry_code
         info_value = getattr(user, attr)
-        return struct.pack("!B", info_key) + pack_method(info_value) + \
-                struct.pack("!B", 0x00)
+        return struct.pack("!B", info_key) + pack_method(info_value)
 
     def handle(self, tr_data):
         logger.info("Reading user info request data...")
@@ -328,8 +324,9 @@ class UserInfoRequestHandler(RequestHandler):
         except MultipleResultsFound:
             raise DBCorruptedError()
 
-        for code in _code_map:
+        for code in UserInfoRequestHandler._code_map:
             reply += UserInfoRequestHandler.pack_entry(quser, code)
+        reply = struct.pack("!L", len(reply) + _SectionSize.LENGTH) + reply
         return reply
 
         
