@@ -21,6 +21,10 @@ public class Login extends PiztorAct {
 		@Override
 		public void handleMessage(Message m) {
 			System.out.println("receive what : " + m.what);
+			if (m.what == -1) {
+				((Exception)m.obj).printStackTrace();
+				return;
+			}
 			if (m.what == 0) {
 				ResLogin res = (ResLogin) m.obj;
 				UserInfo.token = res.t;
@@ -53,7 +57,7 @@ public class Login extends PiztorAct {
 			String pass = edtPass.getText().toString();
 			long nowtime = System.currentTimeMillis();
 			System.out.println(user + " : " + pass + "\n");
-			AppMgr.transam.send(new ReqLogin(user, pass, nowtime, 10000));
+			AppMgr.transam.send(new ReqLogin(user, pass, nowtime, 5000));
 		}
 
 		@Override

@@ -18,6 +18,7 @@ public class SocketClient {
 			IOException {
 		try {
 			client = new Socket(site, port);
+			client.setSoTimeout(1000);
 		} catch (UnknownHostException e) {
 			throw e;
 		} catch (IOException e) {
@@ -27,6 +28,7 @@ public class SocketClient {
 
 	public void sendMsg(Req req,Handler recall) throws IOException {
 		try {
+			
 			DataOutputStream out = new DataOutputStream(
 					client.getOutputStream());
 			int tmp = req.type;

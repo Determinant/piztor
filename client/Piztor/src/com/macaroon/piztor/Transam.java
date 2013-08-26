@@ -52,53 +52,55 @@ import android.os.Message;
 public class Transam implements Runnable {
 	public Timer timer;
 	public Timer mtimer;
-	public boolean running = false; 
+	public boolean running = false;
 	public boolean flag = true;
 	public int cnt = 4;
 	Res res;
 	Req req;
-	public int p;					//port
-	public String i;				//ip
+	public int p; // port
+	public String i; // ip
 	Thread thread;
 	Handler core;
-	Handler recall;					//recall
-	Queue<Req> reqtask ;			//request task
+	Handler recall; // recall
+	Queue<Req> reqtask; // request task
 
-	Transam(String ip, int port,Handler Recall) {
+	Transam(String ip, int port, Handler Recall) {
 		p = port;
 		i = ip;
 		recall = Recall;
 		reqtask = new LinkedList<Req>();
 	}
-	
-	public void send(Req r){
+
+	public void send(Req r) {
 		reqtask.offer(r);
-		
-	}
-	
-	public void setHandler(Handler Recall){
-		recall = Recall;
-		reqtask.clear();
+
 	}
 
-	public void run() {								//start the main timer
-		//TimerTask tmain = new Timertk();
-		//mtimer = new Timer();
-		//mtimer.schedule(tmain, 100, 100);			//check the queue for every 100 msec
-		
-		while(true){
-			if(running == false){
-				
-				if(!reqtask.isEmpty()){				//poll the head request
-					req = reqtask.poll();	
-					if(req.time + req.alive < System.currentTimeMillis()){		//time out!
+	public void setHandler(Handler Recall) {
+		recall = Recall;
+		reqtask.clear();
+
+	}
+
+	public void run() { // start the main timer
+		// TimerTask tmain = new Timertk();
+		// mtimer = new Timer();
+		// mtimer.schedule(tmain, 100, 100); //check the queue for every 100
+		// msec
+
+		while (true) {
+			if (running == false) {
+
+				if (!reqtask.isEmpty()) { // poll the head request
+					req = reqtask.poll();
+					if (req.time + req.alive < System.currentTimeMillis()) { // time
+																				// out!
 						Message ret = new Message();
 						TimeOutException t = new TimeOutException();
 						ret.obj = t;
 						ret.what = -1;
 						recall.sendMessage(ret);
-					}
-					else{													//run the request
+					} else { // run the request
 						final thd t = new thd();
 						flag = false;
 						thread = new Thread(t);
@@ -107,24 +109,24 @@ public class Transam implements Runnable {
 						thread.start();
 						timer = new Timer();
 						TimerTask task = new Timertk();
-						timer.schedule(task, 20000, 20000);
+						timer.schedule(task, 2000, 2000);
 					}
-				}				
+				}
 			}
 		}
 	}
-	
+
 	class tmain extends TimerTask {
 		public void run() {
-			
+
 		}
 	};
 
 	class thd implements Runnable {
 		public void run() {
 			try {
-				SocketClient client = new SocketClient(i,p);
-				client.sendMsg(req,recall);
+				SocketClient client = new SocketClient(i, p);				
+				client.sendMsg(req, recall);
 				Message msg = new Message();
 				msg.what = 1;
 				handler.sendMessage(msg);
@@ -155,7 +157,6 @@ public class Transam implements Runnable {
 				break;
 			case 2:
 				final thd t = new thd();
-				thread.interrupt();
 				thread = new Thread(t);
 				thread.start();
 				break;
@@ -184,20 +185,21 @@ public class Transam implements Runnable {
 			}
 		}
 	};
-	
-	class ConnectFailedException extends Exception{
+
+	class ConnectFailedException extends Exception {
 		private static final long serialVersionUID = 101L;
-		public ConnectFailedException() {  
-			super();  
-			}		
+
+		public ConnectFailedException() {
+			super();
+		}
 	}
-	
-	class TimeOutException extends Exception{
+
+	class TimeOutException extends Exception {
 		private static final long serialVersionUID = 102L;
-		public TimeOutException() {  
-			super();  
-			}	
-		
+		public TimeOutException() {
+			super();
+		}
+
 	}
-	
+
 }

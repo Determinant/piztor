@@ -47,7 +47,7 @@ public class Main extends PiztorAct {
 			switch (m.what) {
 			case 1:
 				ResUpdate update = (ResUpdate) m.obj;
-				if (update.t == 0)
+				if (update.s == 0)
 					System.out.println("update success");
 				else {
 					System.out.println("update failed");
