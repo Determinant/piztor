@@ -65,47 +65,50 @@ if len(argv) == 2:
 
 if len(argv) == 3:
     username = argv[1]
-    password = arv[2]
+    password = argv[2]
 
-resp = send(gen_auth(username, password))
-pl, optcode, status, uid, token = unpack("!LBBL32s", resp)
-print "size: " + str((pl, len(resp)))
-print "opt: " + str(optcode)
-print "status: " + str(status)
-print "uid: " + str(uid)
-print "token: " + get_hex(token)
-
-resp = send(gen_update_location(token, username, random(), random()))
-pl, optcode, status = unpack("!LBB", resp)
-print "size: " + str((pl, len(resp)))
-print "opt: " + str(optcode)
-print "status: " + str(status)
-
-resp = send(gen_request_location(token, username, gid))
-print len(resp)
-pl, optcode, status = unpack("!LBB", resp[:6])
-print "size: " + str((pl, len(resp)))
-idx = 6
-print "length: " + str(len(resp[6:]))
-while idx < pl:
-    print len(resp[idx:idx + 20])
-    uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
-    idx += 20
-    print (uid, lat, lng)
-
-resp = send(gen_request_user_info(token, username, uid))
-pl, optcode, status = unpack("!LBB", resp[:6])
-print "size: " + str((pl, len(resp)))
-
-idx = 6
-while idx < pl:
-    info_key, = unpack("!B", resp[idx:idx + 1])
-    idx += 1
-    print info_key
-    if info_key == 0x00:
-        info_value, = unpack("!L", resp[idx:idx + 4])
-        idx += 4
-    elif info_key == 0x01:
-        info_value, = unpack("!B", resp[idx:idx + 1])
+for i in xrange(10):
+    resp = send(gen_auth(username, password))
+    pl, optcode, status, uid, token = unpack("!LBBL32s", resp)
+    print "size: " + str((pl, len(resp)))
+    print "opt: " + str(optcode)
+    print "status: " + str(status)
+    print "uid: " + str(uid)
+    print "token: " + get_hex(token)
+    
+    resp = send(gen_update_location(token, username, random(), random()))
+    pl, optcode, status = unpack("!LBB", resp)
+    print "size: " + str((pl, len(resp)))
+    print "opt: " + str(optcode)
+    print "status: " + str(status)
+    
+    resp = send(gen_request_location(token, username, gid))
+    print len(resp)
+    pl, optcode, status = unpack("!LBB", resp[:6])
+    print "size: " + str((pl, len(resp)))
+    idx = 6
+    print "length: " + str(len(resp[6:]))
+    while idx < pl:
+        print len(resp[idx:idx + 20])
+        uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
+        idx += 20
+        print (uid, lat, lng)
+    
+    resp = send(gen_request_user_info(token, username, uid))
+    pl, optcode, status = unpack("!LBB", resp[:6])
+    print "size: " + str((pl, len(resp)))
+    
+    idx = 6
+    while idx < pl:
+        info_key, = unpack("!B", resp[idx:idx + 1])
         idx += 1
-    print (info_key, info_value)
+        print info_key
+        if info_key == 0x00:
+            info_value, = unpack("!L", resp[idx:idx + 4])
+            idx += 4
+        elif info_key == 0x01:
+            info_value, = unpack("!B", resp[idx:idx + 1])
+            idx += 1
+        print (info_key, info_value)
+    from time import sleep
+    sleep(10)
