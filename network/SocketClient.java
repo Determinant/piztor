@@ -137,6 +137,7 @@ public class SocketClient {
 				break;
 			case 3:
 				int status3 = in.readUnsignedByte();
+				outlen-=6;
 				ReqUserinfo rus = (ReqUserinfo) req;
 				int u = rus.uid;
 				int g = 0,s = 0;
