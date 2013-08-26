@@ -20,4 +20,12 @@
 		>
 		<include layout="@layout/gather_footbar"></include>
 	</LinearLayout>
+	<ImageView 
+	   	    android:id="@+id/activity_mapview"
+	   	    android:layout_width="fill_parent"
+	   	    android:layout_height="fill_parent"
+	   	    android:layout_below="@+id/gather_timer_layout"
+	   	    android:layout_above="@+id/gather_footbar_layout"
+	   	    android:scaleType="matrix"
+	   	    android:src="@drawable/data"/>
 </RelativeLayout>
