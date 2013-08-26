@@ -9,11 +9,12 @@ host = "localhost"
 port = 9990
 
 def gen_auth(username, password):
-    length = 4 + 1 + len(username) + 1 + len(password)
+    length = 4 + 1 + len(username) + 1 + len(password) + 1
     data = pack("!LB", length, 0x00)
     data += username
     data += "\0"
     data += password
+    data += "\0"
     return data
 
 def gen_update_location(token, username, lat, lng):

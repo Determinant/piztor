@@ -111,7 +111,7 @@ class UserAuthHandler(RequestHandler):
             raise BadReqError("Authentication: Malformed request body")
 
         username = tr_data[0:pos]
-        password = tr_data[pos + 1:]
+        password = tr_data[pos + 1:-1]
         logger.info("Trying to login with " \
                     "(username = {0}, password = {1})" \
                 .format(username, password))
@@ -136,7 +136,7 @@ class UserAuthHandler(RequestHandler):
         if uauth is None:
             raise DBCorruptedError()
         if not uauth.check_password(password):
-            logger.info("Incorrect password: {0}".format(username))
+            logger.info("Incorrect password: {0}".format(password))
             return struct.pack("!LBBL32s",  UserAuthHandler \
                                                 ._user_auth_response_size,
                                             _OptCode.user_auth,
