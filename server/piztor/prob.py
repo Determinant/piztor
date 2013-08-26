@@ -6,7 +6,7 @@ def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
 host = "localhost"
-port = 9990
+port = 2222
 
 def gen_auth(username, password):
     length = 4 + 1 + len(username) + 1 + len(password) + 1
@@ -56,12 +56,16 @@ def send(data):
 
 from sys import argv
 
-if len(argv) == 2:
-    host = argv[1]
-
 username = "hello"
 password = "world"
 gid = 1
+
+if len(argv) == 2:
+    host = argv[1]
+
+if len(argv) == 3:
+    username = argv[1]
+    password = arv[2]
 
 resp = send(gen_auth(username, password))
 pl, optcode, status, uid, token = unpack("!LBBL32s", resp)
