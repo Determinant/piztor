@@ -18,7 +18,7 @@ public class InitAct extends PiztorAct {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		if (UserInfo.token == -1)
+		if (UserInfo.token == null)
 			AppMgr.trigger(AppMgr.noToken);
 		else {
 			//TODO jump to main

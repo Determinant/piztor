@@ -7,8 +7,8 @@ package com.macaroon.piztor;
 public class ReqLocation extends Req{
 	int gid;	//group id;
 	
-	ReqLocation(int token,int groupid,long time,long alive){
-		super(3,token,time,alive);	//for type 3
+	ReqLocation(String token,String name,int groupid,long time,long alive){
+		super(2,token,name,time,alive);	//for type 2
 		gid = groupid;
 	}
 }

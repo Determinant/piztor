@@ -33,8 +33,8 @@ public class Main extends PiztorAct {
 					System.out.println("fuck!!!");
 				else {
 					ReqUpdate r = new ReqUpdate(UserInfo.token,
-							l.getLatitude(), l.getLongitude(),
-							System.currentTimeMillis(), 1000);
+							UserInfo.username, l.getLatitude(),
+							l.getLongitude(), System.currentTimeMillis(), 1000);
 					AppMgr.transam.send(r);
 				}
 			}
@@ -45,20 +45,34 @@ public class Main extends PiztorAct {
 		@Override
 		public void handleMessage(Message m) {
 			switch (m.what) {
-			case 3:
-				ResLocation location = (ResLocation) m.obj;
-				for (int i = 0; i < location.n; i++) {
-					System.out.println(location.l.get(i).lat + " "
-							+ location.l.get(i).lot);
-				}
-				actMgr.trigger(SuccessFetch);
-				break;
-			case 2:
+			case 1:
 				ResUpdate update = (ResUpdate) m.obj;
 				if (update.t == 0)
 					System.out.println("update success");
 				else
 					System.out.println("update failed");
+				break;
+			case 2:
+				ResLocation location = (ResLocation) m.obj;
+				if (location.s == 0) {
+					for (int i = 0; i < location.n; i++) {
+						System.out.println(location.l.get(i).i + " : "
+								+ location.l.get(i).lat + " "
+								+ location.l.get(i).lot);
+					}
+					actMgr.trigger(SuccessFetch);
+				} else {
+					System.out
+							.println("resquest for location must be wrong!!!");
+				}
+				break;
+			case 3:
+				ResUserinfo r = (ResUserinfo) m.obj;
+				if (r.s == 0) {
+					System.out.println(r.id + " " + r.sex + " " + r.groupId);
+				} else {
+					System.out.println("reqest for userInfo must be wrong!!!");
+				}
 				break;
 			default:
 				break;
@@ -86,16 +100,23 @@ public class Main extends PiztorAct {
 		}
 	}
 
+	// TODO flush map view
+	void flushMap() {
+
+	}
+
 	class StartStatus extends ActStatus {
 
 		@Override
 		void enter(int e) {
 			System.out.println("enter start status!!!!");
 			if (e == TimerFlush) {
-				ReqLocation r = new ReqLocation(UserInfo.token, 1,
-						System.currentTimeMillis(), 1000);
+				ReqLocation r = new ReqLocation(UserInfo.token,
+						UserInfo.username, 1, System.currentTimeMillis(), 1000);
 				AppMgr.transam.send(r);
 			}
+			if (e == SuccessFetch)
+				flushMap();
 		}
 
 		@Override
@@ -111,8 +132,8 @@ public class Main extends PiztorAct {
 		void enter(int e) {
 			System.out.println("enter Fetch status!!!!");
 			if (e == FetchButtonPress) {
-				ReqLocation r = new ReqLocation(UserInfo.token, 1,
-						System.currentTimeMillis(), 1000);
+				ReqLocation r = new ReqLocation(UserInfo.token,
+						UserInfo.username, 1, System.currentTimeMillis(), 1000);
 				AppMgr.transam.send(r);
 			}
 		}

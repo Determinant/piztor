@@ -24,6 +24,7 @@ public class Login extends PiztorAct {
 			if (m.what == 0) {
 				ResLogin res = (ResLogin) m.obj;
 				UserInfo.token = res.t;
+				UserInfo.username = edtUser.getText().toString();
 				actMgr.trigger(AppMgr.loginSuccess);
 			} else if (m.what == 101) {
 				actMgr.trigger(loginFailed);
