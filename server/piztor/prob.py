@@ -9,11 +9,12 @@ host = "localhost"
 port = 9990
 
 def gen_auth(username, password):
-    length = 4 + 1 + len(username) + 1 + len(password)
+    length = 4 + 1 + len(username) + 1 + len(password) + 1
     data = pack("!LB", length, 0x00)
     data += username
     data += "\0"
     data += password
+    data += "\0"
     return data
 
 def gen_update_location(token, username, lat, lng):
@@ -78,12 +79,29 @@ print "status: " + str(status)
 
 resp = send(gen_request_location(token, username, gid))
 print len(resp)
-pl, optcode, status, length = unpack("!LBBL", resp[:10])
+pl, optcode, status = unpack("!LBB", resp[:6])
 print "size: " + str((pl, len(resp)))
-idx = 10
-print "length: " + str(len(resp[10:]))
-for i in xrange(length):
+idx = 6
+print "length: " + str(len(resp[6:]))
+while idx < pl:
     print len(resp[idx:idx + 20])
     uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
     idx += 20
     print (uid, lat, lng)
+
+resp = send(gen_request_user_info(token, username, uid))
+pl, optcode, status = unpack("!LBB", resp[:6])
+print "size: " + str((pl, len(resp)))
+
+idx = 6
+while idx < pl:
+    info_key, = unpack("!B", resp[idx:idx + 1])
+    idx += 1
+    print info_key
+    if info_key == 0x00:
+        info_value, = unpack("!L", resp[idx:idx + 4])
+        idx += 4
+    elif info_key == 0x01:
+        info_value, = unpack("!B", resp[idx:idx + 1])
+        idx += 1
+    print (info_key, info_value)

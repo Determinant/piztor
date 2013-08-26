@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v0.3a
+Piztor Transmission Protocol v0.4
 ----------------------------------
 
 - General 
@@ -23,13 +23,21 @@ Piztor Transmission Protocol v0.3a
 
     - In following sections, ``LENGTH`` part is left out for clarity.
     - ``PADDING`` has value ``0``.
+    - ``string`` type structure:
+
+      ::
+
+          +-------?b-------+---------+
+          | STRING_CONTENT | PADDING |
+          +----------------+---------+
+
     - ``AUTH_HEAD`` structure:
 
       ::
 
-          +----32b-----+----?b----+----1b---+
-          | USER_TOKEN | USERNAME | PADDING |
-          +----raw-----+----------+---------+
+          +----32b-----+----?b----+
+          | USER_TOKEN | USERNAME |
+          +----raw-----+--string--+
 
 - Authentication 
 
@@ -37,9 +45,9 @@ Piztor Transmission Protocol v0.3a
 
     :: 
 
-        +--1b---+-----?b------+----1b----+-----?b-----+
-        | 0x00  |   USERNAME  | PADDING  |  PASSWORD  |
-        +-uchar-+-------------+----------+------------+
+        +--1b---+-----?b---+----?b----+
+        | 0x00  | USERNAME | PASSWORD |
+        +-uchar-+--string--+--string--+
 
   - Response
 
@@ -91,9 +99,9 @@ Piztor Transmission Protocol v0.3a
 
     ::
 
-        +--1b---+---1b---+-----4b----+------20b-------+-----+
-        | 0x02  | STATUS | ENTRY_CNT | LOCATION_ENTRY | ... |
-        +-uchar-+-uchar--+----int----+----------------+-----+
+        +--1b---+---1b---+------20b-------+-----+
+        | 0x02  | STATUS | LOCATION_ENTRY | ... |
+        +-uchar-+-uchar--+----------------+-----+
         
     ``LOCATION_ENTRY`` :
 
@@ -125,9 +133,9 @@ Piztor Transmission Protocol v0.3a
     
     ::
 
-        +----1b----+-----?b-----+---1b----+
-        | INFO_KEY | INFO_VALUE | PADDING |
-        +--uchar---+------------+---------+
+        +----1b----+-----?b-----+
+        | INFO_KEY | INFO_VALUE |
+        +--uchar---+------------+
 
     ``INFO_KEY`` :
 
