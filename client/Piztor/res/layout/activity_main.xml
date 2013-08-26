@@ -12,6 +12,7 @@
 		>
 		<include layout="@layout/main_headbar"/>
 	</RelativeLayout>
+	
 	<LinearLayout
 		android:id="@+id/main_footbar_layout" 
 		android:layout_width="wrap_content"
@@ -20,4 +21,13 @@
 		>
 		<include layout="@layout/main_footbar"/>
 	</LinearLayout>
+
+	<ImageView 
+	   	    android:id="@+id/main_mapview"
+	   	    android:layout_width="fill_parent"
+	   	    android:layout_height="fill_parent"
+	   	    android:layout_below="@+id/main_headbar_layout"
+	   	    android:layout_above="@+id/main_footbar_layout"
+	   	    android:scaleType="matrix"
+	   	    android:src="@drawable/data"/>
 </RelativeLayout>

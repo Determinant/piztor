@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.view.Menu;
 
-public class Settings extends Activity {
+public class Settings extends PiztorAct {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {

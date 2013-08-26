@@ -24,11 +24,7 @@ import android.os.Message;
 //											      //
 //     ----------I'm the division line--------    //
 //                                                //
-//           100  for   timeOut				      //
-//           101  for   conection failed          //
-//           102  for   reconnect                 //
-//           103  for   IOexception			      //
-//           104  for   UnknownHostException	  //
+//             -1   for   Exceptions			  //
 //                                                //
 //    ----------I'm the division line--------     //
 //                                                //
@@ -46,9 +42,7 @@ import android.os.Message;
 //     getlocation -- status & entrynumber & data //
 //       entry  -- userid & latitude & longitude  //
 //                                                //
-//  getuserinfo -- status & RUserinfo(base class) //
-//		    0  RKeyGroupID -- groupid             //
-//          1  RKeyGender -- gender               //
+//  getuserinfo -- status & uid & gid & gender    //
 //												  //
 //          status -- 0 for success               //
 //					  1 for failed/invalid        //				
@@ -77,7 +71,6 @@ public class Transam implements Runnable {
 		reqtask = new LinkedList<Req>();
 	}
 	
-	
 	public void send(Req r){
 		reqtask.offer(r);
 		
@@ -100,8 +93,9 @@ public class Transam implements Runnable {
 					req = reqtask.poll();	
 					if(req.time + req.alive < System.currentTimeMillis()){		//time out!
 						Message ret = new Message();
-						ret.obj = "Time out!";
-						ret.what = 100;
+						TimeOutException t = new TimeOutException();
+						ret.obj = t;
+						ret.what = -1;
 						recall.sendMessage(ret);
 					}
 					else{													//run the request
@@ -113,7 +107,7 @@ public class Transam implements Runnable {
 						thread.start();
 						timer = new Timer();
 						TimerTask task = new Timertk();
-						timer.schedule(task, 2000, 2000);
+						timer.schedule(task, 20000, 20000);
 					}
 				}				
 			}
@@ -138,14 +132,14 @@ public class Transam implements Runnable {
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 				Message msg = new Message();
-				msg.obj = "UnknownHostException";
-				msg.what = 104;
+				msg.obj = e;
+				msg.what = -1;
 				recall.sendMessage(msg);
 			} catch (IOException e) {
 				e.printStackTrace();
 				Message msg = new Message();
-				msg.obj = "IOException";
-				msg.what = 103;
+				msg.obj = e;
+				msg.what = -1;
 				recall.sendMessage(msg);
 			}
 
@@ -161,6 +155,7 @@ public class Transam implements Runnable {
 				break;
 			case 2:
 				final thd t = new thd();
+				thread.interrupt();
 				thread = new Thread(t);
 				thread.start();
 				break;
@@ -173,17 +168,14 @@ public class Transam implements Runnable {
 		public void run() {
 			if (flag == false && cnt > 0) {
 				cnt--;
-				Message msg = new Message();
-				msg.obj = "Reconnect for rest " + cnt + " times";
-				msg.what = 102;
-				recall.sendMessage(msg);
 				Message m = new Message();
-				msg.what = 2;
+				m.what = 2;
 				handler.sendMessage(m);
 			} else if (cnt == 0) {
 				Message msg = new Message();
-				msg.obj = "connecting failed";
-				msg.what = 101;
+				ConnectFailedException c = new ConnectFailedException();
+				msg.obj = c;
+				msg.what = -1;
 				recall.sendMessage(msg);
 				timer.cancel();
 			} else if (flag == true) {
@@ -192,4 +184,20 @@ public class Transam implements Runnable {
 			}
 		}
 	};
+	
+	class ConnectFailedException extends Exception{
+		private static final long serialVersionUID = 101L;
+		public ConnectFailedException() {  
+			super();  
+			}		
+	}
+	
+	class TimeOutException extends Exception{
+		private static final long serialVersionUID = 102L;
+		public TimeOutException() {  
+			super();  
+			}	
+		
+	}
+	
 }

@@ -49,8 +49,10 @@ public class Main extends PiztorAct {
 				ResUpdate update = (ResUpdate) m.obj;
 				if (update.t == 0)
 					System.out.println("update success");
-				else
+				else {
 					System.out.println("update failed");
+					actMgr.trigger(AppMgr.errorToken);
+				}
 				break;
 			case 2:
 				ResLocation location = (ResLocation) m.obj;
@@ -64,14 +66,17 @@ public class Main extends PiztorAct {
 				} else {
 					System.out
 							.println("resquest for location must be wrong!!!");
+					actMgr.trigger(AppMgr.errorToken);
 				}
 				break;
 			case 3:
 				ResUserinfo r = (ResUserinfo) m.obj;
 				if (r.s == 0) {
-					System.out.println(r.id + " " + r.sex + " " + r.groupId);
+					System.out.println("id : " + r.uid + " sex :  " + r.sex
+							+ " group : " + r.gid);
 				} else {
 					System.out.println("reqest for userInfo must be wrong!!!");
+					actMgr.trigger(AppMgr.errorToken);
 				}
 				break;
 			default:
@@ -110,6 +115,12 @@ public class Main extends PiztorAct {
 		@Override
 		void enter(int e) {
 			System.out.println("enter start status!!!!");
+			if (e == ActMgr.Create) {
+				AppMgr.transam.send(new ReqUserinfo(UserInfo.token,
+						UserInfo.username, UserInfo.id, System
+								.currentTimeMillis(), 5000));
+			}
+
 			if (e == TimerFlush) {
 				ReqLocation r = new ReqLocation(UserInfo.token,
 						UserInfo.username, 1, System.currentTimeMillis(), 1000);
