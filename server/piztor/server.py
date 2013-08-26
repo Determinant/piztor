@@ -48,6 +48,7 @@ class _OptCode:
     user_auth = 0x00
     location_update = 0x01
     location_request= 0x02
+    user_info_request = 0x03
 
 class _StatusCode:
     sucess = 0x00
@@ -261,6 +262,35 @@ class LocationRequestHandler(RequestHandler):
 
 class UserInfoRequestHandler(RequestHandler):
 
+    _failed_response_size = \
+            _SectionSize.LENGTH + \
+            _SectionSize.OPT_ID + \
+            _SectionSize.STATUS
+
+    _fail_response = \
+        struct.pack("!LBB", _failed_response_size,
+                            _OptCode.user_info_request,
+                            _StatusCode.failure)
+
+    @classmethod
+    def pack_int(cls, val):
+        return struct.pack("!L", val)
+
+    @classmethod
+    def pack_bool(cls, val):
+        return struct.pack("!B", 0x01 if val else 0x00)
+
+    _code_map = {0x00 : ('gid', pack_int),
+                0x01 : ('sex', pack_bool)}
+
+    @classmethod
+    def pack_entry(cls, user, entry_code):
+        attr, pack_method = _code_map(entry_code)
+        info_key = entry_code
+        info_value = getattr(user, attr)
+        return struct.pack("!B", info_key) + pack_method(info_value) + \
+                struct.pack("!B", 0x00)
+
     def handle(self, tr_data):
         logger.info("Reading user info request data...")
 
@@ -271,41 +301,42 @@ class UserInfoRequestHandler(RequestHandler):
                 raise struct.error
             uid, = struct.unpack("!L", tail)
         except struct.error:
-            raise BadReqError("Location request: Malformed request body")
+            raise BadReqError("User info request: Malformed request body")
 
         logger.info("Trying to request locatin with " \
-                    "(token = {0}, gid = {1})" \
-            .format(get_hex(token), gid))
+                    "(token = {0}, uid = {1})" \
+            .format(get_hex(token), uid))
 
         session = self.Session()
         uauth = RequestHandler.get_uauth(token, username, session)
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBBL", LocationRequestHandler \
-                                            ._location_request_response_size(0),
-                                        _OptCode.location_request,
-                                        _StatusCode.failure,
-                                       0)
+            return UserInfoRequestHandler._fail_response
+        # TODO: check the relationship between user and quser
+        user = uauth.user 
 
-        ulist = session.query(UserModel).filter(UserModel.gid == gid).all()
-        reply = struct.pack(
-                "!LBBL", 
-                LocationRequestHandler._location_request_response_size(len(ulist)),
-                _OptCode.location_request, 
-                _StatusCode.sucess,
-                len(ulist))
+        reply = struct.pack("!BB", _OptCode.user_info_request,
+                                    _StatusCode.sucess)
+        try:
+            quser = session.query(UserModel) \
+                    .filter(UserModel.id == uid).one()
+        except NoResultFound:
+            logger.info("No such user: {0}".format(username))
+            return UserInfoRequestHandler._fail_response
 
-        for user in ulist:
-            loc = user.location
-            reply += struct.pack("!Ldd", user.id, loc.lat, loc.lng)
+        except MultipleResultsFound:
+            raise DBCorruptedError()
 
+        for code in _code_map:
+            reply += UserInfoRequestHandler.pack_entry(quser, code)
         return reply
 
         
 handlers = [UserAuthHandler,
             LocationUpdateHandler,
-            LocationRequestHandler]
+            LocationRequestHandler,
+            UserInfoRequestHandler]
 
 def check_header(header):
     return 0 <= header < len(handlers)

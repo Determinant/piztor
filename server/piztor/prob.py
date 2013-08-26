@@ -33,6 +33,14 @@ def gen_request_location(token, username, gid):
     return data
 
 
+def gen_request_user_info(token, username, uid):
+    length = 4 + 1 + 32 + len(username) + 1 + 4
+    data = pack("!LB32s", length, 0x03, token)
+    data += username
+    data += chr(0)
+    data += pack("!L", uid)
+    return data
+
 def send(data):
     received = None
     try:

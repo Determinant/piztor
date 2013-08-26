@@ -132,4 +132,4 @@ Piztor Transmission Protocol v0.3a
     ``INFO_KEY`` :
 
     :``0x00``: gid (value is a 4-byte ``long int``)
-    :``0x01``: sex (value is a 1-byte ``boolean``: ``True`` for male, ``False`` for female)
+    :``0x01``: sex (value is a 1-byte ``boolean``: ``0x01`` for male, ``0x00`` for female)

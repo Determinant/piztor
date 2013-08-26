@@ -1,5 +1,0 @@
-package com.macaroon.piztor;
-
-public class PiztorExcepiton extends Exception{
-
-}
