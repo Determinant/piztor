@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v0.4
+Piztor Transmission Protocol v0.4a
 ----------------------------------
 
 - General 
@@ -141,3 +141,22 @@ Piztor Transmission Protocol v0.4
 
     :``0x00``: gid (value is a 4-byte ``long int``)
     :``0x01``: sex (value is a 1-byte ``boolean``: ``0x01`` for male, ``0x00`` for female)
+
+- User Logout
+
+  - Request
+
+  ::
+
+      +--1b--+-----?b------+
+      | 0x04 |  AUTH_HEAD  |
+      +------+-------------+
+
+  - Response
+
+  ::
+
+      +--1b--+---1b---+
+      | 0x04 | STATUS |
+      +------+--------+
+
