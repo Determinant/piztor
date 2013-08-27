@@ -53,7 +53,7 @@ public class Transam implements Runnable {
 	public boolean flag = true;
 	public int cnt = 4;				//retry times
 	public int tcnt;				//current remain retry times
-	public int retime = 1000;		//timeout time
+	public int retime = 10000;		//timeout time
 	Res res;
 	Req req;
 	public int p;					//port
@@ -123,7 +123,7 @@ public class Transam implements Runnable {
 			try {
 				SocketClient client = new SocketClient(i,p,retime);
 				int out = client.sendMsg(req,recall);
-				if(out == 0){
+				if(out == 0){													
 					client.closeSocket();
 					running = false;
 				}
