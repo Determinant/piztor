@@ -190,10 +190,10 @@ class LocationUpdateHandler(RequestHandler):
         except struct.error:
             raise BadReqError("Location update: Malformed request body")
 
-#        logger.info("Trying to update location with "
-#                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
-#                .format(get_hex(token), username, lat, lng))
-#
+        logger.info("Trying to update location with "
+                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
+                .format(get_hex(token), username, lat, lng))
+
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
         if uauth is None:
@@ -310,7 +310,7 @@ class UserInfoHandler(RequestHandler):
         except struct.error:
             raise BadReqError("User info request: Malformed request body")
 
-        logger.info("Trying to request locatin with " \
+        logger.info("Trying to user info with " \
                     "(token = {0}, uid = {1})" \
             .format(get_hex(token), uid))
 
