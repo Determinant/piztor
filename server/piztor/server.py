@@ -22,7 +22,8 @@ db_path = "root:helloworld@localhost/piztor"
 FORMAT = "%(asctime)-15s %(message)s"
 logging.basicConfig(format = FORMAT)
 logger = logging.getLogger('piztor_server')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARN)
+engine = create_engine('mysql://' + db_path, echo = False, pool_size = 1024)
 
 
 class _SectionSize:
@@ -56,13 +57,12 @@ class _StatusCode:
 
 class RequestHandler(object):
     def __init__(self):
-        self.engine = create_engine('mysql://' + db_path, echo = False)
-        Session = sessionmaker(bind = self.engine)
+        Session = sessionmaker(bind = engine)
         self.session = Session()
 
     def __del__(self):
         self.session.close()
-        self.engine.dispose()
+#        self.engine.dispose()
 
     def check_size(self, tr_data):
         if len(tr_data) > self._max_tr_data_size:
@@ -157,7 +157,7 @@ class UserAuthHandler(RequestHandler):
         else:
             logger.info("Logged in sucessfully: {0}".format(username))
             uauth.regen_token()
-            logger.info("New token generated: " + get_hex(uauth.token))
+            #logger.info("New token generated: " + get_hex(uauth.token))
             self.session.commit()
             return struct.pack("!LBBL32s", UserAuthHandler._response_size,
                                            _OptCode.user_auth,
@@ -189,10 +189,10 @@ class LocationUpdateHandler(RequestHandler):
         except struct.error:
             raise BadReqError("Location update: Malformed request body")
 
-        logger.info("Trying to update location with "
-                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
-                .format(get_hex(token), username, lat, lng))
-
+#        logger.info("Trying to update location with "
+#                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
+#                .format(get_hex(token), username, lat, lng))
+#
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
         if uauth is None:
@@ -235,9 +235,9 @@ class LocationInfoHandler(RequestHandler):
         except struct.error:
             raise BadReqError("Location request: Malformed request body")
 
-        logger.info("Trying to request locatin with " \
-                    "(token = {0}, gid = {1})" \
-            .format(get_hex(token), gid))
+#        logger.info("Trying to request locatin with " \
+#                    "(token = {0}, gid = {1})" \
+#            .format(get_hex(token), gid))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Auth failure
@@ -304,9 +304,9 @@ class UserInfoHandler(RequestHandler):
         except struct.error:
             raise BadReqError("User info request: Malformed request body")
 
-        logger.info("Trying to request locatin with " \
-                    "(token = {0}, uid = {1})" \
-            .format(get_hex(token), uid))
+#        logger.info("Trying to request locatin with " \
+#                    "(token = {0}, uid = {1})" \
+#            .format(get_hex(token), uid))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Auth failure
@@ -383,7 +383,7 @@ class PTP(Protocol, TimeoutMixin):
             if len(self.buff) == self.length:
                 h = PTP.handlers[self.optcode]()
                 reply = h.handle(self.buff[5:])
-                logger.info("Wrote: %s", get_hex(reply))
+#                logger.info("Wrote: %s", get_hex(reply))
                 self.transport.write(reply)
                 self.transport.loseConnection()
             elif len(self.buff) > self.length:
@@ -405,12 +405,12 @@ class PTPFactory(Factory):
     def buildProtocol(self, addr):
         return PTP(self)
 
-#if os.name!='nt':
-#    from twisted.internet import epollreactor
-#    epollreactor.install()
-#else:
-#    from twisted.internet import iocpreactor
-#    iocpreactor.install()
+if os.name!='nt':
+    from twisted.internet import epollreactor
+    epollreactor.install()
+else:
+    from twisted.internet import iocpreactor
+    iocpreactor.install()
 
 from twisted.internet import reactor
 

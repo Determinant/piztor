@@ -1,6 +1,7 @@
 import socket
 from struct import *
 from random import random
+from select import select
 
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
@@ -43,13 +44,21 @@ def gen_request_user_info(token, username, uid):
     return data
 
 def send(data):
-    received = None
+    received = bytes()
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host, port))
-        print len(data)
+        #print len(data)
         sock.sendall(data)
-        received = sock.recv(1024)
+        while True:
+            rd, wr, err = select([sock], [], [], 10)
+            if rd:
+                buff = sock.recv(4096)
+                if len(buff) == 0:
+                    break
+                received += buff
+            else:
+                break
     finally:
         sock.close()
     return received
@@ -61,6 +70,7 @@ password = "world"
 #username = "1234567890123456789012"
 #password = "world12345678901234567890"
 gid = 1
+failed_cnt = 0
 
 if len(argv) == 2:
     host = argv[1]
@@ -71,46 +81,71 @@ if len(argv) == 3:
 
 for i in xrange(10):
     resp = send(gen_auth(username, password))
-    pl, optcode, status, uid, token = unpack("!LBBL32s", resp)
-    print "size: " + str((pl, len(resp)))
-    print "opt: " + str(optcode)
-    print "status: " + str(status)
-    print "uid: " + str(uid)
-    print "token: " + get_hex(token)
+    try:
+        pl, optcode, status, uid, token = unpack("!LBBL32s", resp)
+    except:
+        print "fuck1"
+        failed_cnt += 1
+        continue
+    if pl != len(resp): print "God!"
+#    print "size: " + str((pl, len(resp)))
+#    print "opt: " + str(optcode)
+#    print "status: " + str(status)
+#    print "uid: " + str(uid)
+#    print "token: " + get_hex(token)
     
     resp = send(gen_update_location(token, username, random(), random()))
-    pl, optcode, status = unpack("!LBB", resp)
-    print "size: " + str((pl, len(resp)))
-    print "opt: " + str(optcode)
-    print "status: " + str(status)
+    try:
+        pl, optcode, status = unpack("!LBB", resp)
+    except:
+        print "fuck2"
+    if pl != len(resp): print "God!"
+#    print "size: " + str((pl, len(resp)))
+#    print "opt: " + str(optcode)
+#    print "status: " + str(status)
     
     resp = send(gen_request_location(token, username, gid))
-    print len(resp)
-    pl, optcode, status = unpack("!LBB", resp[:6])
-    print "size: " + str((pl, len(resp)))
+    try:
+        pl, optcode, status = unpack("!LBB", resp[:6])
+    except:
+        print "fuck3"
+    if pl != len(resp): print "God!"
+#    print "size: " + str((pl, len(resp)))
     idx = 6
-    print "length: " + str(len(resp[6:]))
-    while idx < pl:
-        print len(resp[idx:idx + 20])
-        uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
-        idx += 20
-        print (uid, lat, lng)
+#    print "length: " + str(len(resp[6:]))
+    try:
+        while idx < pl:
+#            print len(resp[idx:idx + 20])
+            uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
+            idx += 20
+    except:
+        print "fuck4"
+#        print (uid, lat, lng)
     
     resp = send(gen_request_user_info(token, username, uid))
-    pl, optcode, status = unpack("!LBB", resp[:6])
-    print "size: " + str((pl, len(resp)))
+    try:
+        pl, optcode, status = unpack("!LBB", resp[:6])
+    except:
+        print "fuck5"
+    if pl != len(resp): print "God!"
+#    print "size: " + str((pl, len(resp)))
     
     idx = 6
-    while idx < pl:
-        info_key, = unpack("!B", resp[idx:idx + 1])
-        idx += 1
-        print info_key
-        if info_key == 0x00:
-            info_value, = unpack("!L", resp[idx:idx + 4])
-            idx += 4
-        elif info_key == 0x01:
-            info_value, = unpack("!B", resp[idx:idx + 1])
+    try:
+        while idx < pl:
+            info_key, = unpack("!B", resp[idx:idx + 1])
             idx += 1
-        print (info_key, info_value)
+#            print info_key
+            if info_key == 0x00:
+                info_value, = unpack("!L", resp[idx:idx + 4])
+                idx += 4
+            elif info_key == 0x01:
+                info_value, = unpack("!B", resp[idx:idx + 1])
+                idx += 1
+#            print (info_key, info_value)
+    except:
+        print "fuck6"
     from time import sleep
-#    sleep(10)
+    sleep(10)
+
+print failed_cnt

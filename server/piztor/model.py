@@ -16,20 +16,31 @@ class _TableName:   # avoid typoes
 
 class UserModel(Base):
     __tablename__ = _TableName.UserModel
+    __table_args__ = {
+        'mysql_engine' : 'InnoDB', 
+        'mysql_charset' : 'utf8', 
+        'mysql_auto_increment' : '1'}
 
     id = Column(Integer, primary_key = True)
-    gid = Column(Integer)
-    username = Column(String(MAX_USERNAME_SIZE))
-    sex = Column(Boolean)
+    gid = Column(Integer, nullable = False)
+    username = Column(String(MAX_USERNAME_SIZE), 
+                    unique = True, nullable = False)
+    sex = Column(Boolean, nullable = False)
     location = None
     auth = None
 
 class LocationInfo(Base):
+    __table_args__ = {
+        'mysql_engine' : 'InnoDB', 
+        'mysql_charset' : 'utf8', 
+        'mysql_auto_increment' : '1'}
+
     __tablename__ = _TableName.LocationInfo
 
-    uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'), primary_key = True)
-    lat = Column(Float(precesion = 64))
-    lng = Column(Float(precesion = 64))
+    uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'), 
+                primary_key = True)
+    lat = Column(Float(precesion = 64), nullable = False)
+    lng = Column(Float(precesion = 64), nullable = False)
     user = relationship("UserModel", uselist = False, 
             backref = backref("location", uselist = False,
                 cascade = "all, delete-orphan"))
@@ -49,6 +60,11 @@ def _random_binary_string(length):
     return urandom(length)
 
 class UserAuth(Base):
+    __table_args__ = {
+        'mysql_engine' : 'InnoDB', 
+        'mysql_charset' : 'utf8', 
+        'mysql_auto_increment' : '1'}
+
     __tablename__ = _TableName.UserAuth
 
     uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'), primary_key = True)
