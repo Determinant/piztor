@@ -13,7 +13,6 @@ import android.widget.Toast;
 
 public class Login extends PiztorAct {
 
-	ActMgr actMgr;
 	Button btnLogin;
 	EditText edtUser, edtPass;
 
@@ -35,9 +34,9 @@ public class Login extends PiztorAct {
 					actMgr.trigger(loginFailed);
 					return;
 				}
-				UserInfo.token = res.t;
-				UserInfo.id = res.uid;
-				UserInfo.username = edtUser.getText().toString();
+				Infomation.token = res.t;
+				Infomation.uid = res.uid;
+				Infomation.username = edtUser.getText().toString();
 				System.out.println(res.s + "   :!!!    " + res.t);
 				actMgr.trigger(AppMgr.loginSuccess);
 			} else {
