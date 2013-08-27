@@ -1,17 +1,41 @@
-import socket
+import socket, logging
 from struct import *
 from random import random
 from select import select
 from time import sleep
 
+FORMAT = "%(asctime)-15s %(message)s"
+logging.basicConfig(format = FORMAT)
+logger = logging.getLogger('piztor_server')
+logger.setLevel(logging.INFO)
+
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
+
+class _SectionSize:
+    LENGTH = 4
+    OPT_ID = 1
+    STATUS = 1
+    USER_ID = 4
+    USER_TOKEN = 32
+    GROUP_ID = 4
+    ENTRY_CNT = 4
+    LATITUDE = 8
+    LONGITUDE = 8
+    LOCATION_ENTRY = USER_ID + LATITUDE + LONGITUDE
+    PADDING = 1
 
 host = "localhost"
 port = 2222
 
 def gen_auth(username, password):
-    length = 4 + 1 + len(username) + 1 + len(password) + 1
+    length = _SectionSize.LENGTH + \
+                _SectionSize.OPT_ID + \
+                len(username) + \
+                _SectionSize.PADDING + \
+                len(password) + \
+                _SectionSize.PADDING
+
     data = pack("!LB", length, 0x00)
     data += username
     data += "\0"
@@ -19,8 +43,19 @@ def gen_auth(username, password):
     data += "\0"
     return data
 
+def gen_auth_head_length(token, username):
+    return _SectionSize.USER_TOKEN + \
+                 len(username) + \
+                _SectionSize.PADDING
+
+
 def gen_update_location(token, username, lat, lng):
-    length = 4 + 1 + 32 + 8 + 8 + len(username) + 1
+    length = _SectionSize.LENGTH + \
+                _SectionSize.OPT_ID + \
+                gen_auth_head_length(token, username) + \
+                _SectionSize.LATITUDE + \
+                _SectionSize.LONGITUDE
+
     data = pack("!LB32s", length, 0x01, token)
     data += username
     data += chr(0)
@@ -28,7 +63,11 @@ def gen_update_location(token, username, lat, lng):
     return data
 
 def gen_request_location(token, username, gid):
-    length = 4 + 1 + 32 + 4 + len(username) + 1
+    length = _SectionSize.LENGTH + \
+                _SectionSize.OPT_ID + \
+                gen_auth_head_length(token, username) + \
+                _SectionSize.GROUP_ID
+
     data = pack("!LB32s", length, 0x02, token)
     data += username
     data += chr(0)
@@ -37,7 +76,11 @@ def gen_request_location(token, username, gid):
 
 
 def gen_request_user_info(token, username, uid):
-    length = 4 + 1 + 32 + len(username) + 1 + 4
+    length = _SectionSize.LENGTH + \
+                _SectionSize.OPT_ID + \
+                gen_auth_head_length(token, username) + \
+                _SectionSize.USER_ID
+
     data = pack("!LB32s", length, 0x03, token)
     data += username
     data += chr(0)
@@ -45,7 +88,9 @@ def gen_request_user_info(token, username, uid):
     return data
 
 def gen_logout(token, username):
-    length = 4 + 1 + 32 + len(username) + 1
+    length = _SectionSize.LENGTH + \
+                _SectionSize.OPT_ID + \
+                gen_auth_head_length(token, username)
     data = pack("!LB32s", length, 0x04, token)
     data += username
     data += chr(0)
@@ -56,7 +101,6 @@ def send(data):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host, port))
-        #print len(data)
         sock.sendall(data)
         while True:
             rd, wr, err = select([sock], [], [], 10)
@@ -77,7 +121,6 @@ username = "a"
 password = "a"
 #username = "1234567890123456789012"
 #password = "world12345678901234567890"
-failed_cnt = 0
 
 if len(argv) == 2:
     host = argv[1]
@@ -90,57 +133,50 @@ def request_location(token, username, gid):
     resp = send(gen_request_location(token, username, gid))
     try:
         pl, optcode, status = unpack("!LBB", resp[:6])
-    except:
-        print "fuck3"
-    if pl != len(resp): print "God!"
-    print "size: " + str((pl, len(resp)))
-    idx = 6
-    print "length: " + str(len(resp[6:]))
-    try:
+        if pl != len(resp):
+            logger.error("Request location: incorrect packet length")
+        idx = 6
         while idx < pl:
-            print len(resp[idx:idx + 20])
             uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
             idx += 20
             print (uid, lat, lng)
-    except:
-        print "fuck4"
+    except error:
+        logger.error("Request location: can not parse the response")
 
-
-for i in xrange(10):
+def user_auth(username, password):
     resp = send(gen_auth(username, password))
     try:
         pl, optcode, status, uid, token = unpack("!LBBL32s", resp)
-    except:
-        print "fuck1"
-        failed_cnt += 1
-        continue
-    if pl != len(resp): print "God!"
-    print "size: " + str((pl, len(resp)))
-    print "opt: " + str(optcode)
-    print "status: " + str(status)
-    print "uid: " + str(uid)
-    print "token: " + get_hex(token)
-    
-    resp = send(gen_update_location(token, username, random(), random()))
-    try:
-        pl, optcode, status = unpack("!LBB", resp)
-    except:
-        print "fuck2"
-    if pl != len(resp): print "God!"
-    print "size: " + str((pl, len(resp)))
-    print "opt: " + str(optcode)
-    print "status: " + str(status)
+        if pl != len(resp):
+            logger.error("User authentication: incorrect packet length")
+        print "status: " + str(status)
+        print "uid: " + str(uid)
+        print "token: " + get_hex(token)
+    except error:
+        logger.error("User authentication: can not parse the response")
 
+    return uid, token
+
+def update_location(token, username, lat, lng):
+    resp = send(gen_update_location(token, username, lat, lng)) 
+    print get_hex(resp)
+    try:
+        pl, optcode, status = unpack("!LBB", resp[:6])
+        if pl != len(resp):
+            logger.error("Request location: incorrect packet length")
+        print "status: " + str(status)
+    except error:
+        logger.error("Request location: can not parse the response")
+
+
+def request_user_info(token, username, uid):
     resp = send(gen_request_user_info(token, username, uid))
     try:
         pl, optcode, status = unpack("!LBB", resp[:6])
-    except:
-        print "fuck5"
-    if pl != len(resp): print "God!"
-    print "size: " + str((pl, len(resp)))
+        if pl != len(resp):
+            logger.error("Request user info: incorrect packet length")
     
-    idx = 6
-    try:
+        idx = 6
         while idx < pl:
             info_key, = unpack("!B", resp[idx:idx + 1])
             idx += 1
@@ -153,21 +189,30 @@ for i in xrange(10):
                 sex, = unpack("!B", resp[idx:idx + 1])
                 idx += 1
                 print "sex: {}".format(str(sex))
-    except:
-        print "fuck6"
-    
-    request_location(token, username, gid)    
-    request_location(token, username, comp_id * 256 + 0xff)
+        return comp_id, sec_id, sex
+    except error:
+        logger.error("Request user info: can not parse the response")
 
+def logout(token, username):
     resp = send(gen_logout(token, username))
     try:
         pl, optcode, status = unpack("!LBB", resp)
-    except:
-        print "fuck7"
-    if pl != len(resp): print "God!"
-    print "size: " + str((pl, len(resp)))
-    print "opt: " + str(optcode)
-    print "status: " + str(status)
-    sleep(10)
+        if pl != len(resp):
+            logger.error("Logout: incorrect packet length")
+        print "status: " + str(status)
+    except error:
+        logger.error("Logout: can not parse the response")
 
-print failed_cnt
+
+for i in xrange(10):
+
+    uid, token = user_auth(username, password)
+    update_location(token, username, random(), random()) 
+    
+    comp_id, sec_id, sex = request_user_info(token, username, uid)
+    request_location(token, username, comp_id * 256 + sec_id)    
+    request_location(token, username, comp_id * 256 + 0xff)
+
+    logout(token, username)
+
+    sleep(10)
