@@ -10,7 +10,7 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
-//       Piztor Transmission Protocol v0.4        //
+//       Piztor Transmission Protocol v0.4a       //
 
 //------------------------------------------------//
 //												  //
@@ -19,6 +19,7 @@ import android.os.Message;
 //              1   for   updateLocation		  //
 //              2   for   locationRequest		  //
 //			    3   for   userinfo				  //
+//              4   for   logout                  //
 //											      //
 //     ----------I'm the division line--------    //
 //                                                //
@@ -31,6 +32,7 @@ import android.os.Message;
 //update -- token & username & latitude & longitude//
 //	  getlocation -- token & username & groupid   //
 //    getuserinfo -- token & userinfo & userid    //
+//       logout -- token & username               //
 //												  //
 //    ----------I'm the division line--------     //
 //                                                //
@@ -41,6 +43,7 @@ import android.os.Message;
 //       entry  -- userid & latitude & longitude  //
 //                                                //
 //  getuserinfo -- status & uid & gid & gender    //
+//            logout -- status                    //
 //												  //
 //          status -- 0 for success               //
 //					  1 for failed/invalid        //				
