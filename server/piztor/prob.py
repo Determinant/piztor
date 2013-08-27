@@ -56,9 +56,10 @@ def send(data):
 
 from sys import argv
 
-#username = "hello"
-username = "12345678901234567890"
+username = "hello"
 password = "world"
+#username = "1234567890123456789012"
+#password = "world12345678901234567890"
 gid = 1
 
 if len(argv) == 2:

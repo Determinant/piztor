@@ -367,30 +367,33 @@ class PTP(Protocol, TimeoutMixin):
         self.buff += data
         self.resetTimeout()
         logger.info("Buffer length is now: %d", len(self.buff))
-        if len(self.buff) > 4:
-            try:
-                self.length, self.optcode = struct.unpack("!LB", self.buff[:5])
-                if not PTP.check_header(self.optcode):    # invalid header
-                    raise struct.error
-            except struct.error:
-                raise BadReqError("Malformed request header")
-            if self.length > PTP._MAX_REQUEST_SIZE:
-                print self.length, PTP._MAX_REQUEST_SIZE
-                raise BadReqError("The size of remaining part is too big")
-
-        # Incomplete length info
-        if self.length == -1: return
-
-        if len(self.buff) == self.length:
-            h = PTP.handlers[self.optcode]()
-            reply = h.handle(self.buff[5:])
-            logger.info("Wrote: %s", get_hex(reply))
-            self.transport.write(reply)
+        if len(self.buff) <= 4:
+            return
+        try:
+            if self.length == -1:
+                try:
+                    self.length, self.optcode = struct.unpack("!LB", self.buff[:5])
+                    if not PTP.check_header(self.optcode):    # invalid header
+                        raise struct.error
+                except struct.error:
+                    raise BadReqError("Malformed request header")
+                if self.length > PTP._MAX_REQUEST_SIZE:
+                    print self.length, PTP._MAX_REQUEST_SIZE
+                    raise BadReqError("The size of remaining part is too big")
+            if len(self.buff) == self.length:
+                h = PTP.handlers[self.optcode]()
+                reply = h.handle(self.buff[5:])
+                logger.info("Wrote: %s", get_hex(reply))
+                self.transport.write(reply)
+                self.transport.loseConnection()
+            elif len(self.buff) > self.length:
+                raise BadReqError("The actual length is larger than promised")
+        except BadReqError as e:
+            logger.warn("Rejected a bad request: %s", str(e))
+        except DBCorruptedError:
+            logger.error("*** Database corruption ***")
+        finally:
             self.transport.loseConnection()
-
-        elif len(self.buff) > self.length:
-            self.transport.loseConnection()
-
 
     def connectionLost(self, reason):
         logger.info("The connection is lost")
@@ -414,5 +417,5 @@ from twisted.internet import reactor
 f = PTPFactory()
 f.protocol = PTP
 reactor.listenTCP(2222, f)
-logger.warning("The server is on")
+logger.warning("The server is lanuched")
 reactor.run()
