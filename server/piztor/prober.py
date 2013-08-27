@@ -2,6 +2,7 @@ import socket
 from struct import *
 from random import random
 from select import select
+from time import sleep
 
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
@@ -41,6 +42,13 @@ def gen_request_user_info(token, username, uid):
     data += username
     data += chr(0)
     data += pack("!L", uid)
+    return data
+
+def gen_logout(token, username):
+    length = 4 + 1 + 32 + len(username) + 1
+    data = pack("!LB32s", length, 0x04, token)
+    data += username
+    data += chr(0)
     return data
 
 def send(data):
@@ -145,7 +153,16 @@ for i in xrange(10):
 #            print (info_key, info_value)
     except:
         print "fuck6"
-    from time import sleep
+
+    resp = send(gen_logout(token, username))
+    try:
+        pl, optcode, status = unpack("!LBB", resp)
+    except:
+        print "fuck7"
+    if pl != len(resp): print "God!"
+#    print "size: " + str((pl, len(resp)))
+#    print "opt: " + str(optcode)
+#    print "status: " + str(status)
     sleep(10)
 
 print failed_cnt

@@ -1,7 +1,7 @@
 class PiztorError(Exception):
     pass
 
-class DBCurruptedError(PiztorError):
+class DBCorruptionError(PiztorError):
     pass
 
 class BadReqError(PiztorError):

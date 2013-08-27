@@ -22,7 +22,7 @@ db_path = "root:helloworld@localhost/piztor"
 FORMAT = "%(asctime)-15s %(message)s"
 logging.basicConfig(format = FORMAT)
 logger = logging.getLogger('piztor_server')
-logger.setLevel(logging.WARN)
+logger.setLevel(logging.INFO)
 engine = create_engine('mysql://' + db_path, echo = False, pool_size = 1024)
 
 
@@ -48,8 +48,9 @@ _HEADER_SIZE = _SectionSize.LENGTH + \
 class _OptCode:
     user_auth = 0x00
     location_update = 0x01
-    location_request= 0x02
-    user_info_request = 0x03
+    location_info= 0x02
+    user_info = 0x03
+    user_logout = 0x04
 
 class _StatusCode:
     sucess = 0x00
@@ -85,7 +86,7 @@ class RequestHandler(object):
             return None
 
         except MultipleResultsFound:
-            raise DBCorruptedError()
+            raise DBCorruptionError()
 
     @classmethod
     def trunc_padding(cls, data):
@@ -143,23 +144,23 @@ class UserAuthHandler(RequestHandler):
                 .filter(UserModel.username == username).one()
         except NoResultFound:
             logger.info("No such user: {0}".format(username))
-            return UserAuthHandler._failed_response
+            return self._failed_response
 
         except MultipleResultsFound:
-            raise DBCorruptedError()
+            raise DBCorruptionError()
 
         uauth = user.auth
         if uauth is None:
-            raise DBCorruptedError()
+            raise DBCorruptionError()
         if not uauth.check_password(password):
             logger.info("Incorrect password: {0}".format(password))
-            return UserAuthHandler._failed_response
+            return self._failed_response
         else:
             logger.info("Logged in sucessfully: {0}".format(username))
             uauth.regen_token()
             #logger.info("New token generated: " + get_hex(uauth.token))
             self.session.commit()
-            return struct.pack("!LBBL32s", UserAuthHandler._response_size,
+            return struct.pack("!LBBL32s", self._response_size,
                                            _OptCode.user_auth,
                                            _StatusCode.sucess,
                                            user.id,
@@ -197,7 +198,7 @@ class LocationUpdateHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBB",  LocationUpdateHandler._response_size,
+            return struct.pack("!LBB",  self._response_size,
                                         _OptCode.location_update,
                                         _StatusCode.failure)
 
@@ -207,7 +208,7 @@ class LocationUpdateHandler(RequestHandler):
 
         logger.info("Location is updated sucessfully")
         self.session.commit()
-        return struct.pack("!LBB",  LocationUpdateHandler._response_size,
+        return struct.pack("!LBB",  self._response_size,
                                     _OptCode.location_update,
                                     _StatusCode.sucess)
 
@@ -243,15 +244,15 @@ class LocationInfoHandler(RequestHandler):
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBB", LocationInfoHandler._response_size(0),
-                                        _OptCode.location_request,
+            return struct.pack("!LBB", self._response_size(0),
+                                        _OptCode.location_info,
                                         _StatusCode.failure)
 
         ulist = self.session.query(UserModel).filter(UserModel.gid == gid).all()
         reply = struct.pack(
                 "!LBB", 
-                LocationInfoHandler._response_size(len(ulist)),
-                _OptCode.location_request, 
+                self._response_size(len(ulist)),
+                _OptCode.location_info, 
                 _StatusCode.sucess)
 
         for user in ulist:
@@ -279,7 +280,7 @@ class UserInfoHandler(RequestHandler):
 
     _fail_response = \
         struct.pack("!LBB", _failed_response_size,
-                            _OptCode.user_info_request,
+                            _OptCode.user_info,
                             _StatusCode.failure)
 
     _code_map = {0x00 : ('gid', pack_int),
@@ -312,35 +313,73 @@ class UserInfoHandler(RequestHandler):
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return UserInfoHandler._fail_response
+            return self._fail_response
         # TODO: check the relationship between user and quser
         user = uauth.user 
 
-        reply = struct.pack("!BB", _OptCode.user_info_request,
+        reply = struct.pack("!BB", _OptCode.user_info,
                                     _StatusCode.sucess)
         try:
             quser = self.session.query(UserModel) \
                     .filter(UserModel.id == uid).one()
         except NoResultFound:
             logger.info("No such user: {0}".format(username))
-            return UserInfoHandler._fail_response
+            return self._fail_response
 
         except MultipleResultsFound:
-            raise DBCorruptedError()
+            raise DBCorruptionError()
 
-        for code in UserInfoHandler._code_map:
+        for code in self._code_map:
             reply += UserInfoHandler.pack_entry(quser, code)
         reply = struct.pack("!L", len(reply) + _SectionSize.LENGTH) + reply
         return reply
 
-        
+class UserLogoutHandler(RequestHandler):
+
+    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE
+
+    _response_size = \
+            _SectionSize.LENGTH + \
+            _SectionSize.OPT_ID + \
+            _SectionSize.STATUS
+
+    def handle(self, tr_data):
+        self.check_size(tr_data)
+        logger.info("Reading user logout data...")
+        try:
+            token, = struct.unpack("!32s", tr_data[:32])
+            username, tail = RequestHandler.trunc_padding(tr_data[32:])
+            if username is None: 
+                raise struct.error
+        except struct.error:
+            raise BadReqError("User logout: Malformed request body")
+
+#        logger.info("Trying to update location with "
+#                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
+#                .format(get_hex(token), username, lat, lng))
+#
+        uauth = RequestHandler.get_uauth(token, username, self.session)
+        # Authentication failure
+        if uauth is None:
+            logger.warning("Authentication failure")
+            return struct.pack("!LBB",  self._response_size,
+                                        _OptCode.location_update,
+                                        _StatusCode.failure)
+        uauth.regen_token()
+        logger.info("User Logged out successfully!")
+        self.session.commit()
+        return struct.pack("!LBB",  self._response_size,
+                                    _OptCode.user_logout,
+                                    _StatusCode.sucess)
+       
 
 class PTP(Protocol, TimeoutMixin):
 
     handlers = [UserAuthHandler,
                 LocationUpdateHandler,
                 LocationInfoHandler,
-                UserInfoHandler]
+                UserInfoHandler,
+                UserLogoutHandler]
 
     handler_num = len(handlers)
 
@@ -390,7 +429,7 @@ class PTP(Protocol, TimeoutMixin):
                 raise BadReqError("The actual length is larger than promised")
         except BadReqError as e:
             logger.warn("Rejected a bad request: %s", str(e))
-        except DBCorruptedError:
+        except DBCorruptionError:
             logger.error("*** Database corruption ***")
         finally:
             self.transport.loseConnection()
