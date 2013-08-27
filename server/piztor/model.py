@@ -17,7 +17,7 @@ class UserModel(Base):
 
     id = Column(Integer, primary_key = True)
     gid = Column(Integer)
-    username = Column(String)
+    username = Column(String(20))
     sex = Column(Boolean)
     location = None
     auth = None

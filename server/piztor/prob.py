@@ -111,4 +111,4 @@ for i in xrange(10):
             idx += 1
         print (info_key, info_value)
     from time import sleep
-    sleep(10)
+#    sleep(10)

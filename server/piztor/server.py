@@ -1,7 +1,6 @@
 from twisted.internet.protocol import Protocol
 from twisted.internet.protocol import Factory
 from twisted.internet.endpoints import TCP4ServerEndpoint
-from twisted.internet import reactor
 from twisted.protocols.policies import TimeoutMixin
 
 from sqlalchemy import create_engine
@@ -18,11 +17,12 @@ from model import *
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
-db_path = "piztor.sqlite"
+db_path = "root:helloworld@localhost/piztor"
+#db_path = "piztor.sqlite"
 FORMAT = "%(asctime)-15s %(message)s"
 logging.basicConfig(format = FORMAT)
 logger = logging.getLogger('piztor_server')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARN)
 
 
 class _SectionSize:
@@ -50,8 +50,11 @@ class _StatusCode:
 
 class RequestHandler(object):
     def __init__(self):
-        self.engine = create_engine('sqlite:///' + db_path, echo = False)
+        self.engine = create_engine('mysql://' + db_path, echo = False)
         self.Session = sessionmaker(bind = self.engine)
+
+    def __del__(self):
+        self.engine.dispose()
 
     @classmethod
     def get_uauth(cls, token, username, session):
@@ -70,6 +73,7 @@ class RequestHandler(object):
             return None
 
         except MultipleResultsFound:
+            session.close()
             raise DBCorruptedError()
 
     @classmethod
@@ -124,22 +128,26 @@ class UserAuthHandler(RequestHandler):
                 .filter(UserModel.username == username).one()
         except NoResultFound:
             logger.info("No such user: {0}".format(username))
+            session.commit()
             return UserAuthHandler._failed_response
 
         except MultipleResultsFound:
+            session.close()
             raise DBCorruptedError()
 
         uauth = user.auth
         if uauth is None:
+            session.close()
             raise DBCorruptedError()
         if not uauth.check_password(password):
             logger.info("Incorrect password: {0}".format(password))
+            session.commit()
             return UserAuthHandler._failed_response
         else:
             logger.info("Logged in sucessfully: {0}".format(username))
             uauth.regen_token()
-            session.commit()
             logger.info("New token generated: " + get_hex(uauth.token))
+            session.commit()
             return struct.pack("!LBBL32s", UserAuthHandler._response_size,
                                            _OptCode.user_auth,
                                            _StatusCode.sucess,
@@ -175,6 +183,7 @@ class LocationUpdateHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
+            session.commit()
             return struct.pack("!LBB",  LocationUpdateHandler._response_size,
                                         _OptCode.location_update,
                                         _StatusCode.failure)
@@ -182,9 +191,9 @@ class LocationUpdateHandler(RequestHandler):
         ulocation = uauth.user.location
         ulocation.lat = lat
         ulocation.lng = lng
-        session.commit()
 
         logger.info("Location is updated sucessfully")
+        session.commit()
         return struct.pack("!LBB",  LocationUpdateHandler._response_size,
                                     _OptCode.location_update,
                                     _StatusCode.sucess)
@@ -219,6 +228,7 @@ class LocationRequestHandler(RequestHandler):
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
+            session.commit()
             return struct.pack("!LBB", LocationRequestHandler._response_size(0),
                                         _OptCode.location_request,
                                         _StatusCode.failure)
@@ -234,6 +244,7 @@ class LocationRequestHandler(RequestHandler):
             loc = user.location
             reply += struct.pack("!Ldd", user.id, loc.lat, loc.lng)
 
+        session.commit()
         return reply
 
 def pack_int(val):
@@ -286,6 +297,7 @@ class UserInfoRequestHandler(RequestHandler):
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
+            session.commit()
             return UserInfoRequestHandler._fail_response
         # TODO: check the relationship between user and quser
         user = uauth.user 
@@ -297,14 +309,17 @@ class UserInfoRequestHandler(RequestHandler):
                     .filter(UserModel.id == uid).one()
         except NoResultFound:
             logger.info("No such user: {0}".format(username))
+            session.commit()
             return UserInfoRequestHandler._fail_response
 
         except MultipleResultsFound:
+            session.close()
             raise DBCorruptedError()
 
         for code in UserInfoRequestHandler._code_map:
             reply += UserInfoRequestHandler.pack_entry(quser, code)
         reply = struct.pack("!L", len(reply) + _SectionSize.LENGTH) + reply
+        session.commit()
         return reply
 
         
@@ -364,6 +379,16 @@ class PTPFactory(Factory):
     def buildProtocol(self, addr):
         return PTP(self)
 
-endpoint = TCP4ServerEndpoint(reactor, 2222)
-endpoint.listen(PTPFactory())
+#if os.name!='nt':
+#    from twisted.internet import epollreactor
+#    epollreactor.install()
+#else:
+#    from twisted.internet import iocpreactor
+#    iocpreactor.install()
+
+from twisted.internet import reactor
+
+f = PTPFactory()
+f.protocol = PTP
+reactor.listenTCP(2222, f)
 reactor.run()
