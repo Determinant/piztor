@@ -77,7 +77,6 @@ username = "hello"
 password = "world"
 #username = "1234567890123456789012"
 #password = "world12345678901234567890"
-gid = 1
 failed_cnt = 0
 
 if len(argv) == 2:
@@ -96,11 +95,11 @@ for i in xrange(10):
         failed_cnt += 1
         continue
     if pl != len(resp): print "God!"
-#    print "size: " + str((pl, len(resp)))
-#    print "opt: " + str(optcode)
-#    print "status: " + str(status)
-#    print "uid: " + str(uid)
-#    print "token: " + get_hex(token)
+    print "size: " + str((pl, len(resp)))
+    print "opt: " + str(optcode)
+    print "status: " + str(status)
+    print "uid: " + str(uid)
+    print "token: " + get_hex(token)
     
     resp = send(gen_update_location(token, username, random(), random()))
     try:
@@ -108,9 +107,33 @@ for i in xrange(10):
     except:
         print "fuck2"
     if pl != len(resp): print "God!"
-#    print "size: " + str((pl, len(resp)))
-#    print "opt: " + str(optcode)
-#    print "status: " + str(status)
+    print "size: " + str((pl, len(resp)))
+    print "opt: " + str(optcode)
+    print "status: " + str(status)
+
+    resp = send(gen_request_user_info(token, username, uid))
+    try:
+        pl, optcode, status = unpack("!LBB", resp[:6])
+    except:
+        print "fuck5"
+    if pl != len(resp): print "God!"
+    print "size: " + str((pl, len(resp)))
+    
+    idx = 6
+    try:
+        while idx < pl:
+            info_key, = unpack("!B", resp[idx:idx + 1])
+            idx += 1
+            if info_key == 0x00:
+                gid, = unpack("!L", resp[idx:idx + 4])
+                idx += 4
+                print "gid: {}".format(str(gid))
+            elif info_key == 0x01:
+                sex, = unpack("!B", resp[idx:idx + 1])
+                idx += 1
+                print "sex: {}".format(str(sex))
+    except:
+        print "fuck6"
     
     resp = send(gen_request_location(token, username, gid))
     try:
@@ -118,41 +141,18 @@ for i in xrange(10):
     except:
         print "fuck3"
     if pl != len(resp): print "God!"
-#    print "size: " + str((pl, len(resp)))
+    print "size: " + str((pl, len(resp)))
     idx = 6
-#    print "length: " + str(len(resp[6:]))
+    print "length: " + str(len(resp[6:]))
     try:
         while idx < pl:
-#            print len(resp[idx:idx + 20])
+            print len(resp[idx:idx + 20])
             uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
             idx += 20
+            print (uid, lat, lng)
     except:
         print "fuck4"
-#        print (uid, lat, lng)
     
-    resp = send(gen_request_user_info(token, username, uid))
-    try:
-        pl, optcode, status = unpack("!LBB", resp[:6])
-    except:
-        print "fuck5"
-    if pl != len(resp): print "God!"
-#    print "size: " + str((pl, len(resp)))
-    
-    idx = 6
-    try:
-        while idx < pl:
-            info_key, = unpack("!B", resp[idx:idx + 1])
-            idx += 1
-#            print info_key
-            if info_key == 0x00:
-                info_value, = unpack("!L", resp[idx:idx + 4])
-                idx += 4
-            elif info_key == 0x01:
-                info_value, = unpack("!B", resp[idx:idx + 1])
-                idx += 1
-#            print (info_key, info_value)
-    except:
-        print "fuck6"
 
     resp = send(gen_logout(token, username))
     try:
@@ -160,9 +160,9 @@ for i in xrange(10):
     except:
         print "fuck7"
     if pl != len(resp): print "God!"
-#    print "size: " + str((pl, len(resp)))
-#    print "opt: " + str(optcode)
-#    print "status: " + str(status)
+    print "size: " + str((pl, len(resp)))
+    print "opt: " + str(optcode)
+    print "status: " + str(status)
     sleep(10)
 
 print failed_cnt

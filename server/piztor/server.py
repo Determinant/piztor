@@ -3,7 +3,7 @@ from twisted.internet.protocol import Factory
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.protocols.policies import TimeoutMixin
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
@@ -232,13 +232,13 @@ class LocationInfoHandler(RequestHandler):
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
             if username is None:
                 raise struct.error
-            gid, = struct.unpack("!L", tail)
+            a, b, comp_id, sec_id = struct.unpack("!BBBB", tail)
         except struct.error:
             raise BadReqError("Location request: Malformed request body")
 
-#        logger.info("Trying to request locatin with " \
-#                    "(token = {0}, gid = {1})" \
-#            .format(get_hex(token), gid))
+        logger.info("Trying to request locatin with " \
+                    "(token = {0}, comp_id = {1}, sec_id = {2})" \
+            .format(get_hex(token), comp_id, sec_id))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Auth failure
@@ -248,7 +248,13 @@ class LocationInfoHandler(RequestHandler):
                                         _OptCode.location_info,
                                         _StatusCode.failure)
 
-        ulist = self.session.query(UserModel).filter(UserModel.gid == gid).all()
+        if sec_id == 0xff:  # All members in the company
+            ulist = self.session.query(UserModel) \
+                    .filter(UserModel.comp_id == comp_id).all()
+        else:
+            ulist = self.session.query(UserModel) \
+                    .filter(and_(UserModel.comp_id == comp_id,
+                                UserModel.sec_id == sec_id)).all()
         reply = struct.pack(
                 "!LBB", 
                 self._response_size(len(ulist)),
@@ -261,11 +267,11 @@ class LocationInfoHandler(RequestHandler):
 
         return reply
 
-def pack_int(val):
-    return struct.pack("!L", val)
+def pack_gid(user):
+    return struct.pack("!BBBB", 0, 0, user.comp_id, user.sec_id)
 
-def pack_bool(val):
-    return struct.pack("!B", 0x01 if val else 0x00)
+def pack_sex(user):
+    return struct.pack("!B", 0x01 if user.sex else 0x00)
 
 
 class UserInfoHandler(RequestHandler):
@@ -283,15 +289,14 @@ class UserInfoHandler(RequestHandler):
                             _OptCode.user_info,
                             _StatusCode.failure)
 
-    _code_map = {0x00 : ('gid', pack_int),
-                0x01 : ('sex', pack_bool)}
+    _code_map = {0x00 : pack_gid,
+                0x01 : pack_sex}
 
     @classmethod
     def pack_entry(cls, user, entry_code):
-        attr, pack_method = cls._code_map[entry_code]
+        pack_method = cls._code_map[entry_code]
         info_key = entry_code
-        info_value = getattr(user, attr)
-        return struct.pack("!B", info_key) + pack_method(info_value)
+        return struct.pack("!B", info_key) + pack_method(user)
 
     def handle(self, tr_data):
         self.check_size(tr_data)
@@ -305,9 +310,9 @@ class UserInfoHandler(RequestHandler):
         except struct.error:
             raise BadReqError("User info request: Malformed request body")
 
-#        logger.info("Trying to request locatin with " \
-#                    "(token = {0}, uid = {1})" \
-#            .format(get_hex(token), uid))
+        logger.info("Trying to request locatin with " \
+                    "(token = {0}, uid = {1})" \
+            .format(get_hex(token), uid))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Auth failure
@@ -354,10 +359,10 @@ class UserLogoutHandler(RequestHandler):
         except struct.error:
             raise BadReqError("User logout: Malformed request body")
 
-#        logger.info("Trying to update location with "
-#                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
-#                .format(get_hex(token), username, lat, lng))
-#
+        logger.info("Trying to logout with "
+                    "(token = {0}, username = {1})"\
+                .format(get_hex(token), username))
+
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
         if uauth is None:
@@ -422,7 +427,7 @@ class PTP(Protocol, TimeoutMixin):
             if len(self.buff) == self.length:
                 h = PTP.handlers[self.optcode]()
                 reply = h.handle(self.buff[5:])
-#                logger.info("Wrote: %s", get_hex(reply))
+                logger.info("Wrote: %s", get_hex(reply))
                 self.transport.write(reply)
                 self.transport.loseConnection()
             elif len(self.buff) > self.length:

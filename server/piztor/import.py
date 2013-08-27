@@ -5,10 +5,11 @@ from model import *
 path = "root:helloworld@localhost/piztor"
 
 class UserData:
-    def __init__(self, username, password, gid, sex):
+    def __init__(self, username, password, comp_id, sec_id, sex):
         self.username = username
         self.password = password
-        self.gid = gid
+        self.comp_id = comp_id
+        self.sec_id = sec_id
         self.sex = sex
 
 def create_database():
@@ -21,7 +22,10 @@ def import_user_data(data):
     Session = sessionmaker(bind = engine)
     session = Session()
     for user in data: 
-        um = UserModel(username = user.username, gid = user.gid, sex = user.sex)
+        um = UserModel(username = user.username, 
+                        comp_id = user.comp_id,
+                        sec_id = user.sec_id, 
+                        sex = user.sex)
         um.auth = UserAuth(user.password)
         um.location = LocationInfo(lat = 0, lng = 0)
         session.add(um)
@@ -39,7 +43,11 @@ if __name__ == '__main__':
         while True:
             line = f.readline().split()
             if len(line) == 0: break
-            data.append(UserData(line[0], line[1], line[2], line[3]))
+            data.append(UserData(username = line[0], 
+                                password = line[1], 
+                                comp_id = line[2], 
+                                sec_id = line[3],
+                                sex = line[4]))
 
     create_database()
     import_user_data(data)

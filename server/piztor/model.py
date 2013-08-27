@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, LargeBinary, Boolean
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean
+from sqlalchemy.dialects.mysql import BLOB, TINYINT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 
@@ -9,6 +10,11 @@ _TOKEN_LEN = 16
 MAX_USERNAME_SIZE = 20
 MAX_PASSWORD_SIZE = 20
 
+_table_typical_settings = {
+        'mysql_engine' : 'InnoDB', 
+        'mysql_charset' : 'utf8', 
+        'mysql_auto_increment' : '1'}
+
 class _TableName:   # avoid typoes
     UserModel = 'users'
     LocationInfo = 'location_info'
@@ -16,26 +22,20 @@ class _TableName:   # avoid typoes
 
 class UserModel(Base):
     __tablename__ = _TableName.UserModel
-    __table_args__ = {
-        'mysql_engine' : 'InnoDB', 
-        'mysql_charset' : 'utf8', 
-        'mysql_auto_increment' : '1'}
-
+    __table_args__ = _table_typical_settings
     id = Column(Integer, primary_key = True)
-    gid = Column(Integer, nullable = False)
+    sec_id = Column(TINYINT)
+    comp_id = Column(TINYINT)
     username = Column(String(MAX_USERNAME_SIZE), 
                     unique = True, nullable = False)
     sex = Column(Boolean, nullable = False)
     location = None
     auth = None
+    sec = None
 
 class LocationInfo(Base):
-    __table_args__ = {
-        'mysql_engine' : 'InnoDB', 
-        'mysql_charset' : 'utf8', 
-        'mysql_auto_increment' : '1'}
-
     __tablename__ = _TableName.LocationInfo
+    __table_args__ = _table_typical_settings
 
     uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'), 
                 primary_key = True)
@@ -60,17 +60,13 @@ def _random_binary_string(length):
     return urandom(length)
 
 class UserAuth(Base):
-    __table_args__ = {
-        'mysql_engine' : 'InnoDB', 
-        'mysql_charset' : 'utf8', 
-        'mysql_auto_increment' : '1'}
-
     __tablename__ = _TableName.UserAuth
+    __table_args__ = _table_typical_settings
 
     uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'), primary_key = True)
-    password = Column(LargeBinary)
-    salt = Column(LargeBinary)
-    token = Column(LargeBinary)
+    password = Column(BLOB)
+    salt = Column(BLOB)
+    token = Column(BLOB)
 
     user = relationship("UserModel", uselist = False, 
             backref = backref("auth", uselist = False,
