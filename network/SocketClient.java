@@ -3,29 +3,41 @@ package com.macaroon.piztor;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Vector;
 
+import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
 public class SocketClient {
 	static Socket client;
+	
+	static final int ByteLength = 1;
+	static final int IntLength = 4;
+	static final int DoubleLength = 8;
+	static final int TokenLength = 32;
 
-	public SocketClient(String site, int port) throws UnknownHostException,
+	public SocketClient(String site, int port, int retime) throws UnknownHostException,
 			IOException {
 		try {
-			client = new Socket(site, port);
+			client = new Socket();
+			client.connect(new InetSocketAddress(site,port), 5000);
+			client.setSoTimeout(retime);
 		} catch (UnknownHostException e) {
+			e.printStackTrace();
 			throw e;
 		} catch (IOException e) {
+			e.printStackTrace();
 			throw e;
-		}
+		} 
 	}
 
-	public void sendMsg(Req req,Handler recall) throws IOException {
+	public int sendMsg(Req req,Handler recall) throws IOException,SocketTimeoutException {
 		try {
 			DataOutputStream out = new DataOutputStream(
 					client.getOutputStream());
@@ -36,7 +48,7 @@ public class SocketClient {
 				ReqLogin rau = (ReqLogin) req;
 				String id = rau.user;
 				String pa = rau.pass;
-				len = 4+1+id.length()+1+pa.length()+1;				
+				len = IntLength+ByteLength+id.length()+ByteLength+pa.length()+ByteLength;				
 				out.writeInt(len);
 				out.writeByte(tmp);				
 				out.writeBytes(id);
@@ -48,7 +60,7 @@ public class SocketClient {
 				ReqUpdate rup = (ReqUpdate) req;
 				String tk1 = rup.token;
 				String name1 = rup.uname;
-				len = 4+1+32+name1.length()+1+8+8;				
+				len = IntLength+ByteLength+TokenLength+name1.length()+ByteLength+DoubleLength+DoubleLength;				
 				out.writeInt(len);				
 				out.writeByte(tmp);				
 				double slat = rup.lat;
@@ -64,7 +76,7 @@ public class SocketClient {
 				ReqLocation ras = (ReqLocation) req;
 				String tk2 = ras.token;
 				String name2 = ras.uname;
-				len = 4+1+32+name2.length()+1+4;				
+				len = IntLength+ByteLength+TokenLength+name2.length()+ByteLength+IntLength;				
 				out.writeInt(len);
 				out.writeByte(tmp);				
 				int gid = ras.gid;
@@ -78,7 +90,7 @@ public class SocketClient {
 				ReqUserinfo rus = (ReqUserinfo) req;
 				String tk3 = rus.token;
 				String name3 = rus.uname;
-				len = 4+1+32+name3.length()+1+4;				
+				len = IntLength+ByteLength+TokenLength+name3.length()+ByteLength+IntLength;				
 				out.writeInt(len);
 				out.writeByte(tmp);				
 				int usid = rus.uid;
@@ -122,13 +134,16 @@ public class SocketClient {
 				break;
 			case 2:
 				int status2 = in.readUnsignedByte();
-				int n = in.readInt();
+				int n = 0;
+				outlen-=(IntLength+ByteLength+ByteLength);
 				Vector<Rlocation> tmpv = new Vector<Rlocation>();
-				for (int i = 1; i <= n; i++) {
+				while(outlen > 0) {
 					int tid = in.readInt();
 					double lat = in.readDouble();
 					double lot = in.readDouble();
 					tmpv.add(new Rlocation(tid,lat,lot));
+					outlen -= (IntLength+DoubleLength+DoubleLength);
+					n++;
 				}
 				ResLocation rlocin = new ResLocation(n,status2,tmpv);
 				msg.obj = rlocin;
@@ -137,21 +152,21 @@ public class SocketClient {
 				break;
 			case 3:
 				int status3 = in.readUnsignedByte();
-				outlen-=6;
+				outlen-=(IntLength+ByteLength+ByteLength);
 				ReqUserinfo rus = (ReqUserinfo) req;
 				int u = rus.uid;
 				int g = 0,s = 0;
-				while(outlen>0){
+				while(outlen > 0) {
 					int typ = in.readUnsignedByte();
-					outlen-=1;
+					outlen-=ByteLength;
 					switch(typ){
 					case 0:
 						g = in.readInt();
-						outlen-=4;
+						outlen-=IntLength;
 						break;
 					case 1:
 						s = in.readByte();
-						outlen-=1;
+						outlen-=ByteLength;
 						break;
 					}
 				}
@@ -161,10 +176,14 @@ public class SocketClient {
 				recall.sendMessage(msg);
 				break;
 			}
+			return 0;
 
+		} catch (SocketTimeoutException e){
+			System.out.println("Time out!");
+			return 1;			
 		} catch (IOException e) {
 			throw e;
-		}
+		} 
 	}
 
 	public void closeSocket() throws IOException{
@@ -176,11 +195,12 @@ public class SocketClient {
 		}
 	}
 	
+	@SuppressLint("DefaultLocale")
 	private static byte[] hexStringToBytes(String hexString) {
 		if (hexString == null || hexString.equals("")) {
 			return null;
 		}
-		hexString = hexString.toUpperCase(Locale.CHINA);
+		hexString = hexString.toUpperCase();
 		int length = hexString.length() / 2;
 		char[] hexChars = hexString.toCharArray();
 		byte[] d = new byte[length];
