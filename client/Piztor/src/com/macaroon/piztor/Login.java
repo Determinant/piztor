@@ -35,7 +35,7 @@ public class Login extends PiztorAct {
 					return;
 				}
 				Infomation.token = res.t;
-				Infomation.uid = res.uid;
+				Infomation.myInfo.uid = res.uid;
 				Infomation.username = edtUser.getText().toString();
 				System.out.println(res.s + "   :!!!    " + res.t);
 				actMgr.trigger(AppMgr.loginSuccess);

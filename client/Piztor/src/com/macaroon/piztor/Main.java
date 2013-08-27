@@ -2,18 +2,24 @@ package com.macaroon.piztor;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Vector;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.baidu.location.BDLocation;
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.map.LocationData;
+import com.baidu.mapapi.map.MapView;
 
 public class Main extends PiztorAct {
 	final static int SearchButtonPress = 1;
@@ -22,6 +28,17 @@ public class Main extends PiztorAct {
 	final static int FailedFetch = 5;
 	final static int Fetch = 6;
 	final static int mapViewtouched = 7;
+
+	MapMaker mapMaker = null;
+	MapView mMapView;
+
+	/**
+	 * Locating component
+	 */
+	LocationClient mLocClient;
+	LocationData locData = null;
+	public MyLocationListener myListener = new MyLocationListener();
+
 	ImageButton btnSearch, btnFetch, btnFocus, btnSettings;
 	Timer autodate;
 	MapInfo mapInfo;
@@ -71,9 +88,13 @@ public class Main extends PiztorAct {
 				if (r.s == 0) {
 					System.out.println("id : " + r.uid + " sex :  " + r.sex
 							+ " group : " + r.gid);
-					if (r.uid == Infomation.uid) {
-						Infomation.gid = r.gid;
-						autodate.schedule(new AutoUpdate(), 0, 5000);
+					if (r.uid == Infomation.myInfo.uid) {
+						Infomation.myInfo.gid = r.gid;
+						try {
+							autodate.schedule(new AutoUpdate(), 0, 5000);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					} else {
 						UserInfo user = mapInfo.getUserInfo(r.uid);
 						if (user != null)
@@ -120,6 +141,31 @@ public class Main extends PiztorAct {
 
 	}
 
+	public class MyLocationListener implements BDLocationListener {
+		@Override
+		public void onReceiveLocation(BDLocation location) {
+			Log.d("GPS", "Gotten");
+			if (location == null) {
+				return;
+			}
+
+			locData.latitude = location.getLatitude();
+			locData.longitude = location.getLongitude();
+			locData.accuracy = location.getRadius();
+			locData.direction = location.getDerect();
+
+			mapMaker.UpdateLocationOverlay(locData, false);
+
+		}
+
+		@Override
+		public void onReceivePoi(BDLocation poiLocation) {
+			if (poiLocation == null) {
+				return;
+			}
+		}
+	}
+
 	class StartStatus extends ActStatus {
 
 		@Override
@@ -127,15 +173,15 @@ public class Main extends PiztorAct {
 			System.out.println("enter start status!!!!");
 			if (e == ActMgr.Create) {
 				System.out.println(Infomation.token + "  "
-						+ Infomation.username + "   " + Infomation.uid);
+						+ Infomation.username + "   " + Infomation.myInfo.uid);
 				AppMgr.transam.send(new ReqUserinfo(Infomation.token,
-						Infomation.username, Infomation.uid, System
+						Infomation.username, Infomation.myInfo.uid, System
 								.currentTimeMillis(), 5000));
 				// TODO flush mapinfo.myinfo
 			}
 
 			if (e == Fetch) {
-				requesLocation(Infomation.gid);
+				requesLocation(Infomation.myInfo.gid);
 			}
 			if (e == SuccessFetch)
 				flushMap();
@@ -154,7 +200,7 @@ public class Main extends PiztorAct {
 		void enter(int e) {
 			System.out.println("enter Fetch status!!!!");
 			if (e == Fetch) {
-				requesLocation(Infomation.gid);
+				requesLocation(Infomation.myInfo.gid);
 			}
 			if (e == SuccessFetch) {
 				flushMap();
@@ -175,13 +221,13 @@ public class Main extends PiztorAct {
 			// TODO
 			switch (e) {
 			case Fetch:
-				requesLocation(Infomation.gid);
+				requesLocation(Infomation.myInfo.gid);
 				break;
 			case FocuseButtonPress:
 				// TODO setFocus
 				break;
 			case SuccessFetch:
-				requesLocation(Infomation.gid);
+				requesLocation(Infomation.myInfo.gid);
 				break;
 			default:
 				break;
@@ -238,6 +284,19 @@ public class Main extends PiztorAct {
 		// ImageView view = (ImageView) findViewById(R.id.main_mapview);
 		// view.setOnTouchListener(new MultiTouchListener());
 		setContentView(R.layout.activity_main);
+		mMapView = (MapView) findViewById(R.id.bmapView);
+		mapMaker = new MapMaker(mMapView, getApplicationContext());
+		mapMaker.InitMap();
+		mLocClient = new LocationClient(this);
+		locData = new LocationData();
+		mLocClient.registerLocationListener(myListener);
+		LocationClientOption option = new LocationClientOption();
+		option.setOpenGps(true);
+		option.setCoorType("bd09ll");
+		option.setScanSpan(5000);
+		mLocClient.setLocOption(option);
+		mLocClient.start();
+		mapMaker.UpdateLocationOverlay(locData, false);
 	}
 
 	@Override
@@ -265,13 +324,34 @@ public class Main extends PiztorAct {
 				actMgr.trigger(AppMgr.toSettings);
 			}
 		});
-		
+
+	}
+
+	@Override
+	protected void onResume() {
+		mapMaker.onResume();
+		super.onResume();
+	}
+
+	@Override
+	protected void onPause() {
+		mapMaker.onPause();
+		super.onPause();
 	}
 
 	@Override
 	public void onStop() {
-		super.onStart();
+		super.onStop();
 		autodate.cancel();
+	}
+
+	@Override
+	protected void onDestroy() {
+		if (mLocClient != null) {
+			mLocClient.stop();
+		}
+		mapMaker.onDestroy();
+		super.onDestroy();
 	}
 
 	@Override
@@ -288,6 +368,19 @@ public class Main extends PiztorAct {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return false;
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		mMapView.onSaveInstanceState(outState);
+
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		mMapView.onRestoreInstanceState(savedInstanceState);
 	}
 
 }

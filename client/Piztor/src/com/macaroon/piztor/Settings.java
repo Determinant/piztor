@@ -63,8 +63,8 @@ public class Settings extends PiztorAct {
 				System.out.println("logout status" + logout.s);
 				if (logout.s == 0) {
 					Infomation.token = null;
-					Infomation.gid = -1;
-					Infomation.uid = -1;
+					Infomation.myInfo.gid = -1;
+					Infomation.myInfo.uid = -1;
 					Infomation.username = null;
 					actMgr.trigger(AppMgr.logout);
 					break;

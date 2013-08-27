@@ -9,7 +9,7 @@ public class InitAct extends PiztorAct {
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "initAct";
 		super.onCreate(savedInstanceState);
-		AppMgr.init();
+		AppMgr.init(getApplicationContext());
 		AppMgr.transam.setTimeOutTime(5000);
 		setContentView(R.layout.activity_init);
 	}

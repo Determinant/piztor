@@ -3,10 +3,12 @@ package com.macaroon.piztor;
 import java.util.HashMap;
 import java.util.Vector;
 
+import com.baidu.platform.comapi.basestruct.GeoPoint;
+
 import android.annotation.SuppressLint;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 
-import com.baidu.platform.comapi.basestruct.GeoPoint;
 
 public class MapInfo {
 	HashMap<Integer, UserInfo> mp;
@@ -41,25 +43,43 @@ public class MapInfo {
 			return null;
 	}
 
+	public Vector<UserInfo> getVector() {
+		return allUsers;
+	}
+	
+	public UserInfo getMyInfo() {
+		return myInfo;
+	}
 }
 
 class UserInfo {
 	int uid, gid, sex;
-	GeoPoint p;
+	GeoPoint location;
 
 	UserInfo(int uid) {
 		this.uid = uid;
 	}
 
 	void setLocation(double lat, double lot) {
-		p = new GeoPoint((int) (lat * 10e6), (int) (lot * 10e6));
+		location = new GeoPoint((int)(lat * 1e6), (int)(lot * 1e6));
 	}
 
 	void setInfo(int gid, int sex) {
 		this.gid = gid;
 		this.sex = sex;
 	}
+	
+	public GeoPoint getLocation(){
+		return location;
+	}
 
+	public double getLatitude() {
+		return location.getLatitudeE6() / 1e6;
+	}
+
+	public double getLongitude() {
+		return location.getLongitudeE6() / 1e6;
+	}
 }
 
 interface Style {

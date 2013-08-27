@@ -2,14 +2,24 @@ package com.macaroon.piztor;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Stack;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+import android.util.Log;
+
+import com.baidu.mapapi.BMapManager;
+import com.baidu.mapapi.MKGeneralListener;
 
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
+	
+	private static final String strKey = "5ba8abf7b4694ad49706b8b7538c9d6a";
+    static BMapManager mBMapManager = null;
+	static Context context;
+	
+	
 	// Status
 	public enum ActivityStatus {
 		create, start, resume, restart, stop, pause, destroy
@@ -102,13 +112,29 @@ public class AppMgr {
 		mp.put(a, new HashMap<Integer, Class<?>>());
 	}
 
-	static void init() {
+	static void init(Context context) {
+		if (mBMapManager == null) {
+			mBMapManager = new BMapManager(context);
+			mBMapManager.init(strKey, new MKGeneralListener(){
+				@Override
+		        public void onGetNetworkState(int iError) {
+		            Log.d("Network","failure");
+		        }
+
+		        @Override
+		        public void onGetPermissionState(int iError) {
+		            Log.d("Permission","wrong key");
+		        }
+			});
+		}
+		AppMgr.context = context;
 		mp = new HashMap<Class<?>, HashMap<Integer, Class<?>>>();
 		handler = new Handler();
 		transam = new Transam(Infomation.ip, Infomation.port, handler);
 		tTransam = new Thread(transam);
 		tTransam.start();
 		mapInfo = new MapInfo();
+		Infomation.myInfo = new UserInfo(-1);
 		addStatus(InitAct.class);
 		addStatus(Login.class);
 		addStatus(Main.class);
