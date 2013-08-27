@@ -56,7 +56,8 @@ def send(data):
 
 from sys import argv
 
-username = "hello"
+#username = "hello"
+username = "12345678901234567890"
 password = "world"
 gid = 1
 
@@ -111,4 +112,4 @@ for i in xrange(10):
             idx += 1
         print (info_key, info_value)
     from time import sleep
-    sleep(10)
+#    sleep(10)

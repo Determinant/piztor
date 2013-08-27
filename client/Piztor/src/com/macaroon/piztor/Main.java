@@ -11,6 +11,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 
 public class Main extends PiztorAct {
 	final static int SearchButtonPress = 1;
@@ -202,6 +203,8 @@ public class Main extends PiztorAct {
 		autodate = new Timer();
 		AppMgr.transam.setHandler(fromTransam);
 		setContentView(R.layout.activity_main);
+		ImageView view = (ImageView) findViewById(R.id.main_mapview);
+		view.setOnTouchListener(new MultiTouchListener());
 	}
 
 	@Override
@@ -212,15 +215,16 @@ public class Main extends PiztorAct {
 		btnSearch = (ImageButton) findViewById(R.id.footbar_btn_search);
 		btnSettings = (ImageButton) findViewById(R.id.footbar_btn_settings);
 		btnFetch.setOnClickListener(new View.OnClickListener() {
+			
 			@Override
 			public void onClick(View arg0) {
-				actMgr.trigger(FetchButtonPress);
+			//	actMgr.trigger(FetchButtonPress);
 			}
 		});
 		btnFocus.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				actMgr.trigger(FocuseButtonPress);
+			//	actMgr.trigger(FocuseButtonPress);
 			}
 		});
 		btnSettings.setOnClickListener(new View.OnClickListener() {
@@ -229,7 +233,7 @@ public class Main extends PiztorAct {
 				actMgr.trigger(AppMgr.toSettings);
 			}
 		});
-		autodate.schedule(new AutoUpdate(), 0, 5000);
+		//autodate.schedule(new AutoUpdate(), 0, 5000);
 	}
 	
 	@Override

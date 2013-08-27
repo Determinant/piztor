@@ -6,6 +6,8 @@ Base = declarative_base()
 
 _SALT_LEN = 16
 _TOKEN_LEN = 16
+MAX_USERNAME_SIZE = 20
+MAX_PASSWORD_SIZE = 20
 
 class _TableName:   # avoid typoes
     UserModel = 'users'
@@ -17,7 +19,7 @@ class UserModel(Base):
 
     id = Column(Integer, primary_key = True)
     gid = Column(Integer)
-    username = Column(String)
+    username = Column(String(MAX_USERNAME_SIZE))
     sex = Column(Boolean)
     location = None
     auth = None

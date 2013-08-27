@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from model import *
 
-path = "piztor.sqlite"
+path = "root:helloworld@localhost/piztor"
 
 class UserData:
     def __init__(self, username, password, gid, sex):
@@ -12,12 +12,12 @@ class UserData:
         self.sex = sex
 
 def create_database():
-    engine = create_engine('sqlite:///' + path, echo = True)
+    engine = create_engine('mysql://' + path, echo = True)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
 def import_user_data(data):
-    engine = create_engine('sqlite:///' + path, echo = True)
+    engine = create_engine('mysql://' + path, echo = True)
     Session = sessionmaker(bind = engine)
     session = Session()
     for user in data: 
