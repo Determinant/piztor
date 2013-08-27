@@ -9,6 +9,7 @@ public class PiztorAct extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		System.out.println(id + " on create");
+		AppMgr.addAct(this);
 		AppMgr.setStatus(AppMgr.ActivityStatus.create);
 		AppMgr.nowAct = this;
 	}
@@ -53,6 +54,7 @@ public class PiztorAct extends Activity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		AppMgr.removeAct(this);
 		System.out.println(id + " on destroy");
 		AppMgr.setStatus(AppMgr.ActivityStatus.destroy);
 	}

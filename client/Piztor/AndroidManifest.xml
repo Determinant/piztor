@@ -31,8 +31,8 @@
             android:label="@string/title_activity_main" >
         </activity>
         <activity
-            android:name="com.macaroon.piztor.Setting"
-            android:label="@string/title_activity_setting" >
+            android:name="com.macaroon.piztor.Settings"
+            android:label="@string/title_activity_settings" >
         </activity>
     </application>
 

@@ -1,8 +1,6 @@
 package com.macaroon.piztor;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.Menu;
 
 public class InitAct extends PiztorAct {
@@ -12,6 +10,7 @@ public class InitAct extends PiztorAct {
 		id = "initAct";
 		super.onCreate(savedInstanceState);
 		AppMgr.init();
+		AppMgr.transam.setTimeOutTime(10000);
 		setContentView(R.layout.activity_init);
 	}
 	
@@ -25,11 +24,18 @@ public class InitAct extends PiztorAct {
 			AppMgr.trigger(AppMgr.hasToken);
 		}
 	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		//TODO 减少频率
+		
+	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.init, menu);
-		return true;
+		return false;
 	}
 
 }

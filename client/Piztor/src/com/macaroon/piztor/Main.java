@@ -2,16 +2,16 @@ package com.macaroon.piztor;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Vector;
-
 import android.annotation.SuppressLint;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 
 public class Main extends PiztorAct {
 	final static int SearchButtonPress = 1;
@@ -41,13 +41,14 @@ public class Main extends PiztorAct {
 		}
 	};
 
+	@SuppressLint("HandlerLeak")
 	Handler fromTransam = new Handler() {
 		@Override
 		public void handleMessage(Message m) {
 			switch (m.what) {
 			case 1:
 				ResUpdate update = (ResUpdate) m.obj;
-				if (update.t == 0)
+				if (update.s == 0)
 					System.out.println("update success");
 				else {
 					System.out.println("update failed");
@@ -203,6 +204,8 @@ public class Main extends PiztorAct {
 		autodate = new Timer();
 		AppMgr.transam.setHandler(fromTransam);
 		setContentView(R.layout.activity_main);
+		ImageView view = (ImageView) findViewById(R.id.main_mapview);
+		view.setOnTouchListener(new MultiTouchListener());
 	}
 
 	@Override
@@ -213,25 +216,41 @@ public class Main extends PiztorAct {
 		btnSearch = (ImageButton) findViewById(R.id.footbar_btn_search);
 		btnSettings = (ImageButton) findViewById(R.id.footbar_btn_settings);
 		btnFetch.setOnClickListener(new View.OnClickListener() {
+			
 			@Override
 			public void onClick(View arg0) {
-				actMgr.trigger(FetchButtonPress);
+			//	actMgr.trigger(FetchButtonPress);
 			}
 		});
 		btnFocus.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				actMgr.trigger(FocuseButtonPress);
+			//	actMgr.trigger(FocuseButtonPress);
 			}
 		});
-		autodate.schedule(new AutoUpdate(), 0, 5000);
+		btnSettings.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				actMgr.trigger(AppMgr.toSettings);
+			}
+		});
+		//autodate.schedule(new AutoUpdate(), 0, 5000);
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		 if (keyCode == KeyEvent.KEYCODE_BACK) {
+			 AppMgr.exit();
+			 return true;
+		 }
+		 return super.onKeyDown(keyCode, event);
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
+		return false;
 	}
 
 }

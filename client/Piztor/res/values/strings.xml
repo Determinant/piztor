@@ -16,6 +16,6 @@
     <string name="mine">Mine</string>
     <string name="title_activity_login">Login</string>
     <string name="title_activity_main">Main</string>
-    <string name="title_activity_setting">Setting</string>
+    <string name="title_activity_settings">Settings</string>
 
 </resources>

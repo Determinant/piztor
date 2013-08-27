@@ -1,19 +1,15 @@
 package com.macaroon.piztor;
 
-import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.graphics.Matrix;
 import android.graphics.PointF;
-import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.FloatMath;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
-import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.widget.ImageView;
 
+@SuppressLint("FloatMath")
 public class MultiTouchListener implements OnTouchListener {
 
 	private Matrix matrix = new Matrix();
@@ -27,9 +23,9 @@ public class MultiTouchListener implements OnTouchListener {
 	private PointF start = new PointF();
 	private PointF mid = new PointF();
 	private float preDis = 1f;
-	private float d = 0f;
+	/*private float d = 0f;
 	private float newRot = 0f;
-	private float[] values;
+	private float[] values;*/
 	
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
