@@ -9,6 +9,7 @@ import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class Login extends PiztorAct {
 
@@ -30,6 +31,10 @@ public class Login extends PiztorAct {
 			}
 			if (m.what == 0) {
 				ResLogin res = (ResLogin) m.obj;
+				if (res.s == 1) {
+					actMgr.trigger(loginFailed);
+					return;
+				}
 				UserInfo.token = res.t;
 				UserInfo.id = res.uid;
 				UserInfo.username = edtUser.getText().toString();
@@ -65,7 +70,9 @@ public class Login extends PiztorAct {
 
 		@Override
 		void leave(int e) {
-
+			Toast toast = Toast.makeText(getApplicationContext(),
+					"login failed", Toast.LENGTH_LONG);
+			toast.show();
 		}
 
 	}
@@ -106,11 +113,11 @@ public class Login extends PiztorAct {
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		 if (keyCode == KeyEvent.KEYCODE_BACK) {
-			 AppMgr.exit();
-			 return true;
-		 }
-		 return super.onKeyDown(keyCode, event);
+		if (keyCode == KeyEvent.KEYCODE_BACK) {
+			AppMgr.exit();
+			return true;
+		}
+		return super.onKeyDown(keyCode, event);
 	}
 
 	@Override

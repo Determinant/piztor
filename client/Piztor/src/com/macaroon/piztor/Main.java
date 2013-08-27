@@ -83,7 +83,6 @@ public class Main extends PiztorAct {
 			default:
 				break;
 			}
-
 		}
 	};
 
