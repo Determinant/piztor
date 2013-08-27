@@ -73,8 +73,8 @@ def send(data):
 
 from sys import argv
 
-username = "hello"
-password = "world"
+username = "a"
+password = "a"
 #username = "1234567890123456789012"
 #password = "world12345678901234567890"
 failed_cnt = 0
@@ -85,6 +85,26 @@ if len(argv) == 2:
 if len(argv) == 3:
     username = argv[1]
     password = argv[2]
+
+def request_location(token, username, gid):
+    resp = send(gen_request_location(token, username, gid))
+    try:
+        pl, optcode, status = unpack("!LBB", resp[:6])
+    except:
+        print "fuck3"
+    if pl != len(resp): print "God!"
+    print "size: " + str((pl, len(resp)))
+    idx = 6
+    print "length: " + str(len(resp[6:]))
+    try:
+        while idx < pl:
+            print len(resp[idx:idx + 20])
+            uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
+            idx += 20
+            print (uid, lat, lng)
+    except:
+        print "fuck4"
+
 
 for i in xrange(10):
     resp = send(gen_auth(username, password))
@@ -126,6 +146,7 @@ for i in xrange(10):
             idx += 1
             if info_key == 0x00:
                 gid, = unpack("!L", resp[idx:idx + 4])
+                a, b, comp_id, sec_id = unpack("!BBBB", resp[idx:idx + 4])
                 idx += 4
                 print "gid: {}".format(str(gid))
             elif info_key == 0x01:
@@ -135,24 +156,8 @@ for i in xrange(10):
     except:
         print "fuck6"
     
-    resp = send(gen_request_location(token, username, gid))
-    try:
-        pl, optcode, status = unpack("!LBB", resp[:6])
-    except:
-        print "fuck3"
-    if pl != len(resp): print "God!"
-    print "size: " + str((pl, len(resp)))
-    idx = 6
-    print "length: " + str(len(resp[6:]))
-    try:
-        while idx < pl:
-            print len(resp[idx:idx + 20])
-            uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
-            idx += 20
-            print (uid, lat, lng)
-    except:
-        print "fuck4"
-    
+    request_location(token, username, gid)    
+    request_location(token, username, comp_id * 256 + 0xff)
 
     resp = send(gen_logout(token, username))
     try:
