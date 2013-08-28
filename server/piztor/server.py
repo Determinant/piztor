@@ -71,6 +71,7 @@ class PushData(object):
 class PushTextMesgData(PushData):
     def __init__(self, mesg): 
         self.finger_print = sha256(mesg).digest()
+        logger.info("Mesg: %s", mesg)
         buff = struct.pack("!B32s", 0x00, self.finger_print)
         buff += mesg
         buff += chr(0)
@@ -89,7 +90,6 @@ class PushTunnel(object):
 
     def add(self, pdata):
         logger.info("-- Push data enqued --")
-        logger.info("Data: %s", get_hex(pdata.data))
         self.pending.append(pdata)
 
     def on_receive(self, data):
@@ -101,14 +101,18 @@ class PushTunnel(object):
         self.push()
 
     def push(self):
+        print "Pushing via " + str(self)
+        print "Pending size: " + str(len(self.pending))
+        print self.conn
         if (self.conn is None) or len(self.pending) == 0:
             return
-        print "Pushing"
         front = self.pending.popleft()
         self.pending.appendleft(front)
+        print get_hex(front.data)
         self.conn.transport.write(front.data)
 
     def connect(self, conn):
+        print conn
         conn.tunnel = self
         self.conn = conn
 
@@ -478,7 +482,6 @@ class OpenPushTunnelHandler(RequestHandler):
         if pt.has_key(uid):
             tunnel = pt[uid]
             tunnel.connect(conn)
-            tunnel.push()
 
         logger.info("Push tunnel opened successfully!")
         return struct.pack("!LBB",  self._response_size,
@@ -531,7 +534,6 @@ class SendTextMessageHandler(RequestHandler):
             if pt.has_key(uid):
                 tunnel = pt[uid]
                 tunnel.add(PushTextMesgData(mesg))
-                tunnel.push()
         logger.info("Sent text mesg successfully!")
         return struct.pack("!LBB",  self._response_size,
                                     _OptCode.send_text_mesg,
@@ -600,6 +602,7 @@ class PTP(Protocol, TimeoutMixin):
                 self.transport.write(reply)
                 if self.tunnel:
                     logger.info("Blocking the client...")
+                    self.tunnel.push()
                     self.buff = bytes()
                     self.length = -1
                     self.setTimeout(None)

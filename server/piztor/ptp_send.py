@@ -232,7 +232,7 @@ def open_push_tunnel(token, username):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     sock.sendall(data)
-    sock.recv(4096)
+    print get_hex(sock.recv(6))
     
     length = -1
     while True:
