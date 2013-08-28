@@ -5,6 +5,8 @@ import android.os.Bundle;
 
 public class PiztorAct extends Activity {
 	String id;
+	ActMgr actMgr;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);

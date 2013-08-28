@@ -4,11 +4,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+import android.util.Log;
+
+import com.baidu.mapapi.BMapManager;
+import com.baidu.mapapi.MKGeneralListener;
 
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
+	
+	private static final String strKey = "5ba8abf7b4694ad49706b8b7538c9d6a";
+    static BMapManager mBMapManager = null;
+	static Context context;
+	
+	
 	// Status
 	public enum ActivityStatus {
 		create, start, resume, restart, stop, pause, destroy
@@ -17,7 +28,7 @@ public class AppMgr {
 	static ActivityStatus status;
 	static PiztorAct nowAct;
 	// TODO fix
-	static Handler fromTransam, fromGPS;
+	static Handler handler, fromGPS;
 	static Transam transam = null;
 	static Tracker tracker = null;
 	static Thread tTransam, tGPS;
@@ -27,6 +38,9 @@ public class AppMgr {
 	final static int errorToken = 103;
 	final static int hasToken = 104;
 	final static int toSettings = 105;
+	final static int logout = 106;
+	
+	static MapInfo mapInfo;
 	
 	static HashMap<Class<?>, HashMap<Integer, Class<?>>> mp;
 	static HashSet<PiztorAct> acts;
@@ -63,7 +77,12 @@ public class AppMgr {
 			System.out.println("second");
 		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
 		if (event == errorToken)
-			UserInfo.token = null;
+			Infomation.token = null;
+		if (event == toSettings) {
+			if (nowAct.actMgr.nowStatus.getClass() == Main.FetchStatus.class)
+				i.putExtra("status", true);
+			else i.putExtra("status", false);
+		}
 		nowAct.startActivity(i);
 	}
 
@@ -93,21 +112,34 @@ public class AppMgr {
 		mp.put(a, new HashMap<Integer, Class<?>>());
 	}
 
-	static void init() {
+	static void init(Context context) {
+		if (mBMapManager == null) {
+			mBMapManager = new BMapManager(context);
+			mBMapManager.init(strKey, new MKGeneralListener(){
+				@Override
+		        public void onGetNetworkState(int iError) {
+		            Log.d("Network","failure");
+		        }
+
+		        @Override
+		        public void onGetPermissionState(int iError) {
+		            Log.d("Permission","wrong key");
+		        }
+			});
+		}
+		AppMgr.context = context;
 		mp = new HashMap<Class<?>, HashMap<Integer, Class<?>>>();
-		fromTransam = new Handler();
-		transam = new Transam(UserInfo.ip, UserInfo.port, fromTransam);
-		fromGPS = new Handler();
-		tracker = new Tracker(nowAct.getApplicationContext(), fromGPS);
+		handler = new Handler();
+		transam = new Transam(Infomation.ip, Infomation.port, handler);
 		tTransam = new Thread(transam);
 		tTransam.start();
-		tGPS = new Thread(tracker);
-		tGPS.start();
-		System.out.println("!!!!!!");
+		mapInfo = new MapInfo();
+		Infomation.myInfo = new UserInfo(-1);
 		addStatus(InitAct.class);
 		addStatus(Login.class);
 		addStatus(Main.class);
 		addStatus(Settings.class);
+		addTransition(Main.class, logout, Login.class);
 		addTransition(InitAct.class, noToken, Login.class);
 		addTransition(Login.class, loginSuccess, Main.class);
 		addTransition(Main.class, errorToken, Login.class);
@@ -115,6 +147,7 @@ public class AppMgr {
 		addTransition(InitAct.class, hasToken, Main.class);
 		addTransition(InitAct.class, errorToken, Login.class);
 		addTransition(Main.class, toSettings, Settings.class);
+		addTransition(Settings.class, logout, Login.class);
 	}
 
 }

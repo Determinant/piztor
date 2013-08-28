@@ -7,7 +7,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.util.Locale;
 import java.util.Vector;
 
 import android.annotation.SuppressLint;
@@ -100,6 +99,18 @@ public class SocketClient {
 				out.writeByte(0);
 				out.writeInt(usid);
 				break;
+			case 4:
+				ReqLogout rlo = (ReqLogout) req;
+				String tk4 = rlo.token;
+				String name4 = rlo.uname;
+				len = IntLength+ByteLength+TokenLength+name4.length()+ByteLength;				
+				out.writeInt(len);
+				out.writeByte(tmp);				
+				byte[] b4 = hexStringToBytes(tk4);						
+				out.write(b4);
+				out.writeBytes(name4);
+				out.writeByte(0);
+				break;
 			}
 			out.flush();
 			DataInputStream in = new DataInputStream(client.getInputStream());
@@ -175,11 +186,17 @@ public class SocketClient {
 				msg.what = 3;
 				recall.sendMessage(msg);
 				break;
+			case 4:
+				int status4 = in.readUnsignedByte();
+				ResLogout rlogout = new ResLogout(status4);
+				msg.obj = rlogout;
+				msg.what = 4;
+				recall.sendMessage(msg);
+				break;
 			}
 			return 0;
 
 		} catch (SocketTimeoutException e){
-			System.out.println("Time out!");
 			return 1;			
 		} catch (IOException e) {
 			throw e;
