@@ -236,7 +236,9 @@ public class Main extends PiztorAct {
 				requesLocation(Infomation.myInfo.gid);
 				break;
 			case FocuseButtonPress:
-				mapMaker.UpdateLocationOverlay(locData, true);
+				if( locData != null) {
+					mapMaker.UpdateLocationOverlay(locData, true);
+				} else mapMaker.InitMap();
 				break;
 			case SuccessFetch:
 				flushMap();
@@ -299,6 +301,8 @@ public class Main extends PiztorAct {
 		mapMaker.InitMap();
 		mLocClient = new LocationClient(this);
 		locData = new LocationData();
+		locData.latitude = 31.032247;
+		locData.longitude = 121.445937;
 		mLocClient.registerLocationListener(myListener);
 		LocationClientOption option = new LocationClientOption();
 		option.setOpenGps(true);
