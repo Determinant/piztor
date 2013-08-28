@@ -168,7 +168,7 @@ Piztor Transmission Protocol v1.0
       | 0x04 | STATUS |
       +------+--------+
 
-- Push Tunnel
+- Open Push Tunnel
 
   - Request
 
@@ -186,20 +186,39 @@ Piztor Transmission Protocol v1.0
       | 0x05 | STATUS |
       +------+--------+
 
-- Push Text Message
+- Send Text Message
 
   - Request
 
   ::
-    
-      +--1b--+----?b----+
-      | 0x10 | MESSAGE  |
-      +------+--string--+
+
+      +--1b--+----?b-----+----?b----+
+      | 0x06 | AUTH_HEAD | MESSAGE  |
+      +------+-----------+--string--+
 
   - Response
 
   ::
 
-      +--1b--+
-      | 0x10 |
-      +------+
+      +--1b--+---1b---+
+      | 0x06 | STATUS |
+      +------+--------+
+
+- Push 
+
+   - Acknowledgement
+
+  ::
+
+      +--1b--+-------32b---------+
+      | 0x00 | PUSH_FINGERPRINT  |
+      +------+-------------------+
+ 
+  - Text Message 
+
+  ::
+    
+      +--1b--+-------32b---------+----?b----+
+      | 0x00 | PUSH_FINGERPRINT  | MESSAGE  |
+      +------+-------------------+--string--+
+
