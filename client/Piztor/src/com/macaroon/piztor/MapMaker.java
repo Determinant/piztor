@@ -39,6 +39,7 @@ import com.baidu.mapapi.map.LocationData;
 import com.baidu.mapapi.BMapManager;  
 import com.baidu.mapapi.MKGeneralListener;
 import com.baidu.mapapi.map.ItemizedOverlay;
+import com.baidu.mapapi.map.MKMapTouchListener;
 import com.baidu.mapapi.map.MKMapViewListener;  
 import com.baidu.mapapi.map.MapController;  
 import com.baidu.mapapi.map.MapPoi;  
@@ -55,11 +56,11 @@ public class MapMaker extends Activity{
 	private MapController mMapController = null;
 	private static GeoPoint sjtuCenter = new GeoPoint((int)(31.032247 * 1E6), (int)(121.445937 * 1E6));
 	private MyOverlay mOverlay = null;
-	private MapView.LayoutParams layoutParam = null;
 	private OverlayItem curItem = null;
 	private ArrayList<OverlayItem> mItems = null;
 	private LocationOverlay mLocationOverlay;
 	private Context context;
+	private MKMapTouchListener mapTouchListener;
 	/**
 	 * popups
 	 */
@@ -124,6 +125,9 @@ public class MapMaker extends Activity{
 	}
 	
 	public void InitMap() {
+		/**
+		 * Initialize LocationOverlay
+		 */
 		Log.d("GPS", "init");
 		mLocationOverlay = new LocationOverlay(mMapView);
 		//mLocationOverlay.setMarker(context.getResources().getDrawable(R.drawable.marker1));
@@ -156,8 +160,36 @@ public class MapMaker extends Activity{
 			}
 		};
 		popLay = new PopupOverlay(mMapView, popListener);
+
+		/**
+		 * Initialize touch listener
+		 */
+		/**
+		 * TODO
+		 */
+		mapTouchListener = new MKMapTouchListener() {
+			@Override
+			public void onMapClick(GeoPoint point) {
+				System.out.println("++++++++++++++++++++++++++++++++   SingleClick   "
+						+ point.getLatitudeE6() * 1E-6 + "    " + point.getLongitudeE6() * 1E-6);
+			}
+
+			@Override
+			public void onMapDoubleClick(GeoPoint point) {
+				System.out.println("++++++++++++++++++++++++++++++++   DoubleClick   "
+						+ point.getLatitudeE6() * 1E-6 + "    " + point.getLongitudeE6() * 1E-6);
+			}
+
+			@Override
+			public void onMapLongClick(GeoPoint point) {
+				System.out.println("++++++++++++++++++++++++++++++++   LongClick   "
+						+ point.getLatitudeE6() * 1E-6 + "    " + point.getLongitudeE6() * 1E-6);
+			}
+		};
+		mMapView.regMapTouchListner(mapTouchListener);
+
 	}
-	
+
 	public void UpdateMap(MapInfo mapInfo) {
 		/**
 		 * Update location of others
@@ -199,17 +231,17 @@ public class MapMaker extends Activity{
 		mOverlay.addItem(mItems);
 		mMapView.refresh();
 	}
-	
+
 	@Override
 	protected void onPause() {
 		mMapView.onPause();
 	}
-	
+
 	@Override 
 	protected void onResume() {
 		mMapView.onResume();
 	}
-	
+
 	@Override
 	protected void onDestroy() {
 		mMapView.destroy();
