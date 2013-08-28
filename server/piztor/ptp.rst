@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v0.5
+Piztor Transmission Protocol v1.0
 ----------------------------------
 
 - General 
@@ -168,3 +168,38 @@ Piztor Transmission Protocol v0.5
       | 0x04 | STATUS |
       +------+--------+
 
+- Push Tunnel
+
+  - Request
+
+  ::
+
+      +--1b--+-----?b------+
+      | 0x05 |  AUTH_HEAD  |
+      +------+-------------+
+
+  - Response
+
+  ::
+
+      +--1b--+---1b---+
+      | 0x05 | STATUS |
+      +------+--------+
+
+- Push Text Message
+
+  - Request
+
+  ::
+    
+      +--1b--+----?b----+
+      | 0x10 | MESSAGE  |
+      +------+--string--+
+
+  - Response
+
+  ::
+
+      +--1b--+
+      | 0x10 |
+      +------+
