@@ -261,7 +261,8 @@ public class MapMaker extends Activity {
 			mOverlay = new MyOverlay(context.getResources().getDrawable(R.drawable.circle_red), mMapView);
 			GeoPoint p;
 			Vector<UserInfo> allUsers = mapInfo.getVector();
-			for (int i = 0; i < allUsers.size(); i++) {
+			boolean flag = false;
+			for (int i =1; i < allUsers.size(); i++) {
 				// it's me!
 				if (allUsers.get(i).uid == Infomation.myInfo.uid) continue;
 				p = new GeoPoint((int)(allUsers.get(i).getLatitude() * 1E6), 
@@ -269,7 +270,12 @@ public class MapMaker extends Activity {
 				curItem = new OverlayItem(p, "USERNAME HERE!!!!!", "");
 				//TODO
 				////////////////////////////////////////////////////////////
-				curItem.setMarker(context.getResources().getDrawable(R.drawable.circle_red));
+				if (flag == false){
+					flag = true;
+					curItem.setMarker(context.getResources().getDrawable(R.drawable.circle_green));
+				} else {
+					curItem.setMarker(context.getResources().getDrawable(R.drawable.circle_red));
+				}
 				mOverlay.addItem(curItem);
 			}
 			mItems = new ArrayList<OverlayItem>();
