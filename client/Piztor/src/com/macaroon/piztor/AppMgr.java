@@ -15,10 +15,8 @@ import com.baidu.mapapi.MKGeneralListener;
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
 	
-	private static final String strKey = "5ba8abf7b4694ad49706b8b7538c9d6a";
+	private static final String strKey = "8a0ae50048d103b2b8b12b7066f4ea7d";
     static BMapManager mBMapManager = null;
-	static Context context;
-	
 	
 	// Status
 	public enum ActivityStatus {
@@ -83,6 +81,8 @@ public class AppMgr {
 				i.putExtra("status", true);
 			else i.putExtra("status", false);
 		}
+		if (event == loginSuccess) mBMapManager.start();
+ 		if (event == logout) mBMapManager.stop();
 		nowAct.startActivity(i);
 	}
 
@@ -127,7 +127,6 @@ public class AppMgr {
 		        }
 			});
 		}
-		AppMgr.context = context;
 		mp = new HashMap<Class<?>, HashMap<Integer, Class<?>>>();
 		handler = new Handler();
 		transam = new Transam(Infomation.ip, Infomation.port, handler);

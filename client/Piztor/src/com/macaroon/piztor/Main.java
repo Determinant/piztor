@@ -12,6 +12,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.baidu.location.BDLocation;
@@ -20,6 +21,8 @@ import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.map.LocationData;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.OverlayItem;
+import com.baidu.mapapi.map.PopupOverlay;
 
 public class Main extends PiztorAct {
 	final static int SearchButtonPress = 1;
@@ -28,6 +31,19 @@ public class Main extends PiztorAct {
 	final static int FailedFetch = 5;
 	final static int Fetch = 6;
 	final static int mapViewtouched = 7;
+
+	/**
+	 * popups
+	 */
+	private PopupOverlay pop = null;
+	private TextView popupText = null;
+	private View viewCache = null;
+	private View popupInfo = null;
+	private View popupLeft = null;
+	private View popupRight = null;
+	private MapView.LayoutParams layoutParam = null;
+	private OverlayItem mCurItem = null;
+
 
 	MapMaker mapMaker = null;
 	MapView mMapView;
@@ -40,7 +56,7 @@ public class Main extends PiztorAct {
 	public MyLocationListener myListener = new MyLocationListener();
 
 	ImageButton btnSearch, btnFetch, btnFocus, btnSettings;
-	Timer autodate;
+	//Timer autodate;
 	MapInfo mapInfo;
 	/*
 	 * @SuppressLint("HandlerLeak") Handler fromGPS = new Handler() {
@@ -91,7 +107,7 @@ public class Main extends PiztorAct {
 					if (r.uid == Infomation.myInfo.uid) {
 						Infomation.myInfo.gid = r.gid;
 						try {
-							autodate.schedule(new AutoUpdate(), 0, 5000);
+							//autodate.schedule(new AutoUpdate(), 0, 5000);
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -138,7 +154,9 @@ public class Main extends PiztorAct {
 
 	// TODO flush map view
 	void flushMap() {
-
+		if (mapMaker != null)
+			mapMaker.UpdateMap(AppMgr.mapInfo);
+		else System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 	}
 
 	public class MyLocationListener implements BDLocationListener {
@@ -155,7 +173,8 @@ public class Main extends PiztorAct {
 			locData.direction = location.getDerect();
 
 			mapMaker.UpdateLocationOverlay(locData, false);
-
+			if (Infomation.token != null)
+				AppMgr.transam.send(new ReqUpdate(Infomation.token, Infomation.username, locData.latitude, locData.longitude, System.currentTimeMillis(), 2000));
 		}
 
 		@Override
@@ -224,10 +243,10 @@ public class Main extends PiztorAct {
 				requesLocation(Infomation.myInfo.gid);
 				break;
 			case FocuseButtonPress:
-				// TODO setFocus
+				mapMaker.UpdateLocationOverlay(locData, true);
 				break;
 			case SuccessFetch:
-				requesLocation(Infomation.myInfo.gid);
+				flushMap();
 				break;
 			default:
 				break;
@@ -279,7 +298,7 @@ public class Main extends PiztorAct {
 		actMgr.add(focusStatus, mapViewtouched, startStatus);
 		actMgr.add(focusStatus, SuccessFetch, focusStatus);
 		actMgr.add(focusStatus, Fetch, focusStatus);
-		autodate = new Timer();
+		//autodate = new Timer();
 		flushMap();
 		// ImageView view = (ImageView) findViewById(R.id.main_mapview);
 		// view.setOnTouchListener(new MultiTouchListener());
@@ -297,8 +316,15 @@ public class Main extends PiztorAct {
 		mLocClient.setLocOption(option);
 		mLocClient.start();
 		mapMaker.UpdateLocationOverlay(locData, false);
-	}
 
+	}
+	/*
+	public boolean onTap(int index) {
+		OverlayItem item = getItem(index);
+		mCurItem = item;
+		if ()
+	}
+	*/
 	@Override
 	protected void onStart() {
 		super.onStart();
@@ -342,7 +368,7 @@ public class Main extends PiztorAct {
 	@Override
 	public void onStop() {
 		super.onStop();
-		autodate.cancel();
+		//autodate.cancel();
 	}
 
 	@Override

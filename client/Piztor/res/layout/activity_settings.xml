@@ -80,7 +80,8 @@
 	        android:id="@+id/settings_sex_layout"
 	        android:layout_width="match_parent"
 	        android:layout_height="wrap_content"
-	        android:layout_marginTop="10dip" >
+	        android:layout_marginTop="50dip"
+	         >
 
 	        <TextView
 	            android:id="@+id/settings_sex_text"
@@ -117,7 +118,7 @@
 	        android:id="@+id/settings_team_layout"
 	        android:layout_width="match_parent"
 	        android:layout_height="wrap_content"
-	        android:layout_marginTop="10dip" >
+	        android:layout_marginTop="50dip" >
 
 	        <TextView
 	            android:id="@+id/settings_team_text"

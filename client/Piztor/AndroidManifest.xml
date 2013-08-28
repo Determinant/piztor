@@ -23,8 +23,6 @@
 <!-- 获取设置信息和详情页直接拨打电话需要以下权限  -->
 <uses-permission android:name="android.permission.READ_PHONE_STATE">
 </uses-permission>
-<uses-permission android:name="android.permission.CALL_PHONE">
-</uses-permission>
 <!-- 使用定位功能所需权限,demo已集成百度定位SDK,不使用定位功能可去掉以下6项 -->
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION">
 </uses-permission>
