@@ -61,6 +61,8 @@ public class MapMaker extends Activity{
 	private LocationOverlay mLocationOverlay;
 	private Context context;
 	private MKMapTouchListener mapTouchListener;
+	boolean isFirstLoc = true;
+	
 	/**
 	 * popups
 	 */
@@ -119,9 +121,10 @@ public class MapMaker extends Activity{
 		 */
 		mLocationOverlay.setData(locationData);
 		mMapView.refresh();
-		if (hasAnimation) {
+		if (hasAnimation || isFirstLoc) {
 			mMapController.animateTo(new GeoPoint((int)(locationData.latitude * 1E6), (int)(locationData.longitude * 1E6)));
 		}
+		isFirstLoc = true;
 	}
 	
 	public void InitMap() {
