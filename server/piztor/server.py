@@ -596,14 +596,14 @@ class PTP(Protocol, TimeoutMixin):
                     return
                 h = PTP.handlers[self.optcode]()
                 reply = h.handle(self.buff[5:], self)
+                logger.info("Wrote: %s", get_hex(reply))
+                self.transport.write(reply)
                 if self.tunnel:
                     logger.info("Blocking the client...")
                     self.buff = bytes()
                     self.length = -1
                     self.setTimeout(None)
                     return
-                logger.info("Wrote: %s", get_hex(reply))
-                self.transport.write(reply)
                 self.transport.loseConnection()
             elif len(self.buff) > self.length:
                 raise BadReqError("The actual length is larger than promised")
