@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v0.4a
+Piztor Transmission Protocol v1.0
 ----------------------------------
 
 - General 
@@ -91,9 +91,17 @@ Piztor Transmission Protocol v0.4a
 
     ::
     
-        +--1b---+------?b------+------4b-----+
+        +--1b---+------?b------+------2b-----+
         | 0x02  |  AUTH_HEAD   |  GROUP_ID   |
-        +-uchar-+--------------+-----int-----+
+        +-uchar-+--------------+-------------+
+
+    ``GROUP_ID``:
+
+    ::
+
+        +---1b----+---1b---+
+        | COMP_ID | SEC_ID |
+        +--uchar--+-uchar--+
 
   - Response
 
@@ -139,7 +147,7 @@ Piztor Transmission Protocol v0.4a
 
     ``INFO_KEY`` :
 
-    :``0x00``: gid (value is a 4-byte ``long int``)
+    :``0x00``: gid (value is a 2-byte ``GROUP_ID``)
     :``0x01``: sex (value is a 1-byte ``boolean``: ``0x01`` for male, ``0x00`` for female)
 
 - User Logout
@@ -160,3 +168,38 @@ Piztor Transmission Protocol v0.4a
       | 0x04 | STATUS |
       +------+--------+
 
+- Push Tunnel
+
+  - Request
+
+  ::
+
+      +--1b--+-----?b------+
+      | 0x05 |  AUTH_HEAD  |
+      +------+-------------+
+
+  - Response
+
+  ::
+
+      +--1b--+---1b---+
+      | 0x05 | STATUS |
+      +------+--------+
+
+- Push Text Message
+
+  - Request
+
+  ::
+    
+      +--1b--+----?b----+
+      | 0x10 | MESSAGE  |
+      +------+--string--+
+
+  - Response
+
+  ::
+
+      +--1b--+
+      | 0x10 |
+      +------+

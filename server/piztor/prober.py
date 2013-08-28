@@ -25,8 +25,8 @@ class _SectionSize:
     LOCATION_ENTRY = USER_ID + LATITUDE + LONGITUDE
     PADDING = 1
 
-host = "localhost"
-port = 2222
+host = "69.85.86.42" #"localhost"
+port = 2223
 
 def gen_auth(username, password):
     length = _SectionSize.LENGTH + \
@@ -177,6 +177,9 @@ def request_user_info(token, username, uid):
             logger.error("Request user info: incorrect packet length")
     
         idx = 6
+        comp_id = None
+        sec_id = None
+        sex = None
         while idx < pl:
             info_key, = unpack("!B", resp[idx:idx + 1])
             idx += 1
@@ -210,9 +213,10 @@ for i in xrange(10):
     update_location(token, username, random(), random()) 
     
     comp_id, sec_id, sex = request_user_info(token, username, uid)
-    request_location(token, username, comp_id * 256 + sec_id)    
-    request_location(token, username, comp_id * 256 + 0xff)
+    if comp_id:
+        request_location(token, username, comp_id * 256 + sec_id)    
+        request_location(token, username, comp_id * 256 + 0xff)
 
-    logout(token, username)
+        logout(token, username)
 
     sleep(10)

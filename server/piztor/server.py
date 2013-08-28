@@ -32,7 +32,7 @@ class _SectionSize:
     STATUS = 1
     USER_ID = 4
     USER_TOKEN = 32
-    GROUP_ID = 4
+    GROUP_ID = 2
     ENTRY_CNT = 4
     LATITUDE = 8
     LONGITUDE = 8
@@ -232,7 +232,7 @@ class LocationInfoHandler(RequestHandler):
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
             if username is None:
                 raise struct.error
-            a, b, comp_id, sec_id = struct.unpack("!BBBB", tail)
+            comp_id, sec_id = struct.unpack("!BB", tail)
         except struct.error:
             raise BadReqError("Location request: Malformed request body")
 
@@ -268,7 +268,7 @@ class LocationInfoHandler(RequestHandler):
         return reply
 
 def pack_gid(user):
-    return struct.pack("!BBBB", 0, 0, user.comp_id, user.sec_id)
+    return struct.pack("!BB", user.comp_id, user.sec_id)
 
 def pack_sex(user):
     return struct.pack("!B", 0x01 if user.sex else 0x00)
