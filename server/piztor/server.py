@@ -430,7 +430,7 @@ class UserLogoutHandler(RequestHandler):
         if uauth is None:
             logger.warning("Authentication failure")
             return struct.pack("!LBB",  self._response_size,
-                                        _OptCode.location_update,
+                                        _OptCode.user_logout,
                                         _StatusCode.failure)
         del RequestHandler.push_tunnels[uauth.uid]
         uauth.regen_token()
@@ -469,7 +469,7 @@ class OpenPushTunnelHandler(RequestHandler):
         if uauth is None:
             logger.warning("Authentication failure")
             return struct.pack("!LBB",  self._response_size,
-                                        _OptCode.location_update,
+                                        _OptCode.open_push_tunnel,
                                         _StatusCode.failure)
 
         tunnel = RequestHandler.push_tunnels[uauth.uid]
@@ -482,7 +482,7 @@ class OpenPushTunnelHandler(RequestHandler):
 
         logger.info("Push tunnel opened successfully!")
         return struct.pack("!LBB",  self._response_size,
-                                    _OptCode.user_logout,
+                                    _OptCode.open_push_tunnel,
                                     _StatusCode.sucess)
 
 class SendTextMessageHandler(RequestHandler):
@@ -517,18 +517,24 @@ class SendTextMessageHandler(RequestHandler):
         if uauth is None:
             logger.warning("Authentication failure")
             return struct.pack("!LBB",  self._response_size,
-                                        _OptCode.location_update,
+                                        _OptCode.send_text_mesg,
                                         _StatusCode.failure)
 
         pt = RequestHandler.push_tunnels
-        uid = uauth.uid
-        if pt.has_key(uid):
-            tunnel = pt[uid]
-            tunnel.add(PushTextMesgData(mesg))
-            tunnel.push()
+        u = uauth.user
+        ulist = self.session.query(UserModel) \
+                .filter(and_(UserModel.comp_id == u.comp_id,
+                            UserModel.sec_id == u.sec_id)).all()
+
+        for user in ulist:
+            uid = user.id
+            if pt.has_key(uid):
+                tunnel = pt[uid]
+                tunnel.add(PushTextMesgData(mesg))
+                tunnel.push()
         logger.info("Sent text mesg successfully!")
         return struct.pack("!LBB",  self._response_size,
-                                    _OptCode.user_logout,
+                                    _OptCode.send_text_mesg,
                                     _StatusCode.sucess)
 
 
@@ -559,6 +565,7 @@ class PTP(Protocol, TimeoutMixin):
 
     def timeoutConnection(self):
         logger.info("The connection times out")
+        self.transport.loseConnection()
 
     def connectionMade(self):
         logger.info("A new connection is made")
@@ -593,6 +600,7 @@ class PTP(Protocol, TimeoutMixin):
                     logger.info("Blocking the client...")
                     self.buff = bytes()
                     self.length = -1
+                    self.setTimeout(None)
                     return
                 logger.info("Wrote: %s", get_hex(reply))
                 self.transport.write(reply)
