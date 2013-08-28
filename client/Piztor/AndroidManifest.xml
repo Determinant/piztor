@@ -57,13 +57,13 @@
         <activity
             android:name="com.macaroon.piztor.Main"
             android:label="@string/title_activity_main" 
-            android:screenOrientation="sensor"  
+            android:screenOrientation="portrait"  
           	android:configChanges="orientation">
         </activity>
         <activity
             android:name="com.macaroon.piztor.Settings"
             android:label="@string/title_activity_settings" 
-            android:screenOrientation="sensor"  
+            android:screenOrientation="portrait"  
           	android:configChanges="orientation">
         </activity>
         <service
