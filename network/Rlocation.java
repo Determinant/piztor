@@ -1,13 +1,13 @@
 package com.macaroon.piztor;
 
 class Rlocation{
-	int i;		//id
-	double lat;	//latitude
-	double lot; //longitude
+	int id;		//id
+	double latitude;	//latitude
+	double longitude; //longitude
 	
-	Rlocation(int id,double latitude,double longitude){
-		i = id;
-		lat = latitude;
-		lot = longitude;
+	Rlocation(int i,double lat,double lot){
+		id = i;
+		latitude = lat;
+		longitude = lot;
 	}
 }

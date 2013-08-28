@@ -30,7 +30,7 @@ import android.os.Message;
 //				 *Request form*					  //
 //        login -- username & password			  //
 //update -- token & username & latitude & longitude//
-//	  getlocation -- token & username & groupid   //
+//getlocation -- token & username & company & section//
 //    getuserinfo -- token & userinfo & userid    //
 //       logout -- token & username               //
 //												  //
@@ -42,7 +42,7 @@ import android.os.Message;
 //     getlocation -- status & entrynumber & data //
 //       entry  -- userid & latitude & longitude  //
 //                                                //
-//  getuserinfo -- status & uid & gid & gender    //
+//getuserinfo -- status & uid & company & section & gender//
 //            logout -- status                    //
 //												  //
 //          status -- 0 for success               //
@@ -65,6 +65,9 @@ public class Transam implements Runnable {
 	Handler core;
 	Handler recall;					//recall
 	Queue<Req> reqtask ;			//request task
+	
+	public final static int Exception =-1;
+	public final static int TimeOut =0;
 
 	Transam(String ip, int port,Handler Recall) {
 		p = port;
@@ -102,7 +105,7 @@ public class Transam implements Runnable {
 						Message ret = new Message();
 						TimeOutException t = new TimeOutException();
 						ret.obj = t;
-						ret.what = -1;
+						ret.what = Exception;
 						recall.sendMessage(ret);
 					}
 					else{	                        //run the request
@@ -133,19 +136,19 @@ public class Transam implements Runnable {
 				else {
 					client.closeSocket();
 					Message msg = new Message();
-					msg.what = 0;
+					msg.what = TimeOut;
 					handler.sendMessage(msg);
 				}				
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 				Message msg = new Message();
-				msg.what = -1;
+				msg.what = Exception;
 				msg.obj = e;
 				handler.sendMessage(msg);
 			} catch (IOException e) {
 				e.printStackTrace();
 				Message msg = new Message();
-				msg.what = -1;
+				msg.what = Exception;
 				msg.obj = e;
 				handler.sendMessage(msg);
 			}
@@ -157,7 +160,7 @@ public class Transam implements Runnable {
 	Handler handler = new Handler() {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
-			case -1:
+			case Exception:
 				if (tcnt > 0) {
 					tcnt--;
 					System.out.println(tcnt);
@@ -165,12 +168,12 @@ public class Transam implements Runnable {
 				} else if (tcnt == 0) {
 					Message m = new Message();
 					m.obj = msg.obj;
-					m.what = -1;
+					m.what = Exception;
 					recall.sendMessage(m);
 					running = false;
 				}
 				break;
-			case 0:
+			case TimeOut:
 				if (tcnt > 0) {
 					tcnt--;
 					connect();
@@ -178,7 +181,7 @@ public class Transam implements Runnable {
 					Message m = new Message();
 					ConnectFailedException c = new ConnectFailedException();
 					m.obj = c;
-					m.what = -1;
+					m.what = Exception;
 					recall.sendMessage(m);
 					running = false;
 				}
