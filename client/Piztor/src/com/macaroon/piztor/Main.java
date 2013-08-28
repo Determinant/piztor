@@ -4,6 +4,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -19,10 +21,15 @@ import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.map.ItemizedOverlay;
 import com.baidu.mapapi.map.LocationData;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.OverlayItem;
+import com.baidu.mapapi.map.PopupClickListener;
 import com.baidu.mapapi.map.PopupOverlay;
+import com.baidu.platform.comapi.basestruct.GeoPoint;
+
+import com.macaroon.piztor.BMapUtil;
 
 public class Main extends PiztorAct {
 	final static int SearchButtonPress = 1;
@@ -31,19 +38,6 @@ public class Main extends PiztorAct {
 	final static int FailedFetch = 5;
 	final static int Fetch = 6;
 	final static int mapViewtouched = 7;
-
-	/**
-	 * popups
-	 */
-	private PopupOverlay pop = null;
-	private TextView popupText = null;
-	private View viewCache = null;
-	private View popupInfo = null;
-	private View popupLeft = null;
-	private View popupRight = null;
-	private MapView.LayoutParams layoutParam = null;
-	private OverlayItem mCurItem = null;
-
 
 	MapMaker mapMaker = null;
 	MapView mMapView;
@@ -156,7 +150,6 @@ public class Main extends PiztorAct {
 	void flushMap() {
 		if (mapMaker != null)
 			mapMaker.UpdateMap(AppMgr.mapInfo);
-		else System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 	}
 
 	public class MyLocationListener implements BDLocationListener {
@@ -300,8 +293,6 @@ public class Main extends PiztorAct {
 		actMgr.add(focusStatus, Fetch, focusStatus);
 		//autodate = new Timer();
 		flushMap();
-		// ImageView view = (ImageView) findViewById(R.id.main_mapview);
-		// view.setOnTouchListener(new MultiTouchListener());
 		setContentView(R.layout.activity_main);
 		mMapView = (MapView) findViewById(R.id.bmapView);
 		mapMaker = new MapMaker(mMapView, getApplicationContext());
@@ -316,15 +307,8 @@ public class Main extends PiztorAct {
 		mLocClient.setLocOption(option);
 		mLocClient.start();
 		mapMaker.UpdateLocationOverlay(locData, false);
+	}
 
-	}
-	/*
-	public boolean onTap(int index) {
-		OverlayItem item = getItem(index);
-		mCurItem = item;
-		if ()
-	}
-	*/
 	@Override
 	protected void onStart() {
 		super.onStart();

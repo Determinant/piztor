@@ -12,14 +12,17 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.app.Activity;  
 import android.content.Context;
 import android.content.res.Configuration;  
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.widget.FrameLayout;  
 import android.widget.Toast;  
@@ -42,6 +45,7 @@ import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationOverlay;
 import com.baidu.mapapi.map.OverlayItem;
+import com.baidu.mapapi.map.PopupClickListener;
 import com.baidu.mapapi.map.PopupOverlay;
 import com.baidu.platform.comapi.basestruct.GeoPoint; 
 
@@ -56,6 +60,13 @@ public class MapMaker extends Activity{
 	private ArrayList<OverlayItem> mItems = null;
 	private LocationOverlay mLocationOverlay;
 	private Context context;
+	/**
+	 * popups
+	 */
+	private PopupOverlay popLay = null;
+	private TextView popupText = null;
+	private View viewCache = null;
+	private View popupInfo = null;
 
 	public MapMaker(MapView mapView, Context c) {
 		mMapView = mapView;
@@ -75,11 +86,31 @@ public class MapMaker extends Activity{
 		}
 	}
 
-	public class MyOverlay extends ItemizedOverlay {
+	public class MyOverlay extends ItemizedOverlay{
 		public MyOverlay(Drawable defaultMarker, MapView mapView) {
 			super(defaultMarker, mapView);
 		}
-	}
+
+		@Override
+		public boolean onTap(int index){
+			Log.d("123", "Marker tap");
+			OverlayItem item = getItem(index);
+			   popupText.setText("^ _ ^");
+			   Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
+			   popLay.showPopup(bitmap,item.getPoint(),32);
+			return true;
+		}
+		
+		@Override
+		public boolean onTap(GeoPoint pt, MapView mMapView){
+			Log.d("123", "Marker tap disappear");
+
+			if (popLay != null){
+                popLay.hidePop();
+			}
+			return false;
+		}
+    }
 
 	public void UpdateLocationOverlay(LocationData locationData, boolean hasAnimation) {
 		/**
@@ -102,6 +133,29 @@ public class MapMaker extends Activity{
 		mLocationOverlay.enableCompass();
 		mMapView.refresh();
 		mOverlay = new MyOverlay(context.getResources().getDrawable(R.drawable.circle_red), mMapView);
+		Log.d("123", "MapView initialized");
+
+		/**
+		 * Initialize pop up
+		 */
+		LayoutInflater inflater = (LayoutInflater) context.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
+		Log.d("123", "OK 0");
+		viewCache = inflater.inflate(R.layout.custom_text_view, null);
+		Log.d("123", "OK 1");
+		popupInfo = (View) viewCache.findViewById(R.id.popinfo);
+		Log.d("123", "OK 2");
+		popupText = (TextView) viewCache.findViewById(R.id.textcache);
+		Log.d("123", "OK 3");
+		Log.d("123", "Popup initialized");
+
+		
+		PopupClickListener popListener = new PopupClickListener() {
+			@Override
+			public void onClickedPopup(int index) {
+				//
+			}
+		};
+		popLay = new PopupOverlay(mMapView, popListener);
 	}
 	
 	public void UpdateMap(MapInfo mapInfo) {
@@ -109,9 +163,7 @@ public class MapMaker extends Activity{
 		 * Update location of others
 		 */
 		if (mOverlay != null && mOverlay.getAllItem().size() != 0) {
-			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 			clearOverlay(mMapView);
-			System.out.println("+++++++++++++++++++++++------------------------------------------");
 		}
 		mOverlay = new MyOverlay(context.getResources().getDrawable(R.drawable.circle_red), mMapView);
 		//mMapView.refresh();
