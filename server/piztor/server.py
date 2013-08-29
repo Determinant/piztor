@@ -292,6 +292,7 @@ class LocationUpdateHandler(RequestHandler):
         pdata = PushLocationData(uauth.uid, lat, lng)
         for user in ulist:
             uid = user.id
+            if uid == uauth.uid: continue
             if pt.has_key(uid):
                 tunnel = pt[uid]
                 tunnel.add(pdata)
@@ -557,6 +558,7 @@ class SendTextMessageHandler(RequestHandler):
 
         for user in ulist:
             uid = user.id
+            if uid == uauth.uid: continue
             if pt.has_key(uid):
                 tunnel = pt[uid]
                 tunnel.add(PushTextMesgData(mesg))
@@ -668,6 +670,6 @@ from twisted.internet import reactor
 
 f = PTPFactory()
 f.protocol = PTP
-reactor.listenTCP(2223, f)
+reactor.listenTCP(2222, f)
 logger.warning("The server is lanuched")
 reactor.run()
