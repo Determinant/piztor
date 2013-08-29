@@ -8,6 +8,7 @@ import android.util.Log;
 import android.util.AttributeSet;
 import android.annotation.SuppressLint;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -20,7 +21,10 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.app.Activity;  
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;  
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
@@ -29,6 +33,7 @@ import android.widget.Toast;
 import android.view.View.OnClickListener;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
+import android.provider.Settings;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
@@ -72,16 +77,16 @@ public class MapMaker extends Activity {
 	private MyOverlay markerOverlay;
 	private OverlayItem nowMarker = null;
 
-	//
-	private Context context;
-	
-	private MKMapTouchListener mapTouchListener;
-
 	// Popup component
 	private PopupOverlay popLay = null;
 	private TextView popupText = null;
 	private View viewCache = null;
 	private View popupInfo = null;
+
+	//misc
+	private Context context;
+	private LocationManager locationManager = null;
+	boolean isGPSEnabled;
 
 	/**
 	 * Constructor
@@ -199,30 +204,7 @@ public class MapMaker extends Activity {
 	/**
 	 * Initialize touch listener
 	 */
-	public void InitTouchListenr() {
-
-		mapTouchListener = new MKMapTouchListener() {
-			
-			@Override
-			public void onMapLongClick(GeoPoint arg0) {
-				DrawMarker(arg0);
-				Log.d("marker", "draw a new marker");
-			}
-			
-			@Override
-			public void onMapDoubleClick(GeoPoint arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void onMapClick(GeoPoint arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-		};
-		mMapView.regMapTouchListner(mapTouchListener);
-	}
+	// moved to main
 
 	/**
 	 * Initialize map
@@ -232,8 +214,9 @@ public class MapMaker extends Activity {
 		InitLocationOverlay();
 		InitMyOverLay();
 		InitPopup();
-		InitTouchListenr();
+		//InitTouchListenr();
 	}
+
 	/**
 	 * Update location layer when new location is received
 	 */
@@ -311,11 +294,10 @@ public class MapMaker extends Activity {
 	public void DrawMarker(GeoPoint markerPoint) {
 	
 		nowMarker = new OverlayItem(markerPoint, "THIS IS A MARKER", "");
-		nowMarker.setMarker(context.getResources().getDrawable(R.drawable.marker1));
-		Log.d("marker", "new marker created");
-		System.out.println("mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm    " + markerPoint.getLatitudeE6() + "       " + markerPoint.getLongitudeE6());
-		
+		nowMarker.setMarker(context.getResources().getDrawable(R.drawable.marker_red));
+		Log.d("marker", "new marker created");		
 		UpdateMap(preMapInfo);
+		mMapController.animateTo(markerPoint);
 	}
 
 	/**
