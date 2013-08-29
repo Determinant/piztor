@@ -332,7 +332,6 @@ public class Main extends PiztorAct {
 		
 		locationManager = (LocationManager)this.getSystemService(LOCATION_SERVICE);
 		isGPSEnabled = locationManager.isProviderEnabled(locationManager.GPS_PROVIDER);
-		if (isGPSEnabled == false) alertMaker.showSettingsAlert();
 		
 		mapInfo = AppMgr.mapInfo;
 		ActStatus[] r = new ActStatus[3];
@@ -356,6 +355,7 @@ public class Main extends PiztorAct {
 		mMapView = (MapView) findViewById(R.id.bmapView);
 		mapMaker = new MapMaker(mMapView, getApplicationContext());
 		alertMaker = new AlertMaker(Main.this, mapMaker);
+		if (isGPSEnabled == false) alertMaker.showSettingsAlert();
 		mapMaker.clearOverlay(mMapView);
 		mapMaker.InitMap();
 		InitTouchListenr();

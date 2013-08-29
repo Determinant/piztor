@@ -70,7 +70,7 @@ public class AlertMaker {
 						context.startActivity(intent);
 					}
 				});
-		gpsDialog.setNegativeButton("Cancel",
+		gpsDialog.setNegativeButton("Go without GPS",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						dialog.cancel();
@@ -91,7 +91,7 @@ public class AlertMaker {
 					@Override
 					public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
 						////// at least 2 minutes
-						if ((hourOfDay >= calendar.get(Calendar.HOUR_OF_DAY) && minute-2 >= calendar.get(Calendar.MINUTE))
+						if ((hourOfDay >= calendar.get(Calendar.HOUR_OF_DAY) && minute >= calendar.get(Calendar.MINUTE))
 								|| hourOfDay > calendar.get(Calendar.HOUR_OF_DAY))
 							mapMaker.DrawMarker(markerPoint);
 						else {
