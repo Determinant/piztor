@@ -45,8 +45,8 @@ public class PushClient {
 			IOException {
 		try {
 			client = new Socket();
-			client.connect(new InetSocketAddress(site,port), 5000);
-			client.setSoTimeout(5000);
+			client.connect(new InetSocketAddress(site,port), retime);
+			client.setSoTimeout(2000);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			throw e;

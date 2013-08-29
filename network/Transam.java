@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Timer;
+import java.util.TimerTask;
 
 import android.annotation.SuppressLint;
 import android.os.Handler;
@@ -87,9 +88,10 @@ public class Transam implements Runnable {
 	public final static int EUnknownHostException =106;
 	
 	public Timer timer;
+	public Timer pushtimer;
 	public boolean running = false; 
 	public boolean flag = true;
-	public int cnt = 4;				//retry times
+	public int cnt = 5;				//retry times
 	public int tcnt;				//current remain retry times
 	public int rcnt;				//current remain retry times (push)
 	public int retime = 2000;		//timeout time
@@ -182,7 +184,7 @@ public class Transam implements Runnable {
 					}
 					else{	                        //run the request
 						running = true;
-						tcnt = cnt;
+						tcnt = cnt;			
 						connect();
 					}
 				}				
@@ -202,6 +204,18 @@ public class Transam implements Runnable {
 		Pushthread.start();
 	}
 	
+	class tmain extends TimerTask {
+		public void run() {
+			connect();
+		}
+	};
+	
+	class pmain extends TimerTask {
+		public void run() {
+			connectpush();
+		}
+	};
+	
 	private class reqpush implements Runnable {
 		public void run() {
 			try {
@@ -220,6 +234,7 @@ public class Transam implements Runnable {
 					stopPush();
 				}
 				else {
+					rcnt = cnt;
 					push.listen(recall,handler);
 				}
 			} catch (UnknownHostException e) {
@@ -273,6 +288,7 @@ public class Transam implements Runnable {
 		}
 	}
 
+
 	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
 		public void handleMessage(Message msg) {
@@ -281,7 +297,9 @@ public class Transam implements Runnable {
 				if (tcnt > 0) {
 					tcnt--;
 					System.out.println(tcnt);
-					connect();
+					timer = new Timer();
+					TimerTask task = new tmain();
+					timer.schedule(task,retime);
 				} else if (tcnt == 0) {
 					Message m = new Message();
 					m.obj = msg.obj;
@@ -293,7 +311,10 @@ public class Transam implements Runnable {
 			case TimeOut:
 				if (tcnt > 0) {
 					tcnt--;
-					connect();
+					System.out.println(tcnt);
+					timer = new Timer();
+					TimerTask task = new tmain();
+					timer.schedule(task,retime);
 				} else if (tcnt == 0) {
 					Message m = new Message();
 					EConnectFailedException c = new EConnectFailedException(req.type,req.time);
@@ -306,11 +327,15 @@ public class Transam implements Runnable {
 			case Reconnect:
 				if (rcnt > 0) {
 					rcnt--;
-					connectpush();
+					System.out.println(rcnt);
+					pushtimer = new Timer();
+					TimerTask task = new pmain();
+					pushtimer.schedule(task,retime);
 				} else if (rcnt == 0) {
 					Message m = new Message();
-					//EPushFailedException c = new EPushFailedException(req.type);
-					m.obj = msg.obj;
+					EPushFailedException c = new EPushFailedException(5,0);
+					//m.obj = msg.obj;
+					m.obj = c;
 					m.what = Exception;
 					recall.sendMessage(m);
 				}
