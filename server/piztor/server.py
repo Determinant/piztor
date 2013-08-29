@@ -103,12 +103,11 @@ class PushTunnel(object):
     def push(self):
         print "Pushing via " + str(self)
         print "Pending size: " + str(len(self.pending))
-        print self.conn
+        logger.info("Pushing...")
         if (self.conn is None) or len(self.pending) == 0:
             return
         front = self.pending.popleft()
         self.pending.appendleft(front)
-        print get_hex(front.data)
         self.conn.transport.write(front.data)
 
     def connect(self, conn):
@@ -119,7 +118,6 @@ class PushTunnel(object):
 
     def on_connection_lost(self, conn):
         if conn == self.conn:
-            print "*** clear conn ***"
             self.conn = None
 
 class RequestHandler(object):
