@@ -96,7 +96,7 @@ public class AlertMaker {
 							mapMaker.DrawMarker(markerPoint);
 						else {
 							Toast toast = Toast.makeText(context,
-									"Too early！ Give me at least 2 minutes!", Toast.LENGTH_LONG);
+									"Too early！Give me more time!", Toast.LENGTH_LONG);
 							toast.show();
 							closeBoard(context);
 							showMarkerAlert(markerPoint);
@@ -106,6 +106,27 @@ public class AlertMaker {
 				, calendar.get(Calendar.HOUR_OF_DAY)
 				, calendar.get(Calendar.MINUTE), false);
 		markerDialog.show();
+	}
+	
+	public void showQuitAlert() {
+		
+		AlertDialog.Builder quitDialog = new AlertDialog.Builder(context);
+		closeBoard(context);
+		quitDialog.setTitle("Quit");
+		quitDialog.setMessage("Do you want to logout and quit?");
+		quitDialog.setPositiveButton("Quit",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						AppMgr.exit();
+					}
+				});
+		quitDialog.setNegativeButton("Cancel",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.cancel();
+					}
+				});
+		quitDialog.show();
 	}
 	
 }
