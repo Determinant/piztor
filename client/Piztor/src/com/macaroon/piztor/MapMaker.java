@@ -80,8 +80,11 @@ public class MapMaker extends Activity {
 	// Popup component
 	private PopupOverlay popLay = null;
 	private TextView popupText = null;
+	private TextView leftText = null;
 	private View viewCache = null;
 	private View popupInfo = null;
+	private View popupLeft = null;
+	private View popupRight = null;
 
 	//misc
 	private Context context;
@@ -128,13 +131,24 @@ public class MapMaker extends Activity {
 		@Override
 		public boolean onTap(int index) {
 		
-			OverlayItem item = getItem(index);
-			//TODO
-			/////////////////////////////////////////////////////////
-			popupText.setText("^_^");
-			Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
-			popLay.showPopup(bitmap, item.getPoint(),32);
-
+			if (index == 0 && nowMarker != null) {
+				OverlayItem item = getItem(index);
+				//TODO
+				/////////////////////////////////////////////////////////
+				popupText.setText("hour");
+				leftText.setText("minute");
+				Bitmap bitmap [] = {
+						BMapUtil.getBitmapFromView(popupLeft),
+						BMapUtil.getBitmapFromView(popupInfo),
+						BMapUtil.getBitmapFromView(popupRight),
+				};
+				popLay.showPopup(bitmap, item.getPoint(),32);
+			} else {
+				OverlayItem item = getItem(index);
+				popupText.setText("UID");
+				Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
+				popLay.showPopup(bitmap, item.getPoint(), 32);
+			}
 			return true;
 		}
 
@@ -144,7 +158,6 @@ public class MapMaker extends Activity {
 			if(popLay != null) {
 				popLay.hidePop();
 			}
-
 			return false;
 		}
 	}
@@ -181,7 +194,10 @@ public class MapMaker extends Activity {
 		LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		viewCache = inflater.inflate(R.layout.custom_text_view, null);
 		popupInfo = (View)viewCache.findViewById(R.id.popinfo);
+		popupLeft = (View)viewCache.findViewById(R.id.popleft);
+		popupRight = (View)viewCache.findViewById(R.id.popright);
 		popupText = (TextView)viewCache.findViewById(R.id.textcache);
+		leftText = (TextView)viewCache.findViewById(R.id.popleft);
 
 		PopupClickListener popListener = new PopupClickListener() {
 		
@@ -191,8 +207,12 @@ public class MapMaker extends Activity {
 				if (index == 0) {
 					// do nothing
 				}
-				if (index == 1) {
-					// this is a marker and remove it
+				if (index == 2) {
+					// remove current marker
+					mOverlay.removeItem(nowMarker);
+					nowMarker = null;
+					mMapView.refresh();
+					popLay.hidePop();
 				}
 			}
 		};
@@ -224,7 +244,6 @@ public class MapMaker extends Activity {
 	
 		mLocationOverlay.setData(locationData);
 		mMapView.refresh();
-
 		if (hasAnimation) {
 			mMapController.animateTo(new GeoPoint((int)(locationData.latitude * 1E6)
 						, (int)(locationData.longitude * 1E6)));
@@ -245,6 +264,10 @@ public class MapMaker extends Activity {
 			GeoPoint p;
 			Vector<UserInfo> allUsers = mapInfo.getVector();
 			boolean flag = false;
+			if (nowMarker != null) {
+				Log.d("marker", "now marker is not null");
+				mOverlay.addItem(nowMarker);
+			}
 			for (int i =1; i < allUsers.size(); i++) {
 				// it's me!
 				if (allUsers.get(i).uid == Infomation.myInfo.uid) continue;
@@ -264,10 +287,7 @@ public class MapMaker extends Activity {
 			mItems = new ArrayList<OverlayItem>();
 			mItems.addAll(mOverlay.getAllItem());
 		}
-		if (nowMarker != null) {
-			Log.d("marker", "now marker is not null");
-			mOverlay.addItem(nowMarker);
-		}
+		
 		if (mMapView != null) {
 			if (mMapView.getOverlays() != null) {
 				mMapView.getOverlays().add(mOverlay);

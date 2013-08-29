@@ -13,35 +13,32 @@
         android:background="@drawable/popup_side"
          android:gravity="center"
         android:textStyle="bold"
-         android:textColor="#3814ed"
-        android:text="更新位置"
+        android:textColor="@android:color/black"
         android:textSize="12sp" />
-
    
      <LinearLayout
 	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
 	    android:orientation="vertical"
-	    android:id="@+id/popinfo"
-	    >
+	    android:id="@+id/popinfo">
 	    
-    <TextView
-        android:id="@+id/textcache"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/popup_middle"
-        android:gravity="center"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:textSize="12sp" />
+    	<TextView
+        	android:id="@+id/textcache"
+        	android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+        	android:background="@drawable/popup_middle"
+        	android:gravity="center"
+        	android:textStyle="bold"
+        	android:textColor="@android:color/black"
+        	android:textSize="12sp" />
     
-     <TextView
-        android:id="@+id/popdown"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/popup_down"
-        android:textColor="@android:color/black"
-        android:textSize="12sp" />
+     	<TextView
+        	android:id="@+id/popdown"
+        	android:layout_width="fill_parent"
+        	android:layout_height="wrap_content"
+        	android:background="@drawable/popup_down"
+        	android:textColor="@android:color/black"
+        	android:textSize="12sp" />
     
     
     </LinearLayout>
@@ -52,10 +49,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/popup_side"
-        android:textColor="#3814ed"
+        android:textColor="@android:color/black"
         android:gravity="center"
         android:textStyle="bold"
-        android:text="更新marker"
-        android:textSize="12sp" />
+        android:textSize="12sp" 
+        android:text="cancel"/>
 
 </LinearLayout>
