@@ -10,7 +10,7 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
-//       Piztor Transmission Protocol v0.4a       //
+//       Piztor Transmission Protocol v1.0b       //
 
 //------------------------------------------------//
 //												  //
@@ -20,10 +20,16 @@ import android.os.Message;
 //              2   for   locationRequest		  //
 //			    3   for   userinfo				  //
 //              4   for   logout                  //
+//              5   for   requestpush             //
+//              6   for   sendmessage             //
+//												  //	
+//            100   for   pushmessage	          //
+//            101   for   pushlocation            //
 //											      //
 //     ----------I'm the division line--------    //
 //                                                //
 //             -1   for   Exceptions			  //
+//   Exception (req type,ex type,exception type)  //
 //                                                //
 //    ----------I'm the division line--------     //
 //                                                //
@@ -33,6 +39,7 @@ import android.os.Message;
 //getlocation -- token & username & company & section//
 //    getuserinfo -- token & userinfo & userid    //
 //       logout -- token & username               //
+//    send message -- token & username & message  //
 //												  //
 //    ----------I'm the division line--------     //
 //                                                //
@@ -43,20 +50,49 @@ import android.os.Message;
 //       entry  -- userid & latitude & longitude  //
 //                                                //
 //getuserinfo -- status & uid & company & section & gender//
-//            logout -- status                    //
+//                logout -- status                //
+//			request push -- status				  //
+//          send message -- status                //
 //												  //
 //          status -- 0 for success               //
 //					  1 for failed/invalid        //				
 //												  //
+//          push message -- message               //
+//                                                //
 //------------------------------------------------//
 
+
+
 public class Transam implements Runnable {
+	
+	public final static int Login =0;
+	public final static int Update =1;
+	public final static int Location =2;
+	public final static int UserInfo =3;
+	public final static int Logout =4;
+	public final static int StartPush =5;
+	public final static int SendMessage =6;
+	
+	public final static int PushMessage =100;
+	public final static int PushLocation =101;
+	
+	public final static int GroupID =0;
+	public final static int Gender =1;
+	
+	public final static int EConnectedFailedException =101;
+	public final static int ETimeOutException =102;
+	public final static int EJavaHostException =103;
+	public final static int EPushFailedException =104;
+	public final static int EIOException =105;
+	public final static int EUnknownHostException =106;
+	
 	public Timer timer;
 	public boolean running = false; 
 	public boolean flag = true;
 	public int cnt = 4;				//retry times
 	public int tcnt;				//current remain retry times
-	public int retime = 10000;		//timeout time
+	public int rcnt;				//current remain retry times (push)
+	public int retime = 2000;		//timeout time
 	Res res;
 	Req req;
 	public int p;					//port
@@ -66,6 +102,14 @@ public class Transam implements Runnable {
 	Handler recall;					//recall
 	Queue<Req> reqtask ;			//request task
 	
+	public String itoken;
+	public String iname;
+	
+	Thread Pushthread;
+	PushClient push;
+	
+	
+	public final static int Reconnect =-2;
 	public final static int Exception =-1;
 	public final static int TimeOut =0;
 
@@ -81,6 +125,29 @@ public class Transam implements Runnable {
 		
 	}
 	
+	public void startPush(String token,String name) {
+		itoken = token;
+		iname = name;
+		rcnt = cnt;
+		connectpush();
+	}
+	
+	public void stopPush() {
+		try{
+			if(push.isClosed() == false) {
+				push.closeSocket();
+				itoken = null;
+				iname = null;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			Message msg = new Message();
+			msg.what = Exception;
+			msg.obj = new EIOException(5,0);
+			recall.sendMessage(msg);
+		}
+	}
+	
 	public void setTimeOutTime(int msec){
 		retime = msec;
 	}
@@ -92,8 +159,13 @@ public class Transam implements Runnable {
 	
 	public void setHandler(Handler Recall){
 		recall = Recall;
+		if(push != null) {
+			push.setPushHandler(Recall);
+		}
 		reqtask.clear();
 	}
+	
+
 
 	public void run() {								//start the main thread		
 		while(true){
@@ -103,7 +175,7 @@ public class Transam implements Runnable {
 					req = reqtask.poll();	
 					if(req.time + req.alive < System.currentTimeMillis()){		//time out!
 						Message ret = new Message();
-						TimeOutException t = new TimeOutException();
+						ETimeOutException t = new ETimeOutException(req.type,req.time);
 						ret.obj = t;
 						ret.what = Exception;
 						recall.sendMessage(ret);
@@ -123,8 +195,51 @@ public class Transam implements Runnable {
 		thread = new Thread(t);
 		thread.start();
 	}
+	
+	private void connectpush() {
+		reqpush r = new reqpush();
+		Pushthread = new Thread(r);
+		Pushthread.start();
+	}
+	
+	private class reqpush implements Runnable {
+		public void run() {
+			try {
+				if(itoken == null || iname == null) return;
+				push = new PushClient(i,p,retime);
+				push.setPushHandler(recall);
+				int out = push.start(new ReqStartPush(itoken,iname));
+				if(out == 1) {
+					push.closeSocket();
+					Message msg = new Message();
+					msg.what = Reconnect;
+					msg.obj = new ETimeOutException(5,0);
+					handler.sendMessage(msg);
+				}
+				else if (out == 2){
+					stopPush();
+				}
+				else {
+					push.listen(recall,handler);
+				}
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+				Message msg = new Message();
+				msg.what = Reconnect;
+				msg.obj = new EUnknownHostException(5,0);
+				handler.sendMessage(msg);
+			} catch (IOException e) {
+				e.printStackTrace();
+				Message msg = new Message();
+				msg.what = Reconnect;
+				msg.obj = new EIOException(5,0);
+				handler.sendMessage(msg);
+			}
 
-	class thd implements Runnable {
+		}
+	}
+
+	private class thd implements Runnable {
 		public void run() {
 			try {
 				SocketClient client = new SocketClient(i,p,retime);
@@ -135,21 +250,23 @@ public class Transam implements Runnable {
 				}
 				else {
 					client.closeSocket();
-					Message msg = new Message();
-					msg.what = TimeOut;
-					handler.sendMessage(msg);
+					Message m = new Message();
+					EConnectFailedException c = new EConnectFailedException(req.type,req.time);
+					m.obj = c;
+					m.what = Exception;
+					handler.sendMessage(m);
 				}				
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 				Message msg = new Message();
 				msg.what = Exception;
-				msg.obj = e;
+				msg.obj = new EUnknownHostException(req.type,req.time);
 				handler.sendMessage(msg);
 			} catch (IOException e) {
 				e.printStackTrace();
 				Message msg = new Message();
 				msg.what = Exception;
-				msg.obj = e;
+				msg.obj = new EIOException(req.type,req.time);
 				handler.sendMessage(msg);
 			}
 
@@ -179,11 +296,23 @@ public class Transam implements Runnable {
 					connect();
 				} else if (tcnt == 0) {
 					Message m = new Message();
-					ConnectFailedException c = new ConnectFailedException();
+					EConnectFailedException c = new EConnectFailedException(req.type,req.time);
 					m.obj = c;
 					m.what = Exception;
 					recall.sendMessage(m);
 					running = false;
+				}
+				break;
+			case Reconnect:
+				if (rcnt > 0) {
+					rcnt--;
+					connectpush();
+				} else if (rcnt == 0) {
+					Message m = new Message();
+					//EPushFailedException c = new EPushFailedException(req.type);
+					m.obj = msg.obj;
+					m.what = Exception;
+					recall.sendMessage(m);
 				}
 				break;
 			}
@@ -191,27 +320,58 @@ public class Transam implements Runnable {
 		}
 	};
 	
-	class ConnectFailedException extends Exception{
+	class EException extends Exception {
+		private static final long serialVersionUID = 100L;
+		int Rtype;
+		int Etype;
+		long time;
+		public EException(int e,int r,long timep) {  
+			super();
+			Rtype = r;
+			Etype = e;
+			time = timep;
+			}
+	}
+	
+	class EConnectFailedException extends EException{
 		private static final long serialVersionUID = 101L;
-		public ConnectFailedException() {  
-			super();  
+		public EConnectFailedException(int t,long timep) {  
+			super(101,t,timep);
 			}		
 	}
 	
-	class TimeOutException extends Exception{
+	class ETimeOutException extends EException{
 		private static final long serialVersionUID = 102L;
-		public TimeOutException() {  
-			super();  
-			}	
-		
+		public ETimeOutException(int t,long timep) {  
+			super(102,t,timep);
+			}		
 	}
 	
-	class JavaHostException extends Exception{
+	class EJavaHostException extends EException{
 		private static final long serialVersionUID = 103L;
-		public JavaHostException() {  
-			super();  
-			}	
-		
+		public EJavaHostException(int t,long timep) {  
+			super(103,t,timep);
+		}		
 	}
 	
+	class EPushFailedException extends EException{
+		private static final long serialVersionUID = 104L;
+		public EPushFailedException(int t,long timep) {  
+			super(104,t,timep);
+		}		
+	}
+	
+	class EIOException extends EException{
+		private static final long serialVersionUID = 105L;
+		public EIOException(int t,long timep) {  
+			super(105,t,timep);
+		}		
+	}	
+	
+	class EUnknownHostException extends EException{
+		private static final long serialVersionUID = 106L;
+		public EUnknownHostException(int t,long timep) {  
+			super(106,t,timep);
+		}		
+	}	
 }
