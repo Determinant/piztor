@@ -52,6 +52,8 @@ _HEADER_SIZE = _SectionSize.LENGTH + \
 
 _MAX_TEXT_MESG_SIZE = 1024
 
+_MAX_PENDING_PUSH = 100
+
 class _OptCode:
     user_auth = 0x00
     location_update = 0x01
@@ -96,6 +98,9 @@ class PushTunnel(object):
     def add(self, pdata):
         logger.info("-- Push data enqued --")
         self.pending.append(pdata)
+        if len(self.pending) > _MAX_PENDING_PUSH:
+            logger.info("-- Push queue is full, discarded an obsolete push --")
+            self.pending.popleft()  # discard old push
 
     def on_receive(self, data):
         front = self.pending.popleft()
@@ -670,6 +675,6 @@ from twisted.internet import reactor
 
 f = PTPFactory()
 f.protocol = PTP
-reactor.listenTCP(2222, f)
+reactor.listenTCP(2223, f)
 logger.warning("The server is lanuched")
 reactor.run()
