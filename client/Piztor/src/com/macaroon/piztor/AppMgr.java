@@ -14,10 +14,10 @@ import com.baidu.mapapi.MKGeneralListener;
 
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
-	
+
 	private static final String strKey = "8a0ae50048d103b2b8b12b7066f4ea7d";
-    static BMapManager mBMapManager = null;
-	
+	static BMapManager mBMapManager = null;
+
 	// Status
 	public enum ActivityStatus {
 		create, start, resume, restart, stop, pause, destroy
@@ -37,9 +37,9 @@ public class AppMgr {
 	final static int hasToken = 104;
 	final static int toSettings = 105;
 	final static int logout = 106;
-	
+
 	static MapInfo mapInfo;
-	
+
 	static HashMap<Class<?>, HashMap<Integer, Class<?>>> mp;
 	static HashSet<PiztorAct> acts;
 
@@ -76,13 +76,14 @@ public class AppMgr {
 		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
 		if (event == errorToken)
 			Infomation.token = null;
-		if (event == toSettings) {
-			if (nowAct.actMgr.nowStatus.getClass() == Main.FetchStatus.class)
-				i.putExtra("status", true);
-			else i.putExtra("status", false);
+		if (event == loginSuccess) {
+			mBMapManager.start();
+			transam.startPush(Infomation.token, Infomation.username);
 		}
-		if (event == loginSuccess) mBMapManager.start();
- 		if (event == logout) mBMapManager.stop();
+		if (event == logout) {
+			mBMapManager.stop();
+			transam.stopPush();
+		}
 		nowAct.startActivity(i);
 	}
 
@@ -115,16 +116,18 @@ public class AppMgr {
 	static void init(Context context) {
 		if (mBMapManager == null) {
 			mBMapManager = new BMapManager(context);
-			mBMapManager.init(strKey, new MKGeneralListener(){
+			mBMapManager.init(strKey, new MKGeneralListener() {
 				@Override
-		        public void onGetNetworkState(int iError) {
-		            Log.d("Network","failure");
-		        }
+				public void onGetNetworkState(int iError) {
+					Log.d("Network", "failure");
+					System.out.println("network wocao ni ma de !!!!!!!!!");
+				}
 
-		        @Override
-		        public void onGetPermissionState(int iError) {
-		            Log.d("Permission","wrong key");
-		        }
+				@Override
+				public void onGetPermissionState(int iError) {
+					Log.d("Permission", "wrong key");
+					System.out.println("ju ran bu gei wo quan xian !!!!!!!!!!");
+				}
 			});
 		}
 		mp = new HashMap<Class<?>, HashMap<Integer, Class<?>>>();
@@ -138,15 +141,15 @@ public class AppMgr {
 		addStatus(Login.class);
 		addStatus(Main.class);
 		addStatus(Settings.class);
-		addTransition(Main.class, logout, Login.class);
 		addTransition(InitAct.class, noToken, Login.class);
-		addTransition(Login.class, loginSuccess, Main.class);
-		addTransition(Main.class, errorToken, Login.class);
-		addTransition(Settings.class, errorToken, Login.class);
 		addTransition(InitAct.class, hasToken, Main.class);
 		addTransition(InitAct.class, errorToken, Login.class);
+		addTransition(Main.class, logout, Login.class);
 		addTransition(Main.class, toSettings, Settings.class);
+		addTransition(Main.class, errorToken, Login.class);
+		addTransition(Login.class, loginSuccess, Main.class);
 		addTransition(Settings.class, logout, Login.class);
+		addTransition(Settings.class, errorToken, Login.class);
 	}
 
 }

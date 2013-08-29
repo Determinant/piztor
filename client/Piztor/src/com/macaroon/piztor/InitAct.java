@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.view.Menu;
 
 public class InitAct extends PiztorAct {
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "initAct";
@@ -13,14 +13,18 @@ public class InitAct extends PiztorAct {
 		AppMgr.transam.setTimeOutTime(5000);
 		setContentView(R.layout.activity_init);
 	}
-	
+
 	@Override
 	protected void onStart() {
 		super.onStart();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
 		if (Infomation.token == null)
 			AppMgr.trigger(AppMgr.noToken);
 		else {
-			//TODO jump to main
 			AppMgr.trigger(AppMgr.hasToken);
 		}
 	}
@@ -28,8 +32,6 @@ public class InitAct extends PiztorAct {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		//TODO 减少频率
-		
 	}
 
 	@Override

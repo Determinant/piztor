@@ -3,15 +3,15 @@ package com.macaroon.piztor;
 import java.util.Vector;
 
 //--------------------------------------//
-//			  Location Info			    //
+//			  Push Location			    //
 //--------------------------------------//
 
-public class ResLocation extends Res{
+public class ResPushLocation extends Res{
 	Vector<RLocation> l;	//vector for location info
 	int n;					//number of location info
 	
-	ResLocation(int num,int status,Vector<RLocation> locationvec){
-		super(2,status);	//for type 2
+	ResPushLocation(int num,Vector<RLocation> locationvec){
+		super(101,0);	//for type 101
 		l = locationvec;
 		n = num;
 	}

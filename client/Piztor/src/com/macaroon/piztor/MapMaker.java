@@ -61,7 +61,7 @@ public class MapMaker extends Activity {
 	
 	// MapView controlling component
 	private MapView mMapView = null;
-	private MapController mMapController = null;
+	MapController mMapController = null;
 	
 	// Default center
 	private final static GeoPoint sjtuCenter = new GeoPoint((int)(31.032247 * 1E6), (int)(121.445937 * 1E6));

@@ -53,7 +53,9 @@ public class MapInfo {
 }
 
 class UserInfo {
-	int uid, gid, sex;
+	int uid, sex;
+	int company;		//group id
+	int section;
 	GeoPoint location;
 
 	UserInfo(int uid) {
@@ -64,8 +66,9 @@ class UserInfo {
 		location = new GeoPoint((int)(lat * 1e6), (int)(lot * 1e6));
 	}
 
-	void setInfo(int gid, int sex) {
-		this.gid = gid;
+	void setInfo(int company, int section, int sex) {
+		this.company = company;
+		this.section = section;
 		this.sex = sex;
 	}
 	
