@@ -186,6 +186,7 @@ public class Main extends PiztorAct {
 			locData.accuracy = location.getRadius();
 			locData.direction = location.getDerect();
 
+			System.out.println("LLLLLLLLLLLLLLLLLLLLLLL    " + locData.latitude + "   " + locData.longitude);
 			mapMaker.UpdateLocationOverlay(locData, isFirstLocation);
 			isFirstLocation = false;
 			if (Infomation.token != null) {
@@ -379,10 +380,6 @@ public class Main extends PiztorAct {
 		 InputMethodManager.HIDE_NOT_ALWAYS);
 		 }
 
-	/*
-	 * public boolean onTap(int index) { OverlayItem item = getItem(index);
-	 * mCurItem = item; if () }
-	 */
 	@Override
 	protected void onStart() {
 		super.onStart();
