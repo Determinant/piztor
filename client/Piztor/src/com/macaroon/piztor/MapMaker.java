@@ -8,6 +8,7 @@ import android.util.Log;
 import android.util.AttributeSet;
 import android.annotation.SuppressLint;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -20,7 +21,10 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.app.Activity;  
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;  
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
@@ -29,6 +33,7 @@ import android.widget.Toast;
 import android.view.View.OnClickListener;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
+import android.provider.Settings;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
@@ -72,9 +77,7 @@ public class MapMaker extends Activity {
 	private MyOverlay markerOverlay;
 	private OverlayItem nowMarker = null;
 
-	//
-	private Context context;
-	
+	// map touch listener
 	private MKMapTouchListener mapTouchListener;
 
 	// Popup component
@@ -82,6 +85,11 @@ public class MapMaker extends Activity {
 	private TextView popupText = null;
 	private View viewCache = null;
 	private View popupInfo = null;
+
+	//misc
+	private Context context;
+	private LocationManager locationManager = null;
+	boolean isGPSEnabled;
 
 	/**
 	 * Constructor
@@ -234,6 +242,7 @@ public class MapMaker extends Activity {
 		InitPopup();
 		InitTouchListenr();
 	}
+
 	/**
 	 * Update location layer when new location is received
 	 */

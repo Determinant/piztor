@@ -4,13 +4,20 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -52,6 +59,8 @@ public class Main extends PiztorAct {
 	/**
 	 * Locating component
 	 */
+	LocationManager locationManager;
+	boolean isGPSEnabled;
 	LocationClient mLocClient;
 	LocationData locData = null;
 	public MyLocationListener myListener = new MyLocationListener();
@@ -285,10 +294,45 @@ public class Main extends PiztorAct {
 		}
 	}
 
+	public void showSettingsAlert() {
+		
+		closeBoard(Main.this);
+		AlertDialog.Builder gpsDialog = new AlertDialog.Builder(this);
+		gpsDialog.setTitle("GPS settings");
+		gpsDialog.setMessage("GPS is not enabled. Please turn it on.");
+		gpsDialog.setPositiveButton("Settings",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+						Main.this.startActivity(intent);
+					}
+				});
+		gpsDialog.setNegativeButton("Cancel",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.cancel();
+					}
+				});
+		gpsDialog.show();
+	}
+	
+	public static void closeBoard(Context mcontext) {
+		InputMethodManager imm = (InputMethodManager) mcontext
+				.getSystemService(Context.INPUT_METHOD_SERVICE);
+		  if (imm.isActive())
+			  imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT,
+		 InputMethodManager.HIDE_NOT_ALWAYS);
+		 }
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "Main";
 		super.onCreate(savedInstanceState);
+		
+		locationManager = (LocationManager)this.getSystemService(LOCATION_SERVICE);
+		isGPSEnabled = locationManager.isProviderEnabled(locationManager.GPS_PROVIDER);
+		if (isGPSEnabled == false) showSettingsAlert();
+		
 		mapInfo = AppMgr.mapInfo;
 		ActStatus[] r = new ActStatus[3];
 		ActStatus startStatus = r[0] = new StartStatus();
@@ -358,6 +402,7 @@ public class Main extends PiztorAct {
 
 	@Override
 	protected void onResume() {
+		isFirstLocation = true;
 		mapMaker.onResume();
 		flushMap();
 		super.onResume();
