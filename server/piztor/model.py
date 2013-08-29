@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean
+from sqlalchemy import Table, Column
+from sqlalchemy import Integer, String, Float, ForeignKey, Boolean
 from sqlalchemy.dialects.mysql import BLOB, TINYINT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
@@ -11,24 +12,46 @@ MAX_USERNAME_SIZE = 20
 MAX_PASSWORD_SIZE = 20
 
 _table_typical_settings = {
-        'mysql_engine' : 'InnoDB', 
-        'mysql_charset' : 'utf8', 
+        'mysql_engine' : 'InnoDB',
+        'mysql_charset' : 'utf8',
         'mysql_auto_increment' : '1'}
 
 class _TableName:   # avoid typoes
     UserModel = 'users'
     LocationInfo = 'location_info'
     UserAuth = 'user_auth'
+    CompanyInfo = 'comp_info'
+    SectionInfo = 'sec_info'
+    CompanySub = 'comp_sub'
+    SectionSub = 'sec_sub'
+
+comp_sub_assoc = Table(_TableName.CompanySub, Base.metadata,
+        Column('uid', Integer, ForeignKey(_TableName.UserModel + '.id')),
+        Column('comp_id', Integer, ForeignKey(_TableName.CompanyInfo + '.id')))
+
+sec_sub_assoc = Table(_TableName.SectionSub, Base.metadata,
+        Column('uid', Integer, ForeignKey(_TableName.UserModel + '.id')),
+        Column('sec_id', Integer, ForeignKey(_TableName.SectionInfo + '.id')))
 
 class UserModel(Base):
     __tablename__ = _TableName.UserModel
     __table_args__ = _table_typical_settings
     id = Column(Integer, primary_key = True)
-    sec_id = Column(TINYINT)
-    comp_id = Column(TINYINT)
-    username = Column(String(MAX_USERNAME_SIZE), 
+    username = Column(String(MAX_USERNAME_SIZE),
                     unique = True, nullable = False)
+
     sex = Column(Boolean, nullable = False)
+    sec_no = Column(TINYINT)
+    comp_id = Column(TINYINT, ForeignKey(_TableName.CompanyInfo + '.id'))
+    sec_id = Column(TINYINT, ForeignKey(_TableName.SectionInfo + '.id'))
+
+    comp_sub = relationship(_TableName.CompanyInfo,
+                            secondary = comp_sub_assoc,
+                            backref = "subscribers")
+    sec_sub = relationship(_TableName.SectionInfo,
+                            secondary = sec_sub_assoc,
+                            backref = "subscribers")
+
     location = None
     auth = None
     sec = None
@@ -37,11 +60,11 @@ class LocationInfo(Base):
     __tablename__ = _TableName.LocationInfo
     __table_args__ = _table_typical_settings
 
-    uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'), 
+    uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'),
                 primary_key = True)
     lat = Column(Float(precesion = 64), nullable = False)
     lng = Column(Float(precesion = 64), nullable = False)
-    user = relationship("UserModel", uselist = False, 
+    user = relationship("UserModel", uselist = False,
             backref = backref("location", uselist = False,
                 cascade = "all, delete-orphan"))
 
@@ -68,7 +91,7 @@ class UserAuth(Base):
     salt = Column(BLOB)
     token = Column(BLOB)
 
-    user = relationship("UserModel", uselist = False, 
+    user = relationship("UserModel", uselist = False,
             backref = backref("auth", uselist = False,
                 cascade = "all, delete-orphan"))
 
@@ -92,3 +115,23 @@ class UserAuth(Base):
 
     def get_token(self):
         return self.token
+
+class CompanyInfo(Base):
+    __tablename__ = _TableName.CompanyInfo
+    __table_args__ = _table_typical_settings
+
+    id = Column(TINYINT, primary_key = True)
+    marker_lat = Column(Float(precesion = 64), nullable = False)
+    market_lng = Column(Float(precesion = 64), nullable = False)
+
+    subscribers = None
+
+class SectionInfo(Base):
+    __tablename__ = _TableName.SectionInfo
+    __table_args__ = _table_typical_settings
+
+    id = Column(TINYINT, primary_key = True)
+    marker_lat = Column(Float(precesion = 64), nullable = False)
+    market_lng = Column(Float(precesion = 64), nullable = False)
+
+    subscribers = None

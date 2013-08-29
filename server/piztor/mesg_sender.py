@@ -21,3 +21,4 @@ if len(argv) == 4:
 
 uid, token = user_auth(username, password)
 send_text_mesg(token, username, mesg)
+logout(token, username)

@@ -19,6 +19,9 @@ from model import *
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
+def get_sec_id(comp_id, sec_no):
+    return comp_id * 256 + sec_no
+
 db_path = "root:helloworld@localhost/piztor"
 #db_path = "piztor.sqlite"
 FORMAT = "%(asctime)-15s %(message)s"
@@ -64,19 +67,20 @@ class _StatusCode:
 
 class PushData(object):
     from hashlib import sha256
-    def __init__(self, data):
-        self.data = data
+    def pack(self, optcode, data):
         self.finger_print = sha256(data).digest()
+        buff = struct.pack("!B32s", optcode, self.finger_print)
+        buff += data
+        buff = struc.pack("!L", _SectionSize.LENGTH + len(buff)) + buff
+        self.data = data
 
 class PushTextMesgData(PushData):
     def __init__(self, mesg): 
-        self.finger_print = sha256(mesg).digest()
-        logger.info("Mesg: %s", mesg)
-        buff = struct.pack("!B32s", 0x00, self.finger_print)
-        buff += mesg
-        buff += chr(0)
-        buff = struct.pack("!L", _SectionSize.LENGTH + len(buff)) + buff
-        self.data = buff
+        self.pack(0x00, mesg + chr(0))
+
+class PushLocationData(PushData):
+    def __init__(self, uid, lat, lng):
+        self.pack(0x01, struct.pack("!dd", lat, lng))
                 
 
 class PushTunnel(object):
@@ -84,9 +88,9 @@ class PushTunnel(object):
         self.pending = deque()
         self.conn = None
 
-    def __del__(self):
+    def close(self):
         if self.conn:
-            self.conn.loseConnection()
+            self.conn.transport.loseConnection()
 
     def add(self, pdata):
         logger.info("-- Push data enqued --")
@@ -97,27 +101,28 @@ class PushTunnel(object):
         length, optcode, fingerprint = struct.unpack("!LB32s", data)
         if front.finger_print != fingerprint:
             raise PiztorError
-        logger.info("-- Push data confirmed --")
+        logger.info("-- Push data confirmed by client --")
         self.push()
 
     def push(self):
         print "Pushing via " + str(self)
         print "Pending size: " + str(len(self.pending))
-        print self.conn
+        logger.info("Pushing...")
         if (self.conn is None) or len(self.pending) == 0:
             return
         front = self.pending.popleft()
         self.pending.appendleft(front)
-        print get_hex(front.data)
         self.conn.transport.write(front.data)
 
     def connect(self, conn):
-        print conn
         conn.tunnel = self
+        if self.conn:   # only one long-connection per user
+            self.conn.transport.loseConnection()
         self.conn = conn
 
-    def on_connection_lost(self):
-        self.conn = None
+    def on_connection_lost(self, conn):
+        if conn == self.conn:
+            self.conn = None
 
 class RequestHandler(object):
     push_tunnels = dict()
@@ -298,13 +303,13 @@ class LocationInfoHandler(RequestHandler):
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
             if username is None:
                 raise struct.error
-            comp_id, sec_id = struct.unpack("!BB", tail)
+            comp_id, sec_no = struct.unpack("!BB", tail)
         except struct.error:
             raise BadReqError("Location request: Malformed request body")
 
         logger.info("Trying to request locatin with " \
-                    "(token = {0}, comp_id = {1}, sec_id = {2})" \
-            .format(get_hex(token), comp_id, sec_id))
+                    "(token = {0}, comp_id = {1}, sec_no = {2})" \
+            .format(get_hex(token), comp_id, sec_no))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Auth failure
@@ -314,13 +319,13 @@ class LocationInfoHandler(RequestHandler):
                                         _OptCode.location_info,
                                         _StatusCode.failure)
 
-        if sec_id == 0xff:  # All members in the company
+        if sec_no == 0xff:  # All members in the company
             ulist = self.session.query(UserModel) \
                     .filter(UserModel.comp_id == comp_id).all()
         else:
+            sec_id = get_sec_id(comp_id, sec_no)
             ulist = self.session.query(UserModel) \
-                    .filter(and_(UserModel.comp_id == comp_id,
-                                UserModel.sec_id == sec_id)).all()
+                    .filter(UserModel.sec_id == sec_id).all()
         reply = struct.pack(
                 "!LBB", 
                 self._response_size(len(ulist)),
@@ -334,7 +339,7 @@ class LocationInfoHandler(RequestHandler):
         return reply
 
 def pack_gid(user):
-    return struct.pack("!BB", user.comp_id, user.sec_id)
+    return struct.pack("!BB", user.comp_id, user.sec_no)
 
 def pack_sex(user):
     return struct.pack("!B", 0x01 if user.sex else 0x00)
@@ -436,7 +441,10 @@ class UserLogoutHandler(RequestHandler):
             return struct.pack("!LBB",  self._response_size,
                                         _OptCode.user_logout,
                                         _StatusCode.failure)
-        del RequestHandler.push_tunnels[uauth.uid]
+        pt = RequestHandler.push_tunnels
+        uid = uauth.uid
+        pt[uid].close()
+        del pt[uid]
         uauth.regen_token()
         logger.info("User Logged out successfully!")
         self.session.commit()
@@ -525,15 +533,16 @@ class SendTextMessageHandler(RequestHandler):
 
         pt = RequestHandler.push_tunnels
         u = uauth.user
+        sec_id = get_sec_id(u.comp_id, u.sec_no)
         ulist = self.session.query(UserModel) \
-                .filter(and_(UserModel.comp_id == u.comp_id,
-                            UserModel.sec_id == u.sec_id)).all()
+                .filter(UserModel.sec_id == sec_id).all()
 
         for user in ulist:
             uid = user.id
             if pt.has_key(uid):
                 tunnel = pt[uid]
                 tunnel.add(PushTextMesgData(mesg))
+                tunnel.push()
         logger.info("Sent text mesg successfully!")
         return struct.pack("!LBB",  self._response_size,
                                     _OptCode.send_text_mesg,
@@ -621,7 +630,7 @@ class PTP(Protocol, TimeoutMixin):
 
     def connectionLost(self, reason):
         if self.tunnel:
-            self.tunnel.on_connection_lost()
+            self.tunnel.on_connection_lost(self)
         logger.info("The connection is lost")
         self.setTimeout(None)
 
