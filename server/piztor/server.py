@@ -67,19 +67,20 @@ class _StatusCode:
 
 class PushData(object):
     from hashlib import sha256
-    def __init__(self, data):
-        self.data = data
+    def pack(self, optcode, data):
         self.finger_print = sha256(data).digest()
+        buff = struct.pack("!B32s", optcode, self.finger_print)
+        buff += data
+        buff = struc.pack("!L", _SectionSize.LENGTH + len(buff)) + buff
+        self.data = data
 
 class PushTextMesgData(PushData):
     def __init__(self, mesg): 
-        self.finger_print = sha256(mesg).digest()
-        logger.info("Mesg: %s", mesg)
-        buff = struct.pack("!B32s", 0x00, self.finger_print)
-        buff += mesg
-        buff += chr(0)
-        buff = struct.pack("!L", _SectionSize.LENGTH + len(buff)) + buff
-        self.data = buff
+        self.pack(0x00, mesg + chr(0))
+
+class PushLocationData(PushData):
+    def __init__(self, uid, lat, lng):
+        self.pack(0x01, struct.pack("!dd", lat, lng))
                 
 
 class PushTunnel(object):
