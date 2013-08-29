@@ -19,6 +19,9 @@ from model import *
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
+def get_sec_id(comp_id, sec_no):
+    return comp_id * 256 + sec_no
+
 db_path = "root:helloworld@localhost/piztor"
 #db_path = "piztor.sqlite"
 FORMAT = "%(asctime)-15s %(message)s"
@@ -299,13 +302,13 @@ class LocationInfoHandler(RequestHandler):
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
             if username is None:
                 raise struct.error
-            comp_id, sec_id = struct.unpack("!BB", tail)
+            comp_id, sec_no = struct.unpack("!BB", tail)
         except struct.error:
             raise BadReqError("Location request: Malformed request body")
 
         logger.info("Trying to request locatin with " \
-                    "(token = {0}, comp_id = {1}, sec_id = {2})" \
-            .format(get_hex(token), comp_id, sec_id))
+                    "(token = {0}, comp_id = {1}, sec_no = {2})" \
+            .format(get_hex(token), comp_id, sec_no))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Auth failure
@@ -315,13 +318,13 @@ class LocationInfoHandler(RequestHandler):
                                         _OptCode.location_info,
                                         _StatusCode.failure)
 
-        if sec_id == 0xff:  # All members in the company
+        if sec_no == 0xff:  # All members in the company
             ulist = self.session.query(UserModel) \
                     .filter(UserModel.comp_id == comp_id).all()
         else:
+            sec_id = get_sec_id(comp_id, sec_no)
             ulist = self.session.query(UserModel) \
-                    .filter(and_(UserModel.comp_id == comp_id,
-                                UserModel.sec_id == sec_id)).all()
+                    .filter(UserModel.sec_id == sec_id).all()
         reply = struct.pack(
                 "!LBB", 
                 self._response_size(len(ulist)),
@@ -335,7 +338,7 @@ class LocationInfoHandler(RequestHandler):
         return reply
 
 def pack_gid(user):
-    return struct.pack("!BB", user.comp_id, user.sec_id)
+    return struct.pack("!BB", user.comp_id, user.sec_no)
 
 def pack_sex(user):
     return struct.pack("!B", 0x01 if user.sex else 0x00)
@@ -529,9 +532,9 @@ class SendTextMessageHandler(RequestHandler):
 
         pt = RequestHandler.push_tunnels
         u = uauth.user
+        sec_id = get_sec_id(u.comp_id, u.sec_no)
         ulist = self.session.query(UserModel) \
-                .filter(and_(UserModel.comp_id == u.comp_id,
-                            UserModel.sec_id == u.sec_id)).all()
+                .filter(UserModel.sec_id == sec_id).all()
 
         for user in ulist:
             uid = user.id

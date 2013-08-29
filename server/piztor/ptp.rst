@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v1.0
+Piztor Transmission Protocol v1.0a
 ----------------------------------
 
 - General 
@@ -221,4 +221,12 @@ Piztor Transmission Protocol v1.0
       +--1b--+-------32b---------+----?b----+
       | 0x00 | PUSH_FINGERPRINT  | MESSAGE  |
       +------+-------------------+--string--+
+
+  - User Location Update
+
+  ::
+
+      +--1b--+-------32b---------+-------?b-------+
+      | 0x01 | PUSH_FINGERPRINT  | LOCATION_ENTRY |
+      +------+-------------------+----------------+
 
