@@ -71,8 +71,8 @@ class PushData(object):
         self.finger_print = sha256(data).digest()
         buff = struct.pack("!B32s", optcode, self.finger_print)
         buff += data
-        buff = struc.pack("!L", _SectionSize.LENGTH + len(buff)) + buff
-        self.data = data
+        buff = struct.pack("!L", _SectionSize.LENGTH + len(buff)) + buff
+        self.data = buff
 
 class PushTextMesgData(PushData):
     def __init__(self, mesg): 
@@ -80,13 +80,14 @@ class PushTextMesgData(PushData):
 
 class PushLocationData(PushData):
     def __init__(self, uid, lat, lng):
-        self.pack(0x01, struct.pack("!dd", lat, lng))
+        self.pack(0x01, struct.pack("!Ldd", uid, lat, lng))
                 
 
 class PushTunnel(object):
     def __init__(self):
         self.pending = deque()
         self.conn = None
+        self.blocked = False
 
     def close(self):
         if self.conn:
@@ -102,9 +103,12 @@ class PushTunnel(object):
         if front.finger_print != fingerprint:
             raise PiztorError
         logger.info("-- Push data confirmed by client --")
+        self.blocked = False
         self.push()
 
     def push(self):
+        if self.blocked:
+            return
         print "Pushing via " + str(self)
         print "Pending size: " + str(len(self.pending))
         logger.info("Pushing...")
@@ -113,6 +117,8 @@ class PushTunnel(object):
         front = self.pending.popleft()
         self.pending.appendleft(front)
         self.conn.transport.write(front.data)
+        logger.info("-- Wrote push: %s --", get_hex(front.data))
+        self.blocked = True
 
     def connect(self, conn):
         conn.tunnel = self
@@ -279,6 +285,18 @@ class LocationUpdateHandler(RequestHandler):
 
         logger.info("Location is updated sucessfully")
         self.session.commit()
+
+        pt = RequestHandler.push_tunnels
+        ulist = self.session.query(UserModel) \
+                .filter(UserModel.sec_id == uauth.user.sec_id).all()
+        pdata = PushLocationData(uauth.uid, lat, lng)
+        for user in ulist:
+            uid = user.id
+            if pt.has_key(uid):
+                tunnel = pt[uid]
+                tunnel.add(pdata)
+                tunnel.push()
+
         return struct.pack("!LBB",  self._response_size,
                                     _OptCode.location_update,
                                     _StatusCode.sucess)
@@ -599,26 +617,25 @@ class PTP(Protocol, TimeoutMixin):
                 if self.length > PTP._MAX_REQUEST_SIZE:
                     print self.length, PTP._MAX_REQUEST_SIZE
                     raise BadReqError("The size of remaining part is too big")
-            if len(self.buff) == self.length:
+
+            if len(self.buff) >= self.length:
+                buff = self.buff[:self.length]
+                self.buff = self.buff[self.length:]
                 if self.tunnel:   # received push response
-                    self.tunnel.on_receive(self.buff)
-                    self.buff = bytes()
+                    self.tunnel.on_receive(buff)
                     self.length = -1
                     return
                 h = PTP.handlers[self.optcode]()
-                reply = h.handle(self.buff[5:], self)
+                reply = h.handle(buff[5:], self)
                 logger.info("Wrote: %s", get_hex(reply))
                 self.transport.write(reply)
                 if self.tunnel:
                     logger.info("Blocking the client...")
                     self.tunnel.push()
-                    self.buff = bytes()
                     self.length = -1
                     self.setTimeout(None)
                     return
                 self.transport.loseConnection()
-            elif len(self.buff) > self.length:
-                raise BadReqError("The actual length is larger than promised")
         except BadReqError as e:
             logger.warn("Rejected a bad request: %s", str(e))
             self.transport.loseConnection()
@@ -651,6 +668,6 @@ from twisted.internet import reactor
 
 f = PTPFactory()
 f.protocol = PTP
-reactor.listenTCP(2222, f)
+reactor.listenTCP(2223, f)
 logger.warning("The server is lanuched")
 reactor.run()

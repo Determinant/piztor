@@ -25,7 +25,7 @@ class _SectionSize:
     PADDING = 1
 
 host = "localhost" #"localhost"
-port = 2222
+port = 2223
 
 def gen_auth(username, password):
     length = _SectionSize.LENGTH + \
@@ -234,9 +234,9 @@ def open_push_tunnel(token, username):
     sock.sendall(data)
     print get_hex(sock.recv(6))
     
-    length = -1
     while True:
         received = bytes()
+        length = -1
         while True:
             if len(received) > 4:
                 length, optcode = unpack("!LB", received[:5])
@@ -245,14 +245,14 @@ def open_push_tunnel(token, username):
                 break
             rd, wr, err = select([sock], [], [])
             if rd:
-                buff = sock.recv(4096)
+                buff = sock.recv(1)
                 if len(buff) == 0:
                     break
                 received += buff
             else:
                 break
-        print len(received)
+        print "received: " + str(len(received))
         pl, optcode, fingerprint = unpack("!LB32s", received[:37])
         mesg = received[37:-1]
-        logger.info("Received a push: %s", mesg)
-        sock.sendall(pack("!LB32s", 37, 0x00, fingerprint))
+        logger.info("Received a push: %s", get_hex(mesg))
+        sock.sendall(pack("!LB32s", 37, optcode, fingerprint))

@@ -25,13 +25,13 @@ class _TableName:   # avoid typoes
     CompanySub = 'comp_sub'
     SectionSub = 'sec_sub'
 
-comp_sub_assoc = Table(_TableName.CompanySub, Base.metadata,
-        Column('uid', Integer, ForeignKey(_TableName.UserModel + '.id')),
-        Column('comp_id', Integer, ForeignKey(_TableName.CompanyInfo + '.id')))
-
-sec_sub_assoc = Table(_TableName.SectionSub, Base.metadata,
-        Column('uid', Integer, ForeignKey(_TableName.UserModel + '.id')),
-        Column('sec_id', Integer, ForeignKey(_TableName.SectionInfo + '.id')))
+#comp_sub_assoc = Table(_TableName.CompanySub, Base.metadata,
+#        Column('uid', Integer, ForeignKey(_TableName.UserModel + '.id')),
+#        Column('comp_id', Integer, ForeignKey(_TableName.CompanyInfo + '.id')))
+#
+#sec_sub_assoc = Table(_TableName.SectionSub, Base.metadata,
+#        Column('uid', Integer, ForeignKey(_TableName.UserModel + '.id')),
+#        Column('sec_id', Integer, ForeignKey(_TableName.SectionInfo + '.id')))
 
 class UserModel(Base):
     __tablename__ = _TableName.UserModel
@@ -42,15 +42,17 @@ class UserModel(Base):
 
     sex = Column(Boolean, nullable = False)
     sec_no = Column(TINYINT)
-    comp_id = Column(TINYINT, ForeignKey(_TableName.CompanyInfo + '.id'))
-    sec_id = Column(TINYINT, ForeignKey(_TableName.SectionInfo + '.id'))
+#    comp_id = Column(TINYINT, ForeignKey(_TableName.CompanyInfo + '.id'))
+    comp_id = Column(TINYINT)
+#    sec_id = Column(TINYINT, ForeignKey(_TableName.SectionInfo + '.id'))
+    sec_id = Column(Integer)
 
-    comp_sub = relationship(_TableName.CompanyInfo,
-                            secondary = comp_sub_assoc,
-                            backref = "subscribers")
-    sec_sub = relationship(_TableName.SectionInfo,
-                            secondary = sec_sub_assoc,
-                            backref = "subscribers")
+#    comp_sub = relationship(_TableName.CompanyInfo,
+#                            secondary = comp_sub_assoc,
+#                            backref = "subscribers")
+#    sec_sub = relationship(_TableName.SectionInfo,
+#                            secondary = sec_sub_assoc,
+#                            backref = "subscribers")
 
     location = None
     auth = None
@@ -115,23 +117,23 @@ class UserAuth(Base):
 
     def get_token(self):
         return self.token
-
-class CompanyInfo(Base):
-    __tablename__ = _TableName.CompanyInfo
-    __table_args__ = _table_typical_settings
-
-    id = Column(TINYINT, primary_key = True)
-    marker_lat = Column(Float(precesion = 64), nullable = False)
-    market_lng = Column(Float(precesion = 64), nullable = False)
-
-    subscribers = None
-
-class SectionInfo(Base):
-    __tablename__ = _TableName.SectionInfo
-    __table_args__ = _table_typical_settings
-
-    id = Column(TINYINT, primary_key = True)
-    marker_lat = Column(Float(precesion = 64), nullable = False)
-    market_lng = Column(Float(precesion = 64), nullable = False)
-
-    subscribers = None
+#
+#class CompanyInfo(Base):
+#    __tablename__ = _TableName.CompanyInfo
+#    __table_args__ = _table_typical_settings
+#
+#    id = Column(TINYINT, primary_key = True)
+#    marker_lat = Column(Float(precesion = 64), nullable = False)
+#    marker_lng = Column(Float(precesion = 64), nullable = False)
+#
+#    subscribers = None
+#
+#class SectionInfo(Base):
+#    __tablename__ = _TableName.SectionInfo
+#    __table_args__ = _table_typical_settings
+#
+#    id = Column(TINYINT, primary_key = True)
+#    marker_lat = Column(Float(precesion = 64), nullable = False)
+#    market_lng = Column(Float(precesion = 64), nullable = False)
+#
+#    subscribers = None

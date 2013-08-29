@@ -21,4 +21,7 @@ if len(argv) == 4:
 
 uid, token = user_auth(username, password)
 send_text_mesg(token, username, mesg)
-logout(token, username)
+send_text_mesg(token, username, "a")
+update_location(token, username, 1.2345, 2.468)
+update_location(token, username, 1.2345, 2.468)
+#logout(token, username)
