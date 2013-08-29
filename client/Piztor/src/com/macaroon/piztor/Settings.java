@@ -14,8 +14,10 @@ public class Settings extends PiztorAct {
 	MapInfo mapInfo;
 
 	// Event
-	final static int logoutButtonPressed = 1;
-	final static int logoutFailed = 2;
+	final static int logoutButtonPressed = 10;
+	final static int logoutFailed = 11;
+	
+	
 	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
 		@Override
@@ -24,7 +26,7 @@ public class Settings extends PiztorAct {
 			switch (m.what) {
 			case 1:// 上传自己信息成功or失败
 				ResUpdate update = (ResUpdate) m.obj;
-				if (update.s == 0)
+				if (update.status == 0)
 					System.out.println("update success");
 				else {
 					System.out.println("update failed");
@@ -33,12 +35,12 @@ public class Settings extends PiztorAct {
 				break;
 			case 2:// 得到别人的信息
 				ResLocation location = (ResLocation) m.obj;
-				if (location.s == 0) {
+				if (location.status == 0) {
 					mapInfo.clear();
-					for (Rlocation i : location.l) {
-						System.out.println(i.i + " : " + i.lat + " " + i.lot);
-						UserInfo info = new UserInfo(i.i);
-						info.setLocation(i.lat, i.lot);
+					for (RLocation i : location.l) {
+						System.out.println(i.id + " : " + i.latitude + " " + i.longitude);
+						UserInfo info = new UserInfo(i.id);
+						info.setLocation(i.latitude, i.longitude);
 						mapInfo.addUserInfo(info);
 					}
 				} else {
@@ -47,12 +49,12 @@ public class Settings extends PiztorAct {
 				}
 				break;
 			case 3:// 得到用户信息
-				ResUserinfo r = (ResUserinfo) m.obj;
-				if (r.s == 0) {
+				ResUserInfo r = (ResUserInfo) m.obj;
+				if (r.status == 0) {
 					System.out.println("id : " + r.uid + " sex :  " + r.sex
-							+ " group : " + r.gid);
+							+ " group : " + r.section);
 					UserInfo user = mapInfo.getUserInfo(r.uid);
-					user.setInfo(r.gid, r.sex);
+					user.setInfo(r.company, r.section, r.sex);
 				} else {
 					System.out.println("reqest for userInfo must be wrong!!!");
 					actMgr.trigger(AppMgr.errorToken);
@@ -60,10 +62,11 @@ public class Settings extends PiztorAct {
 				break;
 			case 4:// 登出
 				ResLogout logout = (ResLogout) m.obj;
-				System.out.println("logout status" + logout.s);
-				if (logout.s == 0) {
+				System.out.println("logout status" + logout.status);
+				if (logout.status == 0) {
 					Infomation.token = null;
-					Infomation.myInfo.gid = -1;
+					Infomation.myInfo.company = -1;
+					Infomation.myInfo.section = -1;
 					Infomation.myInfo.uid = -1;
 					Infomation.username = null;
 					actMgr.trigger(AppMgr.logout);
@@ -96,6 +99,7 @@ public class Settings extends PiztorAct {
 
 		@Override
 		void enter(int e) {
+			System.out.println("!!!!!!!logout info send!!!!!!!!");
 			AppMgr.transam.send(new ReqLogout(Infomation.token,
 					Infomation.username, System.currentTimeMillis(), 2000));
 		}

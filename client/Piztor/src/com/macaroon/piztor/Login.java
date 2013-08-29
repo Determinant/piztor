@@ -19,7 +19,7 @@ public class Login extends PiztorAct {
 	int loginButtonClick = 1, retryButtonClick = 2, loginFailed = 3;
 
 	@SuppressLint("HandlerLeak")
-	Handler hand = new Handler() {
+	Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message m) {
 			System.out.println("receive what : " + m.what);
@@ -30,17 +30,20 @@ public class Login extends PiztorAct {
 			}
 			if (m.what == 0) {
 				ResLogin res = (ResLogin) m.obj;
-				if (res.s == 1) {
+				if (res.status == 1) {
 					actMgr.trigger(loginFailed);
 					return;
 				}
 				Infomation.token = res.t;
 				Infomation.myInfo.uid = res.uid;
 				Infomation.username = edtUser.getText().toString();
-				System.out.println(res.s + "   :!!!    " + res.t);
+				System.out.println(res.status + "   :!!!    " + res.type);
 				actMgr.trigger(AppMgr.loginSuccess);
+				System.out.println("............");
 			} else {
-				actMgr.trigger(loginFailed);
+				System.out.println("reveive other info ~~~~~~~~~~~~~~" + m.what);
+//				System.out.println("login de " + m.what); 
+//				actMgr.trigger(loginFailed);
 			}
 		}
 	};
@@ -69,9 +72,13 @@ public class Login extends PiztorAct {
 
 		@Override
 		void leave(int e) {
-			Toast toast = Toast.makeText(getApplicationContext(),
-					"login failed", Toast.LENGTH_LONG);
-			toast.show();
+			if (e == loginFailed) {
+				Toast toast = Toast.makeText(getApplicationContext(),
+						"login failed", Toast.LENGTH_LONG);
+				toast.show();
+			} else {
+				System.out.println("fuck!!!asdfasdfasdf!");
+			}
 		}
 
 	}
@@ -81,7 +88,6 @@ public class Login extends PiztorAct {
 		id = "login";
 		super.onCreate(savedInstanceState);
 		ActStatus[] r = new ActStatus[2];
-		AppMgr.transam.setHandler(hand);
 		r[0] = new StartStatus();
 		r[1] = new LoginStatus();
 		actMgr = new ActMgr(this, r[0], r);
@@ -107,7 +113,7 @@ public class Login extends PiztorAct {
 	@Override
 	protected void onResume() {
 		super.onResume();
-
+		AppMgr.transam.setHandler(handler);
 	}
 
 	@Override

@@ -25,6 +25,7 @@ public class ActMgr {
 	void trigger(int event) {
 		System.out.println(act.id + " : " + event);
 		if (mp.get(nowStatus).containsKey(event)) {
+			System.out.println("status + " + event);
 			nowStatus.leave(event);
 			nowStatus = mp.get(nowStatus).get(event);
 			nowStatus.enter(event);
