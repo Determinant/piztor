@@ -84,9 +84,9 @@ class PushTunnel(object):
         self.pending = deque()
         self.conn = None
 
-    def __del__(self):
+    def close(self):
         if self.conn:
-            self.conn.loseConnection()
+            self.conn.transport.loseConnection()
 
     def add(self, pdata):
         logger.info("-- Push data enqued --")
@@ -97,7 +97,7 @@ class PushTunnel(object):
         length, optcode, fingerprint = struct.unpack("!LB32s", data)
         if front.finger_print != fingerprint:
             raise PiztorError
-        logger.info("-- Push data confirmed --")
+        logger.info("-- Push data confirmed by client --")
         self.push()
 
     def push(self):
@@ -112,12 +112,15 @@ class PushTunnel(object):
         self.conn.transport.write(front.data)
 
     def connect(self, conn):
-        print conn
         conn.tunnel = self
+        if self.conn:   # only one long-connection per user
+            self.conn.transport.loseConnection()
         self.conn = conn
 
-    def on_connection_lost(self):
-        self.conn = None
+    def on_connection_lost(self, conn):
+        if conn == self.conn:
+            print "*** clear conn ***"
+            self.conn = None
 
 class RequestHandler(object):
     push_tunnels = dict()
@@ -436,7 +439,10 @@ class UserLogoutHandler(RequestHandler):
             return struct.pack("!LBB",  self._response_size,
                                         _OptCode.user_logout,
                                         _StatusCode.failure)
-        del RequestHandler.push_tunnels[uauth.uid]
+        pt = RequestHandler.push_tunnels
+        uid = uauth.uid
+        pt[uid].close()
+        del pt[uid]
         uauth.regen_token()
         logger.info("User Logged out successfully!")
         self.session.commit()
@@ -534,6 +540,7 @@ class SendTextMessageHandler(RequestHandler):
             if pt.has_key(uid):
                 tunnel = pt[uid]
                 tunnel.add(PushTextMesgData(mesg))
+                tunnel.push()
         logger.info("Sent text mesg successfully!")
         return struct.pack("!LBB",  self._response_size,
                                     _OptCode.send_text_mesg,
@@ -621,7 +628,7 @@ class PTP(Protocol, TimeoutMixin):
 
     def connectionLost(self, reason):
         if self.tunnel:
-            self.tunnel.on_connection_lost()
+            self.tunnel.on_connection_lost(self)
         logger.info("The connection is lost")
         self.setTimeout(None)
 
