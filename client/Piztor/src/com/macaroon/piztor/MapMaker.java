@@ -77,9 +77,6 @@ public class MapMaker extends Activity {
 	private MyOverlay markerOverlay;
 	private OverlayItem nowMarker = null;
 
-	// map touch listener
-	private MKMapTouchListener mapTouchListener;
-
 	// Popup component
 	private PopupOverlay popLay = null;
 	private TextView popupText = null;
@@ -207,30 +204,7 @@ public class MapMaker extends Activity {
 	/**
 	 * Initialize touch listener
 	 */
-	public void InitTouchListenr() {
-
-		mapTouchListener = new MKMapTouchListener() {
-			
-			@Override
-			public void onMapLongClick(GeoPoint arg0) {
-				DrawMarker(arg0);
-				Log.d("marker", "draw a new marker");
-			}
-			
-			@Override
-			public void onMapDoubleClick(GeoPoint arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void onMapClick(GeoPoint arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-		};
-		mMapView.regMapTouchListner(mapTouchListener);
-	}
+	// moved to main
 
 	/**
 	 * Initialize map
@@ -240,7 +214,7 @@ public class MapMaker extends Activity {
 		InitLocationOverlay();
 		InitMyOverLay();
 		InitPopup();
-		InitTouchListenr();
+		//InitTouchListenr();
 	}
 
 	/**
@@ -320,11 +294,10 @@ public class MapMaker extends Activity {
 	public void DrawMarker(GeoPoint markerPoint) {
 	
 		nowMarker = new OverlayItem(markerPoint, "THIS IS A MARKER", "");
-		nowMarker.setMarker(context.getResources().getDrawable(R.drawable.marker1));
-		Log.d("marker", "new marker created");
-		System.out.println("mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm    " + markerPoint.getLatitudeE6() + "       " + markerPoint.getLongitudeE6());
-		
+		nowMarker.setMarker(context.getResources().getDrawable(R.drawable.marker_red));
+		Log.d("marker", "new marker created");		
 		UpdateMap(preMapInfo);
+		mMapController.animateTo(markerPoint);
 	}
 
 	/**

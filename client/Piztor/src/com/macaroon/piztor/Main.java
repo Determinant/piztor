@@ -1,10 +1,12 @@
 package com.macaroon.piztor;
 
+import java.util.Calendar;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -18,8 +20,10 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.baidu.location.BDLocation;
@@ -27,32 +31,29 @@ import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.map.LocationData;
+import com.baidu.mapapi.map.MKMapTouchListener;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.OverlayItem;
 import com.baidu.mapapi.map.PopupOverlay;
+import com.baidu.platform.comapi.basestruct.GeoPoint;
 
 public class Main extends PiztorAct {
+
 	final static int SearchButtonPress = 1;
 	final static int FocuseButtonPress = 3;
 	final static int SuccessFetch = 4;
 	final static int FailedFetch = 5;
 	final static int Fetch = 6;
 	final static int mapViewtouched = 7;
-
-	/**
-	 * popups
-	 */
-	private PopupOverlay pop = null;
-	private TextView popupText = null;
-	private View viewCache = null;
-	private View popupInfo = null;
-	private View popupLeft = null;
-	private View popupRight = null;
-	private MapView.LayoutParams layoutParam = null;
-	private OverlayItem mCurItem = null;
-
+	
 	MapMaker mapMaker = null;
 	MapView mMapView;
+	AlertMaker alertMaker;
+	private Calendar calendar;
+	GeoPoint markerPoint = null;
+	
+	// map touch listener
+		private MKMapTouchListener mapTouchListener;
 
 	boolean isFirstLocation = true;
 	
@@ -293,36 +294,36 @@ public class Main extends PiztorAct {
 			actMgr.trigger(Main.Fetch);
 		}
 	}
-
-	public void showSettingsAlert() {
-		
-		closeBoard(Main.this);
-		AlertDialog.Builder gpsDialog = new AlertDialog.Builder(this);
-		gpsDialog.setTitle("GPS settings");
-		gpsDialog.setMessage("GPS is not enabled. Please turn it on.");
-		gpsDialog.setPositiveButton("Settings",
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-						Main.this.startActivity(intent);
-					}
-				});
-		gpsDialog.setNegativeButton("Cancel",
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						dialog.cancel();
-					}
-				});
-		gpsDialog.show();
-	}
 	
-	public static void closeBoard(Context mcontext) {
-		InputMethodManager imm = (InputMethodManager) mcontext
-				.getSystemService(Context.INPUT_METHOD_SERVICE);
-		  if (imm.isActive())
-			  imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT,
-		 InputMethodManager.HIDE_NOT_ALWAYS);
-		 }
+	public void InitTouchListenr() {
+
+		mapTouchListener = new MKMapTouchListener() {
+			
+			@Override
+			public void onMapLongClick(GeoPoint arg0) {
+				closeBoard(Main.this);
+				alertMaker.showMarkerAlert(arg0);
+				/*
+				if (mapMaker != null)
+					mapMaker.DrawMarker(arg0);
+				Log.d("marker", "draw a new marker");
+				*/
+			}
+			
+			@Override
+			public void onMapDoubleClick(GeoPoint arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void onMapClick(GeoPoint arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
+		mMapView.regMapTouchListner(mapTouchListener);
+	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -331,7 +332,7 @@ public class Main extends PiztorAct {
 		
 		locationManager = (LocationManager)this.getSystemService(LOCATION_SERVICE);
 		isGPSEnabled = locationManager.isProviderEnabled(locationManager.GPS_PROVIDER);
-		if (isGPSEnabled == false) showSettingsAlert();
+		if (isGPSEnabled == false) alertMaker.showSettingsAlert();
 		
 		mapInfo = AppMgr.mapInfo;
 		ActStatus[] r = new ActStatus[3];
@@ -354,8 +355,10 @@ public class Main extends PiztorAct {
 		setContentView(R.layout.activity_main);
 		mMapView = (MapView) findViewById(R.id.bmapView);
 		mapMaker = new MapMaker(mMapView, getApplicationContext());
+		alertMaker = new AlertMaker(Main.this, mapMaker);
 		mapMaker.clearOverlay(mMapView);
 		mapMaker.InitMap();
+		InitTouchListenr();
 		mLocClient = new LocationClient(this);
 		locData = new LocationData();
 		mLocClient.registerLocationListener(myListener);
@@ -367,6 +370,14 @@ public class Main extends PiztorAct {
 		mLocClient.start();
 		mapMaker.UpdateLocationOverlay(locData, false);
 	}
+	
+	public static void closeBoard(Context cc) {
+		InputMethodManager imm = (InputMethodManager) cc
+				.getSystemService(Context.INPUT_METHOD_SERVICE);
+		  if (imm.isActive())
+			  imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT,
+		 InputMethodManager.HIDE_NOT_ALWAYS);
+		 }
 
 	/*
 	 * public boolean onTap(int index) { OverlayItem item = getItem(index);
