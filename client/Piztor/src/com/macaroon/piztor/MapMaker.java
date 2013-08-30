@@ -50,9 +50,13 @@ import com.baidu.mapapi.map.MapController;
 import com.baidu.mapapi.map.MapPoi;  
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationOverlay;
+import com.baidu.mapapi.map.MKOLSearchRecord;
+import com.baidu.mapapi.map.MKOLUpdateElement;
 import com.baidu.mapapi.map.OverlayItem;
 import com.baidu.mapapi.map.PopupClickListener;
 import com.baidu.mapapi.map.PopupOverlay;
+import com.baidu.mapapi.map.MKOfflineMap;
+import com.baidu.mapapi.map.MKOfflineMapListener;
 import com.baidu.mapapi.search.MKPoiInfo;
 import com.baidu.mapapi.search.MKPoiResult;
 import com.baidu.platform.comapi.basestruct.GeoPoint; 
@@ -62,7 +66,8 @@ public class MapMaker extends Activity {
 	// MapView controlling component
 	private MapView mMapView = null;
 	MapController mMapController = null;
-	
+	MKOfflineMap mOffline = null;
+
 	// Default center
 	private final static GeoPoint sjtuCenter = new GeoPoint((int)(31.032247 * 1E6), (int)(121.445937 * 1E6));
 
@@ -72,6 +77,8 @@ public class MapMaker extends Activity {
 	private LocationOverlay mLocationOverlay;
 	private ArrayList<OverlayItem> mItems = null;
 	private MapInfo preMapInfo = null;
+	private MapInfo nowMapInfo = null;
+	
 
 	// marker layer
 	private MyOverlay markerOverlay;
@@ -163,6 +170,40 @@ public class MapMaker extends Activity {
 	}
 
 	/**
+	 * Initialize offline map
+	 */
+	public void InitOfflineMap() {
+	
+		mOffline = new MKOfflineMap();
+		mOffline.init(mMapController, new MKOfflineMapListener() {
+			
+			@Override
+			public void onGetOfflineMapState(int type, int state) {
+				switch (type) {
+				case MKOfflineMap.TYPE_DOWNLOAD_UPDATE:
+					MKOLUpdateElement update = mOffline.getUpdateInfo(state);
+					break;
+				case MKOfflineMap.TYPE_NEW_OFFLINE:
+					Log.d("offline", String.format("add offline map %d", state));
+					break;
+				case MKOfflineMap.TYPE_VER_UPDATE:
+					Log.d("offline", String.format("new offline map version"));
+					break;
+				}
+			}
+		});
+		int num = mOffline.scan();
+		String msg = "";
+		if (num == 0) {
+			//msg = "No offline map found. It may have been loaded already or misplaced.";
+		} else {
+			msg = String.format("Loaded %d offline maps.", num);
+		}
+		Log.d("offline", "inited");
+		Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+	}
+
+	/**
 	 * Initialize location layer
 	 */
 	public void InitLocationOverlay() {
@@ -234,6 +275,7 @@ public class MapMaker extends Activity {
 		InitLocationOverlay();
 		InitMyOverLay();
 		InitPopup();
+		InitOfflineMap();
 		//InitTouchListenr();
 	}
 
@@ -263,9 +305,7 @@ public class MapMaker extends Activity {
 			mOverlay = new MyOverlay(context.getResources().getDrawable(R.drawable.circle_red), mMapView);
 			GeoPoint p;
 			Vector<UserInfo> allUsers = mapInfo.getVector();
-			boolean flag = false;
 			if (nowMarker != null) {
-				Log.d("marker", "now marker is not null");
 				mOverlay.addItem(nowMarker);
 			}
 			for (int i =1; i < allUsers.size(); i++) {
@@ -276,12 +316,7 @@ public class MapMaker extends Activity {
 				curItem = new OverlayItem(p, "USERNAME HERE!!!!!", "");
 				//TODO
 				////////////////////////////////////////////////////////////
-				if (flag == false){
-					flag = true;
-					curItem.setMarker(context.getResources().getDrawable(R.drawable.circle_green));
-				} else {
-					curItem.setMarker(context.getResources().getDrawable(R.drawable.circle_red));
-				}
+				curItem.setMarker(context.getResources().getDrawable(R.drawable.circle_red));
 				mOverlay.addItem(curItem);
 			}
 			mItems = new ArrayList<OverlayItem>();
@@ -295,6 +330,8 @@ public class MapMaker extends Activity {
 			}
 		}
 	}
+	
+	
 	
 	/**
 	 * Update marker

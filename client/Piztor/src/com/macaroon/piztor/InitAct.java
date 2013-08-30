@@ -2,16 +2,23 @@ package com.macaroon.piztor;
 
 import android.os.Bundle;
 import android.view.Menu;
+import android.content.Context;
 
 public class InitAct extends PiztorAct {
 
+	private CopyMap copyMap;
+	private String assetDir;
+	private String dir;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "initAct";
 		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_init);
+		copyMap = new CopyMap();
+		copyMap.testCopy(InitAct.this);
 		AppMgr.init(getApplicationContext());
 		AppMgr.transam.setTimeOutTime(5000);
-		setContentView(R.layout.activity_init);
 	}
 
 	@Override

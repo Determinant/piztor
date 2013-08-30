@@ -15,7 +15,7 @@ import com.baidu.mapapi.MKGeneralListener;
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
 
-	private static final String strKey = "8a0ae50048d103b2b8b12b7066f4ea7d";
+	static final String strKey = "8a0ae50048d103b2b8b12b7066f4ea7d";
 	static BMapManager mBMapManager = null;
 
 	// Status

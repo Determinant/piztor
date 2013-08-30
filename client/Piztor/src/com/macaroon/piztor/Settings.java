@@ -109,7 +109,6 @@ public class Settings extends PiztorAct {
 			// TODO Auto-generated method stub
 
 		}
-
 	}
 
 	@Override
