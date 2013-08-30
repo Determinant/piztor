@@ -1,9 +1,12 @@
 package com.macaroon.piztor;
 
+import java.util.Vector;
+
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
@@ -12,87 +15,78 @@ import android.widget.Toast;
 public class Settings extends PiztorAct {
 	Button logout;
 	MapInfo mapInfo;
-
+	Transam transam;
 	// Event
 	final static int logoutButtonPressed = 10;
 	final static int logoutFailed = 11;
-	
-	
+
 	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message m) {
-			System.out.println("!!!!!!!!!!!!!!!!!!!!!settings" +  m.what);
 			switch (m.what) {
-			case 1:// 上传自己信息成功or失败
-				ResUpdate update = (ResUpdate) m.obj;
-				if (update.status == 0)
-					System.out.println("update success");
-				else {
-					System.out.println("update failed");
-					actMgr.trigger(AppMgr.errorToken);
-				}
+			case Res.Update:// 上传自己信息成功or失败
+				Log.d("update location", "successfull");
 				break;
-			case 2:// 得到别人的信息
-				ResLocation location = (ResLocation) m.obj;
-				if (location.status == 0) {
-					mapInfo.clear();
-					for (RLocation i : location.l) {
-						System.out.println(i.id + " : " + i.latitude + " " + i.longitude);
-						UserInfo info = new UserInfo(i.id);
-						info.setLocation(i.latitude, i.longitude);
-						mapInfo.addUserInfo(info);
+			case Res.UserInfo:// 得到用户信息
+				ResUserInfo userInfo = (ResUserInfo) m.obj;
+				System.out.println("revieve ........" + userInfo.uinfo.size());
+				Vector<RUserInfo> uinfo = userInfo.uinfo;
+				for (RUserInfo info : uinfo) {
+					System.out.println(info.latitude + "     "
+							+ info.longitude);
+					UserInfo r = mapInfo.getUserInfo(info.uid);
+					if (r != null) {
+						r.setInfo(info.gid.company, info.gid.section, info.sex,
+								info.nickname);
+						r.setLocation(info.latitude, info.longitude);
+					} else {
+						r = new UserInfo(info.uid);
+						r.setInfo(info.gid.company, info.gid.section, info.sex,
+								info.nickname);
+						r.setLocation(info.latitude, info.longitude);
+						mapInfo.addUserInfo(r);
 					}
-				} else {
-					System.out.println("resquest for location failed!");
-					actMgr.trigger(AppMgr.errorToken);
 				}
 				break;
-			case 3:// 得到用户信息
-				ResUserInfo r = (ResUserInfo) m.obj;
-				if (r.status == 0) {
-					System.out.println("id : " + r.uid + " sex :  " + r.sex
-							+ " group : " + r.section);
-					UserInfo user = mapInfo.getUserInfo(r.uid);
-					user.setInfo(r.company, r.section, r.sex);
-				} else {
-					System.out.println("reqest for userInfo must be wrong!!!");
-					actMgr.trigger(AppMgr.errorToken);
-				}
+			case Res.Logout:// 登出
+				actMgr.trigger(AppMgr.logout);
 				break;
-			case 4:// 登出
-				ResLogout logout = (ResLogout) m.obj;
-				System.out.println("logout status" + logout.status);
-				if (logout.status == 0) {
-					Infomation.token = null;
-					Infomation.myInfo.company = -1;
-					Infomation.myInfo.section = -1;
-					Infomation.myInfo.uid = -1;
-					Infomation.username = null;
-					actMgr.trigger(AppMgr.logout);
-					break;
-				} else {
-					Toast toast = Toast.makeText(getApplicationContext(),
-							"logout failed", Toast.LENGTH_LONG);
-					toast.show();
-					actMgr.trigger(logoutFailed);
-				}
+			case Res.PushMessage:
+				ResPushMessage pushMessage = (ResPushMessage) m.obj;
+				receiveMessage(pushMessage.message);
+				break;
+			case Res.SendMessage:
+				Log.d(LogInfo.resquest, "send message successfully");
+				break;
+			case Res.PushLocation:
+				ResPushLocation pushLocation = (ResPushLocation) m.obj;
+				upMapInfo(pushLocation.l);
 				break;
 			default:
 				break;
 			}
 		}
 	};
-
-	class StartStatus extends ActStatus {
-
-		@Override
-		void enter(int e) {
+	
+	void upMapInfo(Vector<RLocation> l) {
+		for (RLocation i : l) {
+			UserInfo info = AppMgr.mapInfo.getUserInfo(i.id);
+			if (info != null) {
+				info.setLocation(i.latitude, i.longitude);
+			} else {
+				info = new UserInfo(i.id);
+				info.setLocation(i.latitude, i.longitude);
+				AppMgr.mapInfo.addUserInfo(info);
+			}
 		}
+	}
 
-		@Override
-		void leave(int e) {
-		}
+	void receiveMessage(String msg) {
+		Log.d("recieve message", msg);
+		Toast toast = Toast.makeText(getApplicationContext(), msg,
+				Toast.LENGTH_LONG);
+		toast.show();
 	}
 
 	class LogoutStatus extends ActStatus {
@@ -100,28 +94,31 @@ public class Settings extends PiztorAct {
 		@Override
 		void enter(int e) {
 			System.out.println("!!!!!!!logout info send!!!!!!!!");
-			AppMgr.transam.send(new ReqLogout(Infomation.token,
-					Infomation.username, System.currentTimeMillis(), 2000));
+			transam.send(new ReqLogout(Infomation.token, Infomation.username,
+					System.currentTimeMillis(), 2000));
 		}
 
 		@Override
 		void leave(int e) {
-			// TODO Auto-generated method stub
 
 		}
+
 	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		mapInfo = AppMgr.mapInfo;
+		transam = AppMgr.transam;
+		if (transam == null)
+			Log.d(LogInfo.exception, "transam = null");
+		transam.setHandler(handler);
 		ActStatus[] r = new ActStatus[3];
-		ActStatus start = r[0] = new StartStatus();
+		ActStatus start = r[0] = new EmptyStatus();
 		ActStatus logout = r[2] = new LogoutStatus();
 		actMgr = new ActMgr(this, start, r);
 		actMgr.add(start, logoutButtonPressed, logout);
 		actMgr.add(logout, logoutFailed, start);
-		AppMgr.transam.setHandler(handler);
-		mapInfo = AppMgr.mapInfo;
 		setContentView(R.layout.activity_settings);
 	}
 
@@ -132,7 +129,7 @@ public class Settings extends PiztorAct {
 		logout.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				 actMgr.trigger(logoutButtonPressed);
+				actMgr.trigger(logoutButtonPressed);
 			}
 		});
 	}
