@@ -9,7 +9,6 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Vector;
 
-import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
@@ -25,18 +24,18 @@ public class PushClient {
 	static final int TokenLength = 32;
 	static final int FingerPrintLength = 32;
 
-	public final static int StartPush =5;
+	static final int StartPush =5;
 	
-	public final static int Message = 0;
-	public final static int Location = 1;
-	public final static int PushMessage =100;
-	public final static int PushLocation =101;
+	static final int Message = 0;
+	static final int Location = 1;
+	static final int PushMessage =100;
+	static final int PushLocation =101;
 	
-	public final static int Reconnect =-2;
+	static final int Reconnect =-2;
 	
-	public final static int Failed = 2;
-	public final static int TimeOut = 1;
-	public final static int Success = 0;
+	static final int StatusFailed = 2;
+	static final int TimeOut = 1;
+	static final int Success = 0;
 	
 	private String LastPrint = "";
 
@@ -68,13 +67,13 @@ public class PushClient {
 			len = IntLength+ByteLength+TokenLength+(r.uname).length()+ByteLength;	
 			byte[] b = new byte[len];
 			int pos = 0;
-			write(b,intToBytes(len),pos);
+			Convert.write(b,Convert.intToBytes(len),pos);
 			pos+=IntLength;
 			b[pos] = (byte) 5;
 			pos+=ByteLength;
-			write(b,hexStringToBytes(r.token),pos);
+			Convert.write(b,Convert.hexStringToBytes(r.token),pos);
 			pos+=TokenLength;
-			write(b,r.uname.getBytes(),pos);
+			Convert.write(b,r.uname.getBytes(),pos);
 			pos+=r.uname.length();
 			b[pos] = 0;
 			pos+=ByteLength;
@@ -84,13 +83,11 @@ public class PushClient {
 			in.readInt();
 			in.readUnsignedByte();
 		    int status = in.readUnsignedByte();
-		    ResStartPush rchk = new ResStartPush(status);
+		    if(status == 1) return StatusFailed;
+		    ResStartPush rchk = new ResStartPush();
 			msg.obj = rchk;
 			msg.what = StartPush;
 			recall.sendMessage(msg);
-			if(status == 1) {
-				return Failed;
-			}
 			return Success;
 		} catch (SocketTimeoutException e){
 			e.printStackTrace();
@@ -105,7 +102,7 @@ public class PushClient {
 		return client.isClosed();
 	}
 
-	public void listen(Handler recall,Handler h) throws IOException{
+	public void listen(Handler recall) throws IOException{
 		client.setSoTimeout(0);
 		DataInputStream in = new DataInputStream(client.getInputStream());
 		DataOutputStream out = new DataOutputStream(client.getOutputStream());
@@ -117,7 +114,7 @@ public class PushClient {
 				int tmp = in.readUnsignedByte();
 				byte[] buffer = new byte[32];
 				in.read(buffer);
-				String p = byteToHexString(buffer);
+				String p = Convert.byteToHexString(buffer);
 				int outlen;
 				int pos=0;
 				byte[] o = new byte[IntLength+ByteLength+FingerPrintLength];;
@@ -135,11 +132,11 @@ public class PushClient {
 					recall.sendMessage(msg);
 					LastPrint = p;
 					}			
-					write(o,intToBytes(outlen),pos);				//can be folded!
+					Convert.write(o,Convert.intToBytes(outlen),pos);				//can be folded!
 					pos+=IntLength;
 					o[pos]=(byte) Message;
 					pos+=ByteLength;
-					write(o,hexStringToBytes(p),pos);
+					Convert.write(o,Convert.hexStringToBytes(p),pos);
 					pos+=FingerPrintLength;
 					out.write(o);
 					out.flush();
@@ -163,11 +160,11 @@ public class PushClient {
 						recall.sendMessage(msg);
 						LastPrint = p;
 					}				
-					write(o,intToBytes(outlen),pos);
+					Convert.write(o,Convert.intToBytes(outlen),pos);
 					pos+=IntLength;
 					o[pos]=(byte) Location;
 					pos+=ByteLength;
-					write(o,hexStringToBytes(p),pos);
+					Convert.write(o,Convert.hexStringToBytes(p),pos);
 					pos+=FingerPrintLength;
 					out.write(o);
 					out.flush();
@@ -188,65 +185,6 @@ public class PushClient {
 			e.printStackTrace();
 			throw e;
 		}
-	}
-	
-	@SuppressLint("DefaultLocale")
-	private static byte[] hexStringToBytes(String hexString) {
-		if (hexString == null || hexString.equals("")) {
-			return null;
-		}
-		hexString = hexString.toUpperCase();
-		int length = hexString.length() / 2;
-		char[] hexChars = hexString.toCharArray();
-		byte[] d = new byte[length];
-		for (int i = 0; i < length; i++) {
-				int pos = i * 2;
-				d[i] = (byte) (charToByte(hexChars[pos]) << 4 | charToByte(hexChars[pos + 1]));
-		}
-		return d;
-	}
-	
-	private static byte charToByte(char c) {
-		return (byte) "0123456789ABCDEF".indexOf(c);
-	}
-	
-	private static byte[] intToBytes(int i) {   
-		  byte[] d = new byte[4];   
-		  d[0] = (byte)((i >> 24) & 0xFF);
-		  d[1] = (byte)((i >> 16) & 0xFF);
-		  d[2] = (byte)((i >> 8) & 0xFF); 
-		  d[3] = (byte)(i & 0xFF);
-		  return d;
-	}
-	
-	@SuppressLint("UseValueOf")
-	public static byte[] doubleToBytes(double d){
-		  byte[] b=new byte[8];
-		  long l=Double.doubleToLongBits(d);
-		  for(int i=0;i < 8;i++){
-		   b[i]=new Long(l).byteValue();
-		   l=l>>8;
-		  }
-		  return b;
-	}
-	
-	private static void write(byte[] s,byte[] w,int l) {
-		
-		for(int i=0;i<w.length;i++){
-			s[i+l] = w[i];
-		}
-	}
-	
-	private static String byteToHexString(byte[] buffer){
-		String p ="";
-		for (int i = 0; i < buffer.length; i++) {
-			   String hex = Integer.toHexString(buffer[i] & 0xFF);
-			   if (hex.length() == 1) {
-			    hex = '0' + hex;
-			   }
-			   p += hex;
-		}
-		return p;
 	}
 
 }

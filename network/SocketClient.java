@@ -9,7 +9,6 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Vector;
 
-import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
@@ -23,15 +22,27 @@ public class SocketClient {
 	static final int DoubleLength = 8;
 	static final int TokenLength = 32;
 
-	public final static int Login =0;
-	public final static int Update =1;
-	public final static int Location =2;
-	public final static int UserInfo =3;
-	public final static int Logout =4;
-	public final static int SendMessage =6;
+	static final int Login =0;
+	static final int Update =1;
+	static final int UserInfo =2;
+	static final int Subscription =3;
+	static final int Logout =4;
+	static final int StartPush =5;
+	static final int SendMessage =6;
 	
-	public final static int GroupID =0;
-	public final static int Gender =1;
+	static final int ClosePush =-5;
+	
+	static final int UID =1;
+	static final int Uname =2;
+	static final int Nname =3;
+	static final int Gender =4;
+	static final int GroupID =5;
+	static final int Latitude =6;
+	static final int Longitude =7;
+	
+	static final int StatusFailed = 2;
+	static final int TimeOut = 1;
+	static final int Success = 0;
 	
 	public SocketClient(String site, int port, int retime) throws UnknownHostException,
 			IOException {
@@ -48,7 +59,7 @@ public class SocketClient {
 		} 
 	}
 
-	public int sendMsg(Req req,Handler recall) throws IOException,SocketTimeoutException {
+	public int sendMsg(Req req,Handler recall,Handler h) throws IOException,SocketTimeoutException {
 		try {
 			DataOutputStream out = new DataOutputStream(
 					client.getOutputStream());
@@ -61,15 +72,15 @@ public class SocketClient {
 				ReqLogin rau = (ReqLogin) req;
 				len = IntLength+ByteLength+rau.user.length()+ByteLength+rau.pass.length()+ByteLength;	
 				b = new byte[len];			
-				write(b,intToBytes(len),pos);
+				Convert.write(b,Convert.intToBytes(len),pos);
 				pos+=IntLength;
 				b[pos] = (byte) tmp;
 				pos+=ByteLength;
-				write(b,rau.user.getBytes(),pos);
+				Convert.write(b,rau.user.getBytes(),pos);
 				pos+=rau.user.length();
 				b[pos] = 0;
 				pos+=ByteLength;
-				write(b, rau.pass.getBytes(),pos);
+				Convert.write(b, rau.pass.getBytes(),pos);
 				pos+= rau.pass.length();
 				b[pos] = 0;
 				pos+=ByteLength;
@@ -79,71 +90,78 @@ public class SocketClient {
 				ReqUpdate rup = (ReqUpdate) req;
 				len = IntLength+ByteLength+TokenLength+(rup.uname).length()+ByteLength+DoubleLength+DoubleLength;				
 				b = new byte[len];
-				write(b,intToBytes(len),pos);
+				Convert.write(b,Convert.intToBytes(len),pos);
 				pos+=IntLength;
 				b[pos] = (byte) tmp;
 				pos+=ByteLength;
-				write(b,hexStringToBytes(rup.token),pos);
+				Convert.write(b,Convert.hexStringToBytes(rup.token),pos);
 				pos+=TokenLength;
-				write(b,(rup.uname).getBytes(),pos);
+				Convert.write(b,(rup.uname).getBytes(),pos);
 				pos+=(rup.uname).length();
 				b[pos] = 0;
 				pos+=ByteLength;
-				write(b,doubleToBytes(rup.latitude),pos);
+				Convert.write(b,Convert.doubleToBytes(rup.latitude),pos);
 				pos+=DoubleLength;
-				write(b,doubleToBytes(rup.longitude),pos);
+				Convert.write(b,Convert.doubleToBytes(rup.longitude),pos);
 				pos+=DoubleLength;
-				out.write(b);
-				break;
-			case Location:
-				ReqLocation ras = (ReqLocation) req;
-				len = IntLength+ByteLength+TokenLength+ras.uname.length()+ByteLength+ByteLength+ByteLength;				
-				b = new byte[len];
-				write(b,intToBytes(len),pos);
-				pos+=IntLength;
-				b[pos] = (byte) tmp;
-				pos+=ByteLength;
-				write(b,hexStringToBytes(ras.token),pos);
-				pos+=TokenLength;
-				write(b,(ras.uname).getBytes(),pos);
-				pos+=(ras.uname).length();
-				b[pos] = 0;
-				pos+=ByteLength;
-				b[pos] = (byte) ras.company;
-				pos+=ByteLength;
-				b[pos] = (byte) ras.section;
-				pos+=ByteLength;				
 				out.write(b);
 				break;
 			case UserInfo:
 				ReqUserInfo rus = (ReqUserInfo) req;
-				len = IntLength+ByteLength+TokenLength+rus.uname.length()+ByteLength+IntLength;				
+				len = IntLength+ByteLength+TokenLength+rus.uname.length()+ByteLength+ByteLength+ByteLength;				
 				b = new byte[len];
-				write(b,intToBytes(len),pos);
+				Convert.write(b,Convert.intToBytes(len),pos);
 				pos+=IntLength;
 				b[pos] = (byte) tmp;
 				pos+=ByteLength;
-				write(b,hexStringToBytes(rus.token),pos);
+				Convert.write(b,Convert.hexStringToBytes(rus.token),pos);
 				pos+=TokenLength;
-				write(b,(rus.uname).getBytes(),pos);
+				Convert.write(b,(rus.uname).getBytes(),pos);
 				pos+=(rus.uname).length();
 				b[pos] = 0;
 				pos+=ByteLength;
-				write(b,intToBytes(rus.uid),pos);
+				b[pos] = (byte) rus.gid.company;
+				pos+=ByteLength;
+				b[pos] = (byte) rus.gid.section;
+				pos+=ByteLength;
+				out.write(b);
+				break;
+			case Subscription:
+				ReqSubscription rsu = (ReqSubscription) req;
+				int number = rsu.n;
+				len = IntLength+ByteLength+TokenLength+rsu.uname.length()+ByteLength+2*ByteLength*number+ByteLength;				
+				b = new byte[len];
+				Convert.write(b,Convert.intToBytes(len),pos);
 				pos+=IntLength;
+				b[pos] = (byte) tmp;
+				pos+=ByteLength;
+				Convert.write(b,Convert.hexStringToBytes(rsu.token),pos);
+				pos+=TokenLength;
+				Convert.write(b,(rsu.uname).getBytes(),pos);
+				pos+=(rsu.uname).length();
+				b[pos] = 0;
+				pos+=ByteLength;
+				for(int i=0;i<number;i++) {
+					b[pos] = (byte) rsu.slist.get(i).company;
+					pos+=ByteLength;
+					b[pos] = (byte) rsu.slist.get(i).section;
+					pos+=ByteLength;
+				}	
+				b[pos] = 0;
+				pos+=ByteLength;
 				out.write(b);
 				break;
 			case Logout:
 				ReqLogout rlo = (ReqLogout) req;
 				len = IntLength+ByteLength+TokenLength+rlo.uname.length()+ByteLength;				
 				b = new byte[len];
-				write(b,intToBytes(len),pos);
+				Convert.write(b,Convert.intToBytes(len),pos);
 				pos+=IntLength;
 				b[pos] = (byte) tmp;
 				pos+=ByteLength;
-				write(b,hexStringToBytes(rlo.token),pos);
+				Convert.write(b,Convert.hexStringToBytes(rlo.token),pos);
 				pos+=TokenLength;
-				write(b,(rlo.uname).getBytes(),pos);
+				Convert.write(b,(rlo.uname).getBytes(),pos);
 				pos+=(rlo.uname).length();
 				b[pos] = 0;
 				pos+=ByteLength;
@@ -153,17 +171,17 @@ public class SocketClient {
 				ReqSendMessage rem = (ReqSendMessage) req;
 				len = IntLength+ByteLength+TokenLength+rem.uname.length()+ByteLength+rem.msg.length()+ByteLength;	
 				b = new byte[len];
-				write(b,intToBytes(len),pos);
+				Convert.write(b,Convert.intToBytes(len),pos);
 				pos+=IntLength;
 				b[pos] = (byte) tmp;
 				pos+=ByteLength;
-				write(b,hexStringToBytes(rem.token),pos);
+				Convert.write(b,Convert.hexStringToBytes(rem.token),pos);
 				pos+=TokenLength;
-				write(b,(rem.uname).getBytes(),pos);
+				Convert.write(b,(rem.uname).getBytes(),pos);
 				pos+=(rem.uname).length();
 				b[pos] = 0;
 				pos+=ByteLength;
-				write(b,rem.msg.getBytes(),pos);
+				Convert.write(b,rem.msg.getBytes(),pos);
 				pos+=rem.msg.length();
 				b[pos] = 0;
 				pos+=ByteLength;
@@ -176,85 +194,211 @@ public class SocketClient {
 			int outlen = in.readInt();
 			int type = in.readUnsignedByte();
 			int status = in.readUnsignedByte();
+			if(status == 1) return StatusFailed;
 			switch (type) {
 			case Login:
-				int id = in.readInt();
 				byte[] buffer = new byte[32];
 				in.read(buffer);
-				String tk = "";
-				for (int i = 0; i < buffer.length; i++) {
-				   String hex = Integer.toHexString(buffer[i] & 0xFF);
-				   if (hex.length() == 1) {
-				    hex = '0' + hex;
-				   }
-				   tk += hex;
-				}
-				ResLogin rchklogin = new ResLogin(id,tk,status);
-				msg.obj = rchklogin;
-				msg.what = Login;
-				recall.sendMessage(msg);
-				break;
-			case Update:
-				msg.obj = new ResUpdate(status);
-				msg.what = Update;
-				recall.sendMessage(msg);
-				break;
-			case Location:
-				int n = 0;
-				outlen-=(IntLength+ByteLength+ByteLength);
-				Vector<RLocation> tmpv = new Vector<RLocation>();
-				while(outlen > 0) {
-					int tid = in.readInt();
-					double lat = in.readDouble();
-					double lot = in.readDouble();
-					tmpv.add(new RLocation(tid,lat,lot));
-					outlen -= (IntLength+DoubleLength+DoubleLength);
-					n++;
-				}
-				msg.obj = new ResLocation(n,status,tmpv);
-				msg.what = Location;
-				recall.sendMessage(msg);
-				break;
-			case UserInfo:
-				outlen-=(IntLength+ByteLength+ByteLength);
-				ReqUserInfo rus = (ReqUserInfo) req;
-				int u = rus.uid;
-				int com = 0,sec = 0,s = 0;
-				while(outlen > 0) {
+				String tk = Convert.byteToHexString(buffer);
+				outlen-=(IntLength+ByteLength+TokenLength+ByteLength);
+				int cnt = 0;
+				int uid =0,s =0;
+				String uname ="",nname ="";
+				double lat =0.0,lot =0.0;
+				RGroup rg = null;
+				int i = 0;
+				byte[] bu = new byte[200];
+				while(cnt < 7) {
 					int typ = in.readUnsignedByte();
 					outlen-=ByteLength;
 					switch(typ){
-					case GroupID:
-						com = in.readUnsignedByte();
-						sec = in.readUnsignedByte();
-						outlen-=(ByteLength+ByteLength);
+					case UID:
+						uid = in.readInt();
+						outlen-=IntLength;
+						break;
+					case Uname:						
+						i = 0;
+						while(true) {
+							bu[i] = in.readByte();
+							if(bu[i] == 0)break;
+							i++;
+						}
+						byte[] wr = new byte[i];
+						for(int j=0;j<i;j++){
+							wr[j] = bu[j];
+						}
+						uname = new String(wr);
+						outlen-=ByteLength*(i+1);
+						break;
+					case Nname:
+						i = 0;
+						while(true) {
+							bu[i] = in.readByte();
+							if(bu[i] == 0)break;
+							i++;
+						}
+						byte[] wt = new byte[i];
+						for(int j=0;j<i;j++){
+							wt[j] = bu[j];
+						}
+						nname = new String(wt);
+						outlen-=ByteLength*(i+1);
 						break;
 					case Gender:
 						s = in.readUnsignedByte();
 						outlen-=ByteLength;
 						break;
+					case GroupID:
+						int com = in.readUnsignedByte();
+						int sec = in.readUnsignedByte();
+						rg = new RGroup(com,sec);
+						outlen-=ByteLength*2;
+						break;
+					case Latitude:
+						lat = in.readDouble();
+						outlen-=DoubleLength;
+						break;
+					case Longitude:
+						lot = in.readDouble();
+						outlen-=DoubleLength;
+						break;
 					}
+					cnt++;
 				}
-				msg.obj = new ResUserInfo(status,u,com,sec,s);
+				RUserInfo r = new RUserInfo(uid,uname,nname,lat,lot,rg,s);
+				in.readUnsignedByte();
+				outlen-=ByteLength;
+				int number =0;
+				System.out.println("read   "+ outlen);
+				Vector<RGroup> vrg = new Vector<RGroup>();
+				while(outlen > 1) {
+					int com = in.readUnsignedByte();
+					int sec = in.readUnsignedByte();
+					vrg.add(new RGroup(com,sec));
+					outlen-=ByteLength*2;
+					number++;
+				}
+				in.readUnsignedByte();
+				msg.obj = new ResLogin(tk, r, vrg, number);
+				msg.what = Login;
+				recall.sendMessage(msg);
+				Vector<String> vs = new Vector<String>();
+				vs.add(uname);
+				vs.add(tk);
+				Message m = new Message();
+				m.obj = vs;
+				m.what = StartPush;
+				h.sendMessage(m);
+				break;
+			case Update:
+				msg.obj = new ResUpdate();
+				msg.what = Update;
+				recall.sendMessage(msg);
+				break;
+			case UserInfo:
+				outlen-=(IntLength+ByteLength+ByteLength);
+				int uid1 =0,s1 =0;
+				String uname1 ="",nname1 ="";
+				double lat1 =0.0,lot1 =0.0;
+				RGroup rg1 = null;
+				int k = 0;
+				byte[] bn = new byte[200];
+				Vector<RUserInfo> v = new Vector<RUserInfo>();
+				int n = 0;
+				while(outlen > 0) {
+					int tmpcnt =0;
+					while(tmpcnt < 7) {
+						int typ = in.readUnsignedByte();
+						outlen-=ByteLength;
+						switch(typ){
+						case UID:
+							uid1 = in.readInt();
+							outlen-=IntLength;
+							break;
+						case Uname:						
+							k = 0;
+							while(true) {
+								bn[k] = in.readByte();
+								if(bn[k] == 0)break;
+								k++;
+							}
+							byte[] wr = new byte[k];
+							for(int j=0;j<k;j++){
+								wr[j] = bn[j];
+							}
+							uname1 = new String(wr);
+							outlen-=ByteLength*(k+1);
+							break;
+						case Nname:
+							k = 0;
+							while(true) {
+								bn[k] = in.readByte();
+								if(bn[k] == 0)break;
+								k++;
+							}
+							byte[] wt = new byte[k];
+							for(int j=0;j<k;j++){
+								wt[j] = bn[j];
+							}
+							nname1 = new String(wt);
+							outlen-=ByteLength*(k+1);
+							break;
+						case Gender:
+							s1 = in.readUnsignedByte();
+							outlen-=ByteLength;
+							break;
+						case GroupID:
+							int com = in.readUnsignedByte();
+							int sec = in.readUnsignedByte();
+							rg1 = new RGroup(com,sec);
+							outlen-=ByteLength*2;
+							break;
+						case Latitude:
+							lat1 = in.readDouble();
+							outlen-=DoubleLength;
+							break;
+						case Longitude:
+							lot1 = in.readDouble();
+							outlen-=DoubleLength;
+							break;
+						}
+						tmpcnt++;
+					}
+					in.readUnsignedByte();
+					outlen-=ByteLength;
+					v.add(new RUserInfo(uid1,uname1,nname1,lat1,lot1,rg1,s1));
+					n++;
+				}
+				msg.obj = new ResUserInfo(n,v);
 				msg.what = UserInfo;
 				recall.sendMessage(msg);
 				break;
-			case Logout:
-				msg.obj = new ResLogout(status);
-				msg.what = Logout;
+			case Subscription:
+				msg.obj = new ResSubscription();
+				msg.what = Subscription;
 				recall.sendMessage(msg);
 				break;
+			case Logout:
+				msg.obj = new ResLogout();
+				msg.what = Logout;
+				recall.sendMessage(msg);
+				Message ms = new Message();
+				ms.what = ClosePush;
+				h.sendMessage(ms);
+				break;
 			case SendMessage:
-				msg.obj = new ResSendMessage(status);
+				msg.obj = new ResSendMessage();
 				msg.what = SendMessage;
 				recall.sendMessage(msg);
 				break;
 			}
-			return 0;
+			return Success;
 
 		} catch (SocketTimeoutException e){
-			return 1;			
+			e.printStackTrace();
+			return TimeOut;			
 		} catch (IOException e) {
+			e.printStackTrace();
 			throw e;
 		} 
 	}
@@ -267,50 +411,7 @@ public class SocketClient {
 			throw e;
 		}
 	}
-	
-	@SuppressLint("DefaultLocale")
-	private static byte[] hexStringToBytes(String hexString) {
-		if (hexString == null || hexString.equals("")) {
-			return null;
-		}
-		hexString = hexString.toUpperCase();
-		int length = hexString.length() / 2;
-		char[] hexChars = hexString.toCharArray();
-		byte[] d = new byte[length];
-		for (int i = 0; i < length; i++) {
-				int pos = i * 2;
-				d[i] = (byte) (charToByte(hexChars[pos]) << 4 | charToByte(hexChars[pos + 1]));
-		}
-		return d;
-	}
-	
-	private static byte charToByte(char c) {
-		return (byte) "0123456789ABCDEF".indexOf(c);
-	}
-	
-	private static byte[] intToBytes(int i) {   
-		  byte[] d = new byte[4];   
-		  d[0] = (byte)((i >> 24) & 0xFF);
-		  d[1] = (byte)((i >> 16) & 0xFF);
-		  d[2] = (byte)((i >> 8) & 0xFF); 
-		  d[3] = (byte)(i & 0xFF);
-		  return d;
-	}
-	
-	public static byte[] doubleToBytes(double d){
-		  byte[] b=new byte[8];
-		  long l=Double.doubleToLongBits(d);
-		  for(int i=0;i<8;i++){
-			  b[i] = (byte)(l >>> 8*(7-i));
-		  }
-		  return b;
-	}
-	
-	private static void write(byte[] s,byte[] w,int l) {
-		
-		for(int i=0;i<w.length;i++){
-			s[i+l] = w[i];
-		}
-	}
+
+
 
 }
