@@ -1,26 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:layout_width="fill_parent"
-	android:layout_height="wrap_content"
-	android:background="@android:color/black"
-	android:orientation="horizontal" >
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content" >
 
-	<RelativeLayout
-		android:id="@+id/settings_headbar_layout"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:layout_alignParentTop="true" >
+    <LinearLayout
 
-		<include layout="@layout/settings_headbar" />
-	</RelativeLayout>
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical" >
 
-	<LinearLayout
-	    android:layout_width="fill_parent"
-	    android:layout_height="match_parent"
-	    android:layout_marginTop="48dip"
-	    android:orientation="vertical" >
-
-	    <TextView
+        <include layout="@layout/settings_headbar"></include>
+        
+        <TextView
 	        android:id="@+id/settings_GPSrefreshrate_text"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
@@ -33,134 +24,108 @@
 	    <SeekBar
 	        android:id="@+id/settings_GPSrefreshrate"
 	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content" />
-
-	    <!--
-             LinearLayout
-			android:layout_width="fill_parent"
-			android:layout_height="wrap_content"
-			android:orientation="horizontal"
-	    -->
-	    <!--
-                 TextView 
-				android:id="@+id/GPS_min_text"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:layout_alignParentLeft="true"
-				android:layout_marginLeft="10dip"
-				android:text="1s"
-				android:textSize="10dip"
-				android:textColor="@android:color/white"/
-	    -->
-
-
-	    <!--
-            TextView
-			android:id="@+id/GPS_max_text"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:layout_alignParentRight="true"
-			android:text="30s"
-			android:textColor="@android:color/white"
-			android:textSize="10dip" /
-	    -->
-
-
-	    <!-- /LinearLayout -->
-	    <!-- end of gps text -->
-
+	        android:layout_height="wrap_content"
+	        android:layout_marginLeft="40px"
+	        android:layout_marginRight="40px" />
+        
 	    <View
 	        android:layout_width="fill_parent"
 	        android:layout_height="1.0px"
-	        android:layout_marginLeft="1.0px"
-	        android:layout_marginRight="1.0px"
+	        android:layout_marginTop="40px"
+	        android:layout_marginBottom="40px"
+	        android:layout_marginLeft="20.0px"
+	        android:layout_marginRight="20.0px"
 	        android:background="#ffc0c3c4" />
+	    
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 2" />
 
-	    <LinearLayout
-	        android:id="@+id/settings_sex_layout"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content"
-	        android:layout_marginTop="50dip"
-	         >
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 3" />
 
-	        <TextView
-	            android:id="@+id/settings_sex_text"
-	            android:layout_width="wrap_content"
-	            android:layout_height="wrap_content"
-	            android:layout_marginLeft="10dip"
-	            android:text="@string/show_sex"
-	            android:textColor="@android:color/white"
-	            android:textSize="20dip" />
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 4" />
 
-	        <CheckBox
-	            android:id="@+id/settings_show_male"
-	            android:layout_width="wrap_content"
-	            android:layout_height="wrap_content"
-	            android:text="@string/male"
-	            android:textColor="@android:color/white" />
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 5" />
 
-	        <CheckBox
-	            android:id="@+id/settings_show_female"
-	            android:layout_width="wrap_content"
-	            android:layout_height="wrap_content"
-	            android:text="@string/female"
-	            android:textColor="@android:color/white" />
-	    </LinearLayout>
+        <ProgressBar
+            android:id="@+id/progressBar1"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-	    <View
-	        android:layout_width="fill_parent"
-	        android:layout_height="1.0px"
-	        android:layout_marginLeft="1.0px"
-	        android:layout_marginRight="1.0px"
-	        android:background="#ffc0c3c4" />
+        <RadioButton
+            android:id="@+id/radioButton2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RadioButton 1" />
 
-	    <LinearLayout
-	        android:id="@+id/settings_team_layout"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content"
-	        android:layout_marginTop="50dip" >
+        <RadioButton
+            android:id="@+id/radioButton1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RadioButton 2" />
 
-	        <TextView
-	            android:id="@+id/settings_team_text"
-	            android:layout_width="wrap_content"
-	            android:layout_height="wrap_content"
-	            android:layout_marginLeft="10dip"
-	            android:text="@string/show_team"
-	            android:textColor="@android:color/white"
-	            android:textSize="20dip" />
+        <ToggleButton
+            android:id="@+id/toggleButton1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ToggleButton" />
 
-	        <RadioButton
-	            android:id="@+id/settings_team_mine"
-	            android:layout_width="wrap_content"
-	            android:layout_height="wrap_content"
-	            android:text="@string/mine"
-	            android:textColor="@android:color/white"
-	            android:textSize="20dip" />
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 6" />
 
-	        <RadioButton
-	            android:id="@+id/settings_team_all"
-	            android:layout_width="wrap_content"
-	            android:layout_height="wrap_content"
-	            android:text="@string/all"
-	            android:textColor="@android:color/white"
-	            android:textSize="20dip" />
-	    </LinearLayout>
+        <SeekBar
+            android:id="@+id/seekBar1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-	    <View
-	        android:layout_width="fill_parent"
-	        android:layout_height="1.0px"
-	        android:layout_marginLeft="1.0px"
-	        android:layout_marginRight="1.0px"
-	        android:background="#ffc0c3c4" />
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 7" />
 
-	    <Button
-	        android:id="@+id/settings_btn_logout"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content"
-	        android:layout_weight="0.00"
-	        android:layout_marginTop="100dip"
-	        android:text="Logout" />
+        <Button
+            android:id="@+id/button4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 8" />
 
-	</LinearLayout>
+        <CheckBox
+            android:id="@+id/checkBox1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CheckBox" />
 
-	</RelativeLayout>
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 9" />
+
+        <Button
+            android:id="@+id/button1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 10" />
+
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Button 11"
+            android:id="@+id/settings_btn_logout" />
+    </LinearLayout>
+
+</ScrollView>

@@ -1,6 +1,7 @@
 package com.macaroon.piztor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -78,7 +79,9 @@ public class MapMaker extends Activity {
 	private ArrayList<OverlayItem> mItems = null;
 	private MapInfo preMapInfo = null;
 	private MapInfo nowMapInfo = null;
-	
+	private Vector<UserInfo> freshManInfo = null;
+	// hash from uid to overlay item
+	private HashMap<Integer, OverlayItem> hash = null;
 
 	// marker layer
 	private MyOverlay markerOverlay;
@@ -223,7 +226,9 @@ public class MapMaker extends Activity {
 		
 		//TODO
 		/////////////////////////////////////////////////////////////////
+		hash = new HashMap<Integer, OverlayItem>();
 		mOverlay = new MyOverlay(context.getResources().getDrawable(R.drawable.circle_red), mMapView);
+		mMapView.getOverlays().add(mOverlay);
 		markerOverlay = new MyOverlay(context.getResources().getDrawable(R.drawable.marker1), mMapView);
 	}
 	
@@ -295,6 +300,7 @@ public class MapMaker extends Activity {
 	/**
 	 * Update to draw other users
 	 */
+	/*
 	public void UpdateMap(MapInfo mapInfo) {
 	
 		if (mapInfo != null) {
@@ -325,12 +331,61 @@ public class MapMaker extends Activity {
 		
 		if (mMapView != null) {
 			if (mMapView.getOverlays() != null) {
-				mMapView.getOverlays().add(mOverlay);
+				//mMapView.getOverlays().add(mOverlay);
 				mMapView.refresh();
 			}
 		}
 	}
+	*/
 	
+	public void UpdateMap(MapInfo mapInfo) {
+	
+		if (mapInfo == null) {
+			if (mOverlay != null && mOverlay.getAllItem().size() != 0) {
+				mOverlay.removeAll();
+			}
+			return;
+		}
+		freshManInfo = new Vector<UserInfo>();
+		// first remove all old users that are not here now
+		if (preMapInfo != null) {
+			for (UserInfo i : preMapInfo.getVector()) {
+				if (i.uid == Infomation.myInfo.uid) continue;
+				if (mapInfo.getUserInfo(i.uid) == null) {
+					mOverlay.removeItem(hash.get(i.uid));
+					hash.remove(i.uid);
+				}
+			}
+		}
+		mMapView.refresh();
+
+		// then update and add items
+		for (UserInfo i : mapInfo.getVector()) {
+			if (i.uid == Infomation.myInfo.uid) continue;
+			if (hash.containsKey(i.uid) == false) {	
+				GeoPoint p = new GeoPoint((int)(i.getLatitude() * 1E6), (int)(i.getLongitude() * 1E6));
+				curItem = new OverlayItem(p, "USERNAME_HERE", "USER_SNIPPET_HERE");
+				//TODO getDrawable
+				///////////////////////////////
+				curItem.setMarker(context.getResources().getDrawable(R.drawable.circle_red));
+				mOverlay.addItem(curItem);
+				hash.put(i.uid, curItem);
+				//if (mMapView != null)
+				//	mMapView.refresh();
+			} else {
+				GeoPoint p = new GeoPoint((int)(i.getLatitude() * 1E6), (int)(i.getLongitude() * 1E6));
+				curItem = hash.get(i.uid);
+				curItem.setGeoPoint(p);
+				mOverlay.updateItem(curItem);
+				//if (mMapView != null)
+				//	mMapView.refresh();
+			}
+		}
+		if (mMapView != null) {
+			mMapView.refresh();
+		}
+		preMapInfo = mapInfo;
+	}
 	
 	
 	/**
