@@ -237,11 +237,20 @@ class RequestHandler(object):
         buff += chr(0)
         return buff
 
+    @classmethod
+    def unpack_sub_list(cls, data):
+        res = list()
+        idx = 0
+        end = len(data) - 1
+        while idx < end:
+            res.append(struct.unpack("!H", 
+                        data[idx:idx + _SectionSize.GROUP_ID]))
+        return res
+
 
 class UserAuthHandler(RequestHandler):
 
     _optcode = _OptCode.user_auth
-
     _max_tr_data_size = MAX_USERNAME_SIZE + \
                         _SectionSize.PADDING + \
                         MAX_PASSWORD_SIZE + \
@@ -290,15 +299,16 @@ class UserAuthHandler(RequestHandler):
             #logger.info("New token generated: " + get_hex(uauth.token))
             self.session.commit()
             # STATUS |  USER_TOKEN
-            buff = struct.pack("!B32s",  _StatusCode.sucess, uauth.token)
+            reply = struct.pack("!B32s",  _StatusCode.sucess, uauth.token)
             # USER_ENTRY
-            buff += RequestHandler.pack_user_entry(user)
-            buff += RequestHandler.pack_sub_list(user)
-            return self.pack(buff)
+            reply += RequestHandler.pack_user_entry(user)
+            reply += RequestHandler.pack_sub_list(user)
+            return self.pack(reply)
 
 
-class LocationUpdateHandler(RequestHandler):
+class UpdateLocationHandler(RequestHandler):
 
+    _optcode = _OptCode.user_auth
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
                         _SectionSize.LATITUDE + \
                         _SectionSize.LONGITUDE
@@ -376,13 +386,13 @@ class UserInfoHandler(RequestHandler):
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
             if username is None:
                 raise struct.error
-            gid, = struct.unpack("!L", tail)
+            gid, = struct.unpack("!H", tail)
         except struct.error:
             raise BadReqError("User info request: Malformed request body")
 
         logger.info("Trying to user info with " \
-                    "(token = {0}, uid = {1})" \
-            .format(get_hex(token), uid))
+                    "(token = {0}, gid = {1})" \
+            .format(get_hex(token), gid))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Auth failure
@@ -390,28 +400,63 @@ class UserInfoHandler(RequestHandler):
             logger.warning("Authentication failure")
             return self._failed_response
         # TODO: check the relationship between user and quser
-        user = uauth.user 
+        u = uauth.user 
 
+        grp = self.session.query(UserModel) \
+                        .filter(UserModel.sec_id == gid)
+        grp += self.session.query(UserModel) \
+                        .filter(UserModel.comp_id = gid)
+
+        reply = struct.pack("!B", _StatusCode.sucess)
+        for user in grp:
+            reply += RequestHandler.pack_user_entry(user)
+        return self.pack(reply)
+
+class UpdateSubscription(RequestHandler):
+
+    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
+                        _SectionSize.LATITUDE + \
+                        _SectionSize.LONGITUDE
+
+    def _find_or_create_group(self.gid, session):
+        q = self.session.query(GroupInfo).filter(GroupInfo.id == gid)
+        entry = q.first()
+        if not entry:
+            entry = GroupInfo(gid = gid)
+        self.session.commit()
+        return entry
+
+    def handle(self, tr_data, conn):
+        self.check_size(tr_data)
+        logger.info("Reading update subscription data...")
         try:
-            grp = self.session.query(UserModel) \
-                    .filter(UserModel.sec_id == ).one()
-        except NoResultFound:
-            logger.info("No such user: {0}".format(username))
-            return self._failed_response
+            token, = struct.unpack("!32s", tr_data[:32])
+            username, tail = RequestHandler.trunc_padding(tr_data[32:])
+            if username is None: 
+                raise struct.error
+            sub_list = RequestHandler.unpack_sub_list(tail)
+        except struct.error:
+            raise BadReqError("Location update: Malformed request body")
 
-        except MultipleResultsFound:
-            raise DBCorruptionError()
+        logger.info("Trying to update location with "
+                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
+                .format(get_hex(token), username, lat, lng))
 
-        return reply
+        uauth = RequestHandler.get_uauth(token, username, self.session)
+        # Authentication failure
+        if uauth is None:
+            logger.warning("Authentication failure")
+            return self.pack(struct.pack("!B", _StatusCode.failure))
+
+        uauth.user.sub = map(self._find_or_create_group, sub_list)
+        self.session.commit()
+        logger.info("Subscription is updated sucessfully")
+
+        return self.pack(struct.pack("!B", _StatusCode.sucess))
 
 class UserLogoutHandler(RequestHandler):
 
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE
-
-    _response_size = \
-            _SectionSize.LENGTH + \
-            _SectionSize.OPT_ID + \
-            _SectionSize.STATUS
 
     def handle(self, tr_data, conn):
         self.check_size(tr_data)
@@ -432,9 +477,7 @@ class UserLogoutHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBB",  self._response_size,
-                                        _OptCode.user_logout,
-                                        _StatusCode.failure)
+            return self.pack(struct.pack("!B", _StatusCode.failure))
         pt = RequestHandler.push_tunnels
         uid = uauth.uid
         pt[uid].close()
@@ -442,9 +485,7 @@ class UserLogoutHandler(RequestHandler):
         uauth.regen_token()
         logger.info("User Logged out successfully!")
         self.session.commit()
-        return struct.pack("!LBB",  self._response_size,
-                                    _OptCode.user_logout,
-                                    _StatusCode.sucess)
+        return self.pack(struct.pack("!B",  _StatusCode.sucess))
 
 class OpenPushTunnelHandler(RequestHandler):
 
@@ -546,9 +587,9 @@ class SendTextMessageHandler(RequestHandler):
 class PTP(Protocol, TimeoutMixin):
 
     handlers = [UserAuthHandler,
-                LocationUpdateHandler,
-                LocationInfoHandler,
+                UpdateLocationHandler,
                 UserInfoHandler,
+                UpdateSubscription,
                 UserLogoutHandler,
                 OpenPushTunnelHandler,
                 SendTextMessageHandler]

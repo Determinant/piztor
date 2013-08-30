@@ -22,7 +22,6 @@ def create_database():
 def find_or_create_group(comp_no, sec_no, session):
     gid = UserModel.to_gid(comp_no, sec_no)
     q = session.query(GroupInfo).filter(GroupInfo.id == gid)
-    entry = None
     entry = q.first()
     if not entry:
         entry = GroupInfo(gid = gid)

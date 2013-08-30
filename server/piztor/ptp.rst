@@ -60,9 +60,9 @@ Piztor Transmission Protocol v2.0
 
       ::
   
-          +----1b---+------?b-----+-----+---------+
-          | USER_ID | INFO_ENTRY  | ... | PADDING |
-          +--uchar--+-------------+-----+---------+
+          +------?b-----+-----+---------+
+          | INFO_ENTRY  | ... | PADDING |
+          +-------------+-----+---------+
 
       - ``INFO_ENTRY`` : 
       
