@@ -42,6 +42,7 @@ public class SocketClient {
 	static final int Longitude =7;
 	static final int Level =8;
 	
+	static final int LevelFailed =3;
 	static final int StatusFailed = 2;
 	static final int TimeOut = 1;
 	static final int Success = 0;
@@ -219,6 +220,7 @@ public class SocketClient {
 			int type = in.readUnsignedByte();
 			int status = in.readUnsignedByte();
 			if(status == 1) return StatusFailed;
+			if(status == 2) return LevelFailed;
 			switch (type) {
 			case Login:
 				byte[] buffer = new byte[32];

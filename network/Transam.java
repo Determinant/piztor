@@ -34,10 +34,16 @@ public class Transam implements Runnable {
 	static final int EIOException =105;
 	static final int EUnknownHostException =106;
 	static final int EStatusFailedException =107;
+	static final int ELevelFailedException =108;
 	
 	static final int Reconnect =-2;
 	static final int Exception =-1;
 	static final int TimeOut =0;
+	
+	static final int RLevelFailed =3;
+	static final int RStatusFailed = 2;
+	static final int RTimeOut = 1;
+	static final int RSuccess = 0;
 	
 	private Timer timer;
 	private Timer pushtimer;
@@ -166,14 +172,14 @@ public class Transam implements Runnable {
 				push = new PushClient(i,p,retime);
 				push.setPushHandler(recall);
 				int out = push.start(new ReqStartPush(itoken,iname));
-				if(out == 1) {
+				if(out == RTimeOut) {
 					push.closeSocket();
 					Message msg = new Message();
 					msg.what = Reconnect;
 					msg.obj = new ETimeOutException(5,0);
 					handler.sendMessage(msg);
 				}
-				else if (out == 2){
+				else if (out == RStatusFailed){
 					stopPush();
 					Message msg = new Message();
 					msg.what = Exception;
@@ -206,16 +212,24 @@ public class Transam implements Runnable {
 			try {
 				SocketClient client = new SocketClient(i,p,retime);
 				int out = client.sendMsg(req,recall,handler);
-				if(out == 0){													
+				if(out == RSuccess){													
 					client.closeSocket();
 					running = false;
 				}
-				else if (out == 1){
+				else if (out == RTimeOut){
 					client.closeSocket();
 					Message m = new Message();					
 					m.obj = new ETimeOutException(req.type,req.time);
 					m.what = TimeOut;
 					handler.sendMessage(m);
+				}
+				else if (out == RLevelFailed){
+					client.closeSocket();
+					Message m = new Message();					
+					m.obj = new ELevelFailedException(req.type,req.time);
+					m.what = Exception;
+					recall.sendMessage(m);
+					running = false;
 				}
 				else {
 					client.closeSocket();

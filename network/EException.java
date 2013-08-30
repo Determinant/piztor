@@ -10,7 +10,8 @@ public class EException extends Exception {
 	static final int EPushFailedException =104;
 	static final int EIOException =105;
 	static final int EUnknownHostException =106;
-	static final int EStatusFailedException =107;
+	static final int EStatusFailedException =107;	
+	static final int ELevelFailedException =108;
 	
 	
 	private static final long serialVersionUID = 100L;
@@ -71,5 +72,12 @@ public class EException extends Exception {
 		private static final long serialVersionUID = 107L;
 		public EStatusFailedException(int t,long timep) {  
 			super(107,t,timep);
+		}		
+	}	
+	
+	class ELevelFailedException extends EException{
+		private static final long serialVersionUID = 108L;
+		public ELevelFailedException(int t,long timep) {  
+			super(108,t,timep);
 		}		
 	}	
