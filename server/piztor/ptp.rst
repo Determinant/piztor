@@ -81,6 +81,7 @@ Piztor Transmission Protocol v2.0a
         :``0x05``: gid (value is a 2-byte ``GROUP_ID``)
         :``0x06``: latitude (value is a 8-byte ``double`` )
         :``0x07``: longtitude( value is a 8-byte ``double`` )
+        :``0x08``: level ( value is a 1-byte ``uchar`` )
 
       - ``SUB_LIST`` :
 
@@ -247,6 +248,12 @@ Piztor Transmission Protocol v2.0a
           +--------+
           | STATUS |
           +--------+
+
+      ``STATUS`` :
+  
+      - ``0x00`` for success
+      - ``0x01`` for invalid token
+      - ``0x02`` for insufficient level
 
 - Push Notification
 

@@ -5,13 +5,15 @@ from model import *
 path = "root:helloworld@localhost/piztor"
 
 class UserData:
-    def __init__(self, username, nickname, password, comp_no, sec_no, sex, sub):
+    def __init__(self, username, nickname, password, 
+                        comp_no, sec_no, sex, perm, sub):
         self.username = username
         self.nickname = nickname
         self.password = password
         self.comp_no = int(comp_no)
         self.sec_no = int(sec_no)
         self.sex = int(sex)
+        self.perm = perm
         self.sub = sub
 
 def create_database():
@@ -38,7 +40,8 @@ def import_user_data(data):
                         nickname = user.nickname,
                         sex = user.sex,
                         comp_no = user.comp_no,
-                        sec_no = user.sec_no)
+                        sec_no = user.sec_no,
+                        perm = user.perm)
     
         for cn, sn in user.sub:
             print cn, sn
@@ -72,7 +75,9 @@ if __name__ == '__main__':
                                 password = line[2], 
                                 comp_no = line[3], 
                                 sec_no = line[4],
-                                sex = line[5], sub = sub))
+                                sex = line[5],
+                                perm = line[6],
+                                sub = sub))
 
 
     create_database()

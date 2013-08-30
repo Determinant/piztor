@@ -53,6 +53,7 @@ class UserModel(Base):
     comp_id = Column(Integer)
     sec_id = Column(Integer)
 
+    perm = Column(TINYINT, nullable = False)
     sub = relationship("GroupInfo",
                             secondary = group_sub,
                             backref = "subscribers")
@@ -64,13 +65,14 @@ class UserModel(Base):
     def to_gid(self, comp_no, sec_no):
         return comp_no * 256 + sec_no
 
-    def __init__(self, username, nickname, sex, comp_no, sec_no):
+    def __init__(self, username, nickname, sex, comp_no, sec_no, perm):
         self.username = username
         self.nickname = nickname
         self.sex = sex
         self.comp_id = UserModel.to_gid(comp_no, 0xff)
         self.sec_id = UserModel.to_gid(comp_no, sec_no)
         self.sub = list()
+        self.perm = perm
 
 
 class LocationInfo(Base):

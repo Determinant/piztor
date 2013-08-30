@@ -27,6 +27,10 @@ logger = logging.getLogger('piztor_server')
 logger.setLevel(logging.INFO)
 engine = create_engine('mysql://' + db_path, echo = False, pool_size = 1024)
 
+class _PermCode:
+    normal = 0x00
+    sectoin = 0x01
+    company = 0x02
 
 class _SectionSize:
     LENGTH = 4
@@ -596,9 +600,9 @@ class SetMarkerHandler(RequestHandler):
             if username is None: 
                 raise struct.error
         except struct.error:
-            raise BadReqError("Send text mesg: Malformed request body")
+            raise BadReqError("Set marker: Malformed request body")
 
-        logger.info("Trying to send text mesg with "
+        logger.info("Trying to set marker with "
                     "(token = {0}, username = {1})"\
                 .format(get_hex(token), username))
 
@@ -610,8 +614,10 @@ class SetMarkerHandler(RequestHandler):
 
         pt = RequestHandler.push_tunnels
         u = uauth.user
-        ulist = self.session.query(UserModel) \
+        if u.perm == _PermCode.section:
+            ulist = self.session.query(UserModel) \
                 .filter(UserModel.sec_id == u.sec_id).all()
+        else if u.perm == _PermCode.section:
 
         for user in ulist:
             uid = user.id
