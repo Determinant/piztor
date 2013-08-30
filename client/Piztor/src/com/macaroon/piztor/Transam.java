@@ -5,12 +5,14 @@ import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Vector;
 
 import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
-//       Piztor Transmission Protocol v0.4a       //
+//       Piztor Transmission Protocol v2.0 beta   //
 
 //------------------------------------------------//
 //												  //
@@ -24,11 +26,12 @@ import android.os.Message;
 //              6   for   sendmessage             //
 //												  //	
 //            100   for   pushmessage	          //
+//            101   for   pushlocation            //
 //											      //
 //     ----------I'm the division line--------    //
 //                                                //
 //             -1   for   Exceptions			  //
-//       Exception (req type , exception type)    //
+//   Exception (req type,ex type,exception type)  //
 //                                                //
 //    ----------I'm the division line--------     //
 //                                                //
@@ -56,7 +59,6 @@ import android.os.Message;
 //          status -- 0 for success               //
 //					  1 for failed/invalid        //				
 //												  //
-//          push message -- message               //
 //                                                //
 //------------------------------------------------//
 
@@ -64,53 +66,47 @@ import android.os.Message;
 
 public class Transam implements Runnable {
 	
-	public final static int Login =0;
-	public final static int Update =1;
-	public final static int Location =2;
-	public final static int UserInfo =3;
-	public final static int Logout =4;
-	public final static int StartPush =5;
-	public final static int SendMessage =6;
+	static final int Login =0;
+	static final int Update =1;
+	static final int UserInfo =2;
+	static final int Subscription =3;
+	static final int Logout =4;
+	static final int StartPush =5;
+	static final int SendMessage =6;
 	
-	public final static int PushMessage =100;
-	public final static int PushLocation =101;
+	static final int ClosePush = -5;
 	
-	public final static int GroupID =0;
-	public final static int Gender =1;
+	static final int EConnectedFailedException =101;
+	static final int ETimeOutException =102;
+	static final int EJavaHostException =103;
+	static final int EPushFailedException =104;
+	static final int EIOException =105;
+	static final int EUnknownHostException =106;
+	static final int EStatusFailedException =107;
 	
-	public final static int EConnectedFailedException =101;
-	public final static int ETimeOutException =102;
-	public final static int EJavaHostException =103;
-	public final static int EPushFailedException =104;
-	public final static int EIOException =105;
-	public final static int EUnknownHostException =106;
+	static final int Reconnect =-2;
+	static final int Exception =-1;
+	static final int TimeOut =0;
 	
-	public Timer timer;
-	public boolean running = false; 
-	public boolean flag = true;
-	public int cnt = 4;				//retry times
-	public int tcnt;				//current remain retry times
-	public int rcnt;				//current remain retry times (push)
-	public int retime = 2000;		//timeout time
-	Res res;
-	Req req;
-	public int p;					//port
-	public String i;				//ip
-	Thread thread;
-	Handler core;
-	Handler recall;					//recall
-	Queue<Req> reqtask ;			//request task
+	private Timer timer;
+	private Timer pushtimer;
+	private boolean running = false; 
+	private int cnt = 5;				//retry times
+	private int tcnt;				//current remain retry times
+	private int rcnt;				//current remain retry times (push)
+	private int retime = 2000;		//timeout time
+	private Req req;
+	private int p;					//port
+	private String i;				//ip
+	private Thread thread;
+	private Handler recall;					//recall
+	private Queue<Req> reqtask ;			//request task
 	
-	public String itoken;
-	public String iname;
+	private String itoken;
+	private String iname;
 	
-	Thread Pushthread;
-	PushClient push;
-	
-	
-	public final static int Reconnect =-2;
-	public final static int Exception =-1;
-	public final static int TimeOut =0;
+	private Thread Pushthread;
+	private PushClient push;
 
 	Transam(String ip, int port,Handler Recall) {
 		p = port;
@@ -124,14 +120,14 @@ public class Transam implements Runnable {
 		
 	}
 	
-	public void startPush(String token,String name) {
+	private void startPush(String token,String name) {
 		itoken = token;
 		iname = name;
 		rcnt = cnt;
 		connectpush();
 	}
 	
-	public void stopPush() {
+	private void stopPush() {
 		try{
 			if(push.isClosed() == false) {
 				push.closeSocket();
@@ -181,7 +177,7 @@ public class Transam implements Runnable {
 					}
 					else{	                        //run the request
 						running = true;
-						tcnt = cnt;
+						tcnt = cnt;			
 						connect();
 					}
 				}				
@@ -201,7 +197,19 @@ public class Transam implements Runnable {
 		Pushthread.start();
 	}
 	
-	class reqpush implements Runnable {
+	class tmain extends TimerTask {
+		public void run() {
+			connect();
+		}
+	};
+	
+	class pmain extends TimerTask {
+		public void run() {
+			connectpush();
+		}
+	};
+	
+	private class reqpush implements Runnable {
 		public void run() {
 			try {
 				if(itoken == null || iname == null) return;
@@ -217,9 +225,14 @@ public class Transam implements Runnable {
 				}
 				else if (out == 2){
 					stopPush();
+					Message msg = new Message();
+					msg.what = Exception;
+					msg.obj = new EStatusFailedException(5,0);
+					recall.sendMessage(msg);
 				}
 				else {
-					push.listen(recall,handler);
+					rcnt = cnt;
+					push.listen(recall);
 				}
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
@@ -238,23 +251,30 @@ public class Transam implements Runnable {
 		}
 	}
 
-	class thd implements Runnable {
+	private class thd implements Runnable {
 		public void run() {
 			try {
 				SocketClient client = new SocketClient(i,p,retime);
-				int out = client.sendMsg(req,recall);
+				int out = client.sendMsg(req,recall,handler);
 				if(out == 0){													
 					client.closeSocket();
 					running = false;
 				}
+				else if (out == 1){
+					client.closeSocket();
+					Message m = new Message();					
+					m.obj = new ETimeOutException(req.type,req.time);
+					m.what = TimeOut;
+					handler.sendMessage(m);
+				}
 				else {
 					client.closeSocket();
-					Message m = new Message();
-					EConnectFailedException c = new EConnectFailedException(req.type,req.time);
-					m.obj = c;
-					m.what = Exception;
-					handler.sendMessage(m);
-				}				
+					Message msg = new Message();
+					msg.what = Exception;
+					msg.obj = new EStatusFailedException(5,0);
+					recall.sendMessage(msg);
+					running = false;
+				}
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 				Message msg = new Message();
@@ -272,15 +292,18 @@ public class Transam implements Runnable {
 		}
 	}
 
+
 	@SuppressLint("HandlerLeak")
-	Handler handler = new Handler() {
+	private Handler handler = new Handler() {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case Exception:
 				if (tcnt > 0) {
 					tcnt--;
 					System.out.println(tcnt);
-					connect();
+					timer = new Timer();
+					TimerTask task = new tmain();
+					timer.schedule(task,retime);
 				} else if (tcnt == 0) {
 					Message m = new Message();
 					m.obj = msg.obj;
@@ -292,7 +315,10 @@ public class Transam implements Runnable {
 			case TimeOut:
 				if (tcnt > 0) {
 					tcnt--;
-					connect();
+					System.out.println(tcnt);
+					timer = new Timer();
+					TimerTask task = new tmain();
+					timer.schedule(task,retime);
 				} else if (tcnt == 0) {
 					Message m = new Message();
 					EConnectFailedException c = new EConnectFailedException(req.type,req.time);
@@ -305,72 +331,33 @@ public class Transam implements Runnable {
 			case Reconnect:
 				if (rcnt > 0) {
 					rcnt--;
-					connectpush();
+					System.out.println(rcnt);
+					pushtimer = new Timer();
+					TimerTask task = new pmain();
+					pushtimer.schedule(task,retime);
 				} else if (rcnt == 0) {
 					Message m = new Message();
-					//EPushFailedException c = new EPushFailedException(req.type);
-					m.obj = msg.obj;
+					EPushFailedException c = new EPushFailedException(5,0);
+					//m.obj = msg.obj;
+					m.obj = c;
 					m.what = Exception;
 					recall.sendMessage(m);
 				}
+				break;
+			case StartPush:
+				@SuppressWarnings("unchecked")
+				Vector<String> s = (Vector<String>) msg.obj;
+				startPush(s.get(1),s.get(0));
+				System.out.println("startpush");
+				break;
+			case ClosePush:
+				stopPush();
+				System.out.println("closepush");
 				break;
 			}
 			super.handleMessage(msg);
 		}
 	};
 	
-	class EException extends Exception {
-		private static final long serialVersionUID = 100L;
-		int Rtype;
-		int Etype;
-		long time;
-		public EException(int e,int r,long timep) {  
-			super();
-			Rtype = r;
-			Etype = e;
-			time = timep;
-			}
-	}
 	
-	class EConnectFailedException extends EException{
-		private static final long serialVersionUID = 101L;
-		public EConnectFailedException(int t,long timep) {  
-			super(101,t,timep);
-			}		
-	}
-	
-	class ETimeOutException extends EException{
-		private static final long serialVersionUID = 102L;
-		public ETimeOutException(int t,long timep) {  
-			super(102,t,timep);
-			}		
-	}
-	
-	class EJavaHostException extends EException{
-		private static final long serialVersionUID = 103L;
-		public EJavaHostException(int t,long timep) {  
-			super(103,t,timep);
-		}		
-	}
-	
-	class EPushFailedException extends EException{
-		private static final long serialVersionUID = 104L;
-		public EPushFailedException(int t,long timep) {  
-			super(104,t,timep);
-		}		
-	}
-	
-	class EIOException extends EException{
-		private static final long serialVersionUID = 105L;
-		public EIOException(int t,long timep) {  
-			super(105,t,timep);
-		}		
-	}	
-	
-	class EUnknownHostException extends EException{
-		private static final long serialVersionUID = 106L;
-		public EUnknownHostException(int t,long timep) {  
-			super(106,t,timep);
-		}		
-	}	
 }

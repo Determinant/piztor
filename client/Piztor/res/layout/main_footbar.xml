@@ -6,7 +6,7 @@
 	android:background="@drawable/footbar_background" android:baselineAligned="false">
 
 	<LinearLayout 
-		android:id="@+id/footbar_btn_search_layout"
+		android:id="@+id/footbar_btn_checkin_layout"
 		android:layout_width="64dip"
 		android:layout_height="match_parent"
 		android:orientation="vertical"
@@ -14,21 +14,21 @@
 		android:layout_gravity="center_vertical"
 		android:layout_weight="1">
 		<ImageButton
-			android:id="@+id/footbar_btn_search"
+			android:id="@+id/footbar_btn_checkin"
 			android:layout_width="90dip"
 			android:layout_height="30dip"
 			android:layout_gravity="center"
 			android:contentDescription="@string/desc"
-			android:background="@drawable/footbar_btn_search_style"/>
+			android:background="@drawable/footbar_btn_checkin_style"/>
 		<TextView 
-			android:id="@+id/footbar_btn_search_text"
+			android:id="@+id/footbar_btn_checkin_text"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:gravity="center_horizontal"
 			android:textSize="10dip"
 			android:textColor="@android:color/white"
 			android:layout_gravity="center"
-			android:text="@string/search"/>
+			android:text="@string/checkin"/>
 	</LinearLayout>
 
 	<LinearLayout 

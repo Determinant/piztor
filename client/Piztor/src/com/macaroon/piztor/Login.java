@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
@@ -30,20 +31,19 @@ public class Login extends PiztorAct {
 			}
 			if (m.what == 0) {
 				ResLogin res = (ResLogin) m.obj;
-				if (res.status == 1) {
-					actMgr.trigger(loginFailed);
-					return;
-				}
+				Log.d(LogInfo.login, LogInfo.s);
 				Infomation.token = res.t;
-				Infomation.myInfo.uid = res.uid;
-				Infomation.username = edtUser.getText().toString();
-				System.out.println(res.status + "   :!!!    " + res.type);
+				Infomation.sublist = res.sublist;
+				Infomation.username = res.uinfo.username;
+				Infomation.myInfo = new UserInfo(res.uinfo.uid);
+				Infomation.myInfo.setInfo(res.uinfo.gid.company,
+						res.uinfo.gid.section, res.uinfo.sex,
+						res.uinfo.nickname);
+				System.out.println("login !!!!" + res.sublist.size());
 				actMgr.trigger(AppMgr.loginSuccess);
-				System.out.println("............");
 			} else {
-				System.out.println("reveive other info ~~~~~~~~~~~~~~" + m.what);
-//				System.out.println("login de " + m.what); 
-//				actMgr.trigger(loginFailed);
+				System.out.println("login handler reveive other info   :  "
+						+ m.what);
 			}
 		}
 	};
@@ -113,7 +113,10 @@ public class Login extends PiztorAct {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		AppMgr.transam.setHandler(handler);
+		if (AppMgr.transam == null)
+			Log.d(LogInfo.exception, "transam = null");
+			AppMgr.transam.setHandler(handler);
+		
 	}
 
 	@Override

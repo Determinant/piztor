@@ -21,5 +21,9 @@
     <string name="username">username</string>
     <string name="login">login</string>
     <string name="desc">desc</string>
+    <string name="logout">Logout</string>
+    <string name="update_info">My Account</string>
+    <string name="subscribe_info">Subscribe information</string>
+    <string name="change">更改</string>
 
 </resources>

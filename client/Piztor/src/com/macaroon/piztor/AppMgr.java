@@ -68,21 +68,15 @@ public class AppMgr {
 
 	static void trigger(int event) {
 		Intent i = new Intent();
-		System.out.println(nowAct.id + " : " + event);
-		if (mp.get(nowAct.getClass()) == null)
-			System.out.println("first");
-		else if (mp.get(nowAct.getClass()) == null)
-			System.out.println("second");
 		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
 		if (event == errorToken)
 			Infomation.token = null;
 		if (event == loginSuccess) {
 			mBMapManager.start();
-			transam.startPush(Infomation.token, Infomation.username);
+			mapInfo.clear();
 		}
 		if (event == logout) {
 			mBMapManager.stop();
-			transam.stopPush();
 		}
 		nowAct.startActivity(i);
 	}

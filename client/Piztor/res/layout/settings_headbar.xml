@@ -5,14 +5,14 @@
     android:background="@drawable/topbar_background"
     android:id="@+id/settings_headbar_layout" >
 
-	<ImageButton 
+	<!-- ImageButton 
         android:id="@+id/settings_btn_back"
         android:layout_width="110dip"
         android:layout_height="40dip"
         android:layout_marginLeft="0dip"
         android:layout_alignParentLeft="true"
         android:layout_centerVertical="true"
-        android:background="@drawable/navigation_back"/>
+        android:background="@drawable/navigation_back"/-->
 	
     <TextView 
         android:id="@+id/settings_headbar_text"
