@@ -170,6 +170,9 @@ def pack_lat(user):
 def pack_lng(user):
     return struct.pack("!d", user.location.lng)
 
+def pack_perm(user):
+    return struct.pack("!B", user.perm)
+
 class RequestHandler(object):
     push_tunnels = dict()
     def __init__(self):
@@ -228,7 +231,8 @@ class RequestHandler(object):
                     0x04 : pack_sex,
                     0x05 : pack_gid,
                     0x06 : pack_lat,
-                    0x07 : pack_lng }
+                    0x07 : pack_lng,
+                    0x08 : pack_perm}
 
     @classmethod
     def pack_info_entry(cls, user, entry_code):
