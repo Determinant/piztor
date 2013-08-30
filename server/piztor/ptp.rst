@@ -235,6 +235,7 @@ Piztor Transmission Protocol v2.0a
     - Request
 
       ::
+      
           +-------------+----8b------+------8b-----+----4b----+
           |  AUTH_HEAD  |  LATITUDE  |  LONGITUDE  | DEADLINE |
           +-------------+---double---+---double----+---int----+

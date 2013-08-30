@@ -38,6 +38,7 @@ class _SectionSize:
     LATITUDE = 8
     LONGITUDE = 8
     PADDING = 1
+    DEADLINE = 4
 
 _MAX_AUTH_HEAD_SIZE = _SectionSize.USER_TOKEN + \
                       MAX_USERNAME_SIZE + \
@@ -57,6 +58,7 @@ class _OptCode:
     user_logout =           0x04
     open_push_tunnel =      0x05
     send_text_mesg =        0x06
+    set_marker =            0x07
 
 class _StatusCode:
     sucess = 0x00
@@ -546,6 +548,51 @@ class SendTextMessageHandler(RequestHandler):
             token, = struct.unpack("!32s", tr_data[:32])
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
             mesg = tail[:-1]
+            if username is None: 
+                raise struct.error
+        except struct.error:
+            raise BadReqError("Send text mesg: Malformed request body")
+
+        logger.info("Trying to send text mesg with "
+                    "(token = {0}, username = {1})"\
+                .format(get_hex(token), username))
+
+        uauth = RequestHandler.get_uauth(token, username, self.session)
+        # Authentication failure
+        if uauth is None:
+            logger.warning("Authentication failure")
+            return self.pack(struct.pack("!B", _StatusCode.failure))
+
+        pt = RequestHandler.push_tunnels
+        u = uauth.user
+        ulist = self.session.query(UserModel) \
+                .filter(UserModel.sec_id == u.sec_id).all()
+
+        for user in ulist:
+            uid = user.id
+            if uid == uauth.uid: continue
+            if pt.has_key(uid):
+                tunnel = pt[uid]
+                tunnel.add(PushTextMesgData(mesg))
+                tunnel.push()
+        logger.info("Sent text mesg successfully!")
+        return self.pack(struct.pack("!B", _StatusCode.sucess))
+
+class SetMarkerHandler(RequestHandler):
+
+    _optcode = _OptCode.set_marker
+    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
+                        _SectionSize.LATITUDE + \
+                        _SectionSize.LONGITUDE + \
+                        _SectionSize.DEADLINE
+
+    def handle(self, tr_data, conn):
+        self.check_size(tr_data)
+        logger.info("Reading set marker data...")
+        try:
+            token, = struct.unpack("!32s", tr_data[:32])
+            username, tail = RequestHandler.trunc_padding(tr_data[32:])
+            lat, lng, deadline = struct.unpack("!ddl", tail)
             if username is None: 
                 raise struct.error
         except struct.error:
