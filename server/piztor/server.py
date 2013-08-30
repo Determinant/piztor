@@ -130,6 +130,31 @@ class PushTunnel(object):
         if conn == self.conn:
             self.conn = None
 
+def pack_uid(user):
+    return struct.pack("!L", user.id)
+
+def pack_username(user):
+    buff = user.username
+    buff += chr(0)
+    return buff
+
+def pack_nickname(user):
+    buff = user.nickname
+    buff += chr(0)
+    return buff
+
+def pack_sex(user):
+    return struct.pack("!B", 0x01 if user.sex else 0x00)
+
+def pack_gid(user):
+    return struct.pack("!H", user.sec_id)
+
+def pack_lat(user):
+    return struct.pack("!d", user.location.lat)
+
+def pack_lng(user):
+    return struct.pack("!d", user.location.lng)
+
 class RequestHandler(object):
     push_tunnels = dict()
     def __init__(self):
@@ -138,7 +163,6 @@ class RequestHandler(object):
 
     def __del__(self):
         self.session.close()
-#        self.engine.dispose()
 
     def check_size(self, tr_data):
         if len(tr_data) > self._max_tr_data_size:
@@ -177,24 +201,54 @@ class RequestHandler(object):
         # padding not found
         return (None, data)
 
+    def pack(self, data):
+        return struct.pack("!LB", 
+                                _SectionSize.LENGTH + \
+                                _SectionSize.OPT_ID + \
+                                len(data), self._optcode) + data
+
+    _code_map = { 0x01 : pack_uid,
+                    0x02 : pack_username,
+                    0x03 : pack_nickname,
+                    0x04 : pack_sex,
+                    0x05 : pack_gid,
+                    0x06 : pack_lat,
+                    0x07 : pack_lng }
+
+    @classmethod
+    def pack_info_entry(cls, user, entry_code):
+        pack_method = cls._code_map[entry_code]
+        info_key = entry_code
+        return struct.pack("!B", info_key) + pack_method(user)
+
+    @classmethod
+    def pack_user_entry(cls, user):
+        buff = bytes()
+        for entry_code in _code_map:
+            buff += cls.pack_info_entry(user, entry_code)
+        buff += chr(0)
+        return buff
+
+    @classmethod
+    def pack_sub_list(cls, user):
+        buff = bytes()
+        for grp in user.sub:
+            buff += struct.pack("!H", grp.id)
+        buff += chr(0)
+        return buff
+
+
 class UserAuthHandler(RequestHandler):
+
+    _optcode = _OptCode.user_auth
 
     _max_tr_data_size = MAX_USERNAME_SIZE + \
                         _SectionSize.PADDING + \
                         MAX_PASSWORD_SIZE + \
                         _SectionSize.PADDING
 
-    _response_size = \
-            _SectionSize.LENGTH + \
-            _SectionSize.OPT_ID + \
-            _SectionSize.STATUS + \
-            _SectionSize.USER_TOKEN
-
     _failed_response = \
-            RequestHandler.pack(
-                _OptCode.user_auth,
-                struct.pack("!B32s"_StatusCode.failure,
-                                    bytes('\x00' * 32)))
+            RequestHandler.pack(struct.pack("!B", _StatusCode.failure))
 
 
     def handle(self, tr_data, conn):
@@ -235,11 +289,12 @@ class UserAuthHandler(RequestHandler):
             uauth.regen_token()
             #logger.info("New token generated: " + get_hex(uauth.token))
             self.session.commit()
-            return struct.pack("!LBBL32s", self._response_size,
-                                           _OptCode.user_auth,
-                                           _StatusCode.sucess,
-                                           user.id,
-                                           uauth.token)
+            # STATUS |  USER_TOKEN
+            buff = struct.pack("!B32s",  _StatusCode.sucess, uauth.token)
+            # USER_ENTRY
+            buff += RequestHandler.pack_user_entry(user)
+            buff += RequestHandler.pack_sub_list(user)
+            return self.pack(buff)
 
 
 class LocationUpdateHandler(RequestHandler):
@@ -247,11 +302,6 @@ class LocationUpdateHandler(RequestHandler):
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
                         _SectionSize.LATITUDE + \
                         _SectionSize.LONGITUDE
-
-    _response_size = \
-            _SectionSize.LENGTH + \
-            _SectionSize.OPT_ID + \
-            _SectionSize.STATUS
 
     def handle(self, tr_data, conn):
         self.check_size(tr_data)
@@ -273,16 +323,14 @@ class LocationUpdateHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBB",  self._response_size,
-                                        _OptCode.location_update,
-                                        _StatusCode.failure)
+            return self.pack(struct.pack("!B", _StatusCode.failure))
 
-        ulocation = uauth.user.location
-        ulocation.lat = lat
-        ulocation.lng = lng
+        loc = uauth.user.location
+        loc.lat = lat
+        loc.lng = lng
 
-        logger.info("Location is updated sucessfully")
         self.session.commit()
+        logger.info("Location is updated sucessfully")
 
         pt = RequestHandler.push_tunnels
         u = uauth.user
@@ -308,66 +356,7 @@ class LocationUpdateHandler(RequestHandler):
                 tunnel.add(pdata)
                 tunnel.push()
 
-        return struct.pack("!LBB",  self._response_size,
-                                    _OptCode.location_update,
-                                    _StatusCode.sucess)
-
-class LocationInfoHandler(RequestHandler):
-
-    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
-                        _SectionSize.GROUP_ID
-
-    @classmethod
-    def _response_size(cls, item_num):
-        return _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                _SectionSize.STATUS + \
-                _SectionSize.LOCATION_ENTRY * item_num
-
-    def handle(self, tr_data, conn):
-        self.check_size(tr_data)
-        logger.info("Reading location request data..")
-        try:
-            token, = struct.unpack("!32s", tr_data[:32])
-            username, tail = RequestHandler.trunc_padding(tr_data[32:])
-            if username is None:
-                raise struct.error
-            comp_no, sec_no = struct.unpack("!BB", tail)
-        except struct.error:
-            raise BadReqError("Location request: Malformed request body")
-
-        logger.info("Trying to request locatin with " \
-                    "(token = {0}, comp_no = {1}, sec_no = {2})" \
-            .format(get_hex(token), comp_no, sec_no))
-
-        uauth = RequestHandler.get_uauth(token, username, self.session)
-        # Auth failure
-        if uauth is None:
-            logger.warning("Authentication failure")
-            return struct.pack("!LBB", self._response_size(0),
-                                        _OptCode.location_info,
-                                        _StatusCode.failure)
-
-        ulist = self.session.query(UserModel) \
-                    .filter(UserModel.sec_id == 
-                            UserModel.to_gid(comp_no, sec_no)).all()
-        reply = struct.pack(
-                "!LBB", 
-                self._response_size(len(ulist)),
-                _OptCode.location_info, 
-                _StatusCode.sucess)
-
-        for user in ulist:
-            loc = user.location
-            reply += struct.pack("!Ldd", user.id, loc.lat, loc.lng)
-
-        return reply
-
-def pack_gid(user):
-    return struct.pack("!H", user.sec_id)
-
-def pack_sex(user):
-    return struct.pack("!B", 0x01 if user.sex else 0x00)
+        return self.pack(struct.pack("!B", _StatusCode.sucess))
 
 
 class UserInfoHandler(RequestHandler):
@@ -375,24 +364,9 @@ class UserInfoHandler(RequestHandler):
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
                         _SectionSize.USER_ID
 
-    _failed_response_size = \
-            _SectionSize.LENGTH + \
-            _SectionSize.OPT_ID + \
-            _SectionSize.STATUS
+    _failed_response = \
+        self.pack(struct.pack("!B", _StatusCode.failure))
 
-    _fail_response = \
-        struct.pack("!LBB", _failed_response_size,
-                            _OptCode.user_info,
-                            _StatusCode.failure)
-
-    _code_map = {0x00 : pack_gid,
-                0x01 : pack_sex}
-
-    @classmethod
-    def pack_entry(cls, user, entry_code):
-        pack_method = cls._code_map[entry_code]
-        info_key = entry_code
-        return struct.pack("!B", info_key) + pack_method(user)
 
     def handle(self, tr_data, conn):
         self.check_size(tr_data)
@@ -402,7 +376,7 @@ class UserInfoHandler(RequestHandler):
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
             if username is None:
                 raise struct.error
-            uid, = struct.unpack("!L", tail)
+            gid, = struct.unpack("!L", tail)
         except struct.error:
             raise BadReqError("User info request: Malformed request body")
 
@@ -414,25 +388,20 @@ class UserInfoHandler(RequestHandler):
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return self._fail_response
+            return self._failed_response
         # TODO: check the relationship between user and quser
         user = uauth.user 
 
-        reply = struct.pack("!BB", _OptCode.user_info,
-                                    _StatusCode.sucess)
         try:
-            quser = self.session.query(UserModel) \
-                    .filter(UserModel.id == uid).one()
+            grp = self.session.query(UserModel) \
+                    .filter(UserModel.sec_id == ).one()
         except NoResultFound:
             logger.info("No such user: {0}".format(username))
-            return self._fail_response
+            return self._failed_response
 
         except MultipleResultsFound:
             raise DBCorruptionError()
 
-        for code in self._code_map:
-            reply += UserInfoHandler.pack_entry(quser, code)
-        reply = struct.pack("!L", len(reply) + _SectionSize.LENGTH) + reply
         return reply
 
 class UserLogoutHandler(RequestHandler):
