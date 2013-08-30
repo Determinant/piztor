@@ -86,9 +86,9 @@ Piztor Transmission Protocol v2.0
 
       ::
 
-          +----------+-----+
-          | GROUP_ID | ... |
-          +----------+-----+
+          +----------+-----+---------+
+          | GROUP_ID | ... | PADDING |
+          +----------+-----+---------+
  
   - Authentication ``0x00``
   
