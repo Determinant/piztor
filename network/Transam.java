@@ -12,57 +12,7 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
-//       Piztor Transmission Protocol v2.0 beta   //
-
-//------------------------------------------------//
-//												  //
-//				*return msg type*			      //
-//				0   for   login					  //
-//              1   for   updateLocation		  //
-//              2   for   locationRequest		  //
-//			    3   for   userinfo				  //
-//              4   for   logout                  //
-//              5   for   requestpush             //
-//              6   for   sendmessage             //
-//												  //	
-//            100   for   pushmessage	          //
-//            101   for   pushlocation            //
-//											      //
-//     ----------I'm the division line--------    //
-//                                                //
-//             -1   for   Exceptions			  //
-//   Exception (req type,ex type,exception type)  //
-//                                                //
-//    ----------I'm the division line--------     //
-//                                                //
-//				 *Request form*					  //
-//        login -- username & password			  //
-//update -- token & username & latitude & longitude//
-//getlocation -- token & username & company & section//
-//    getuserinfo -- token & userinfo & userid    //
-//       logout -- token & username               //
-//    send message -- token & username & message  //
-//												  //
-//    ----------I'm the division line--------     //
-//                                                //
-//               *Respond form*					  //
-//        login -- status & userid & token        //
-//			  update -- status                    //
-//     getlocation -- status & entrynumber & data //
-//       entry  -- userid & latitude & longitude  //
-//                                                //
-//getuserinfo -- status & uid & company & section & gender//
-//                logout -- status                //
-//			request push -- status				  //
-//          send message -- status                //
-//												  //
-//          status -- 0 for success               //
-//					  1 for failed/invalid        //				
-//												  //
-//                                                //
-//------------------------------------------------//
-
-
+//       Piztor Transmission Protocol v2.0a beta   //
 
 public class Transam implements Runnable {
 	
