@@ -81,7 +81,8 @@ class PushLocationData(PushData):
                 
 
 class PushTunnel(object):
-    def __init__(self):
+    def __init__(self, uid):
+        self.uid = uid
         self.pending = deque()
         self.conn = None
         self.blocked = False
@@ -109,7 +110,7 @@ class PushTunnel(object):
     def push(self):
         if self.blocked:
             return
-        print "Pushing via " + str(self)
+        print "Pushing via " + str(self.uid)
         print "Pending size: " + str(len(self.pending))
         logger.info("Pushing...")
         if (self.conn is None) or len(self.pending) == 0:
@@ -175,11 +176,11 @@ class RequestHandler(object):
                     .filter(UserAuth.token == token).one()
 
             if uauth.user.username != username:
-                logger.warning("Toke and username mismatch")
+                logger.warning("Token and username mismatch")
                 return None
             uid = uauth.uid
             if not cls.push_tunnels.has_key(uid):
-                cls.push_tunnels[uid] = PushTunnel()
+                cls.push_tunnels[uid] = PushTunnel(uid)
             return uauth
 
         except NoResultFound:
@@ -324,7 +325,7 @@ class UpdateLocationHandler(RequestHandler):
                 raise struct.error
             lat, lng = struct.unpack("!dd", tail)
         except struct.error:
-            raise BadReqError("Location update: Malformed request body")
+            raise BadReqError("Update location: Malformed request body")
 
         logger.info("Trying to update location with "
                     "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
@@ -377,7 +378,7 @@ class UserInfoHandler(RequestHandler):
                         _SectionSize.GROUP_ID
 
     _failed_response = \
-            lambda : self.pack(struct.pack("!B", _StatusCode.failure))
+            lambda self : self.pack(struct.pack("!B", _StatusCode.failure))
 
 
     def handle(self, tr_data, conn):
@@ -392,7 +393,7 @@ class UserInfoHandler(RequestHandler):
         except struct.error:
             raise BadReqError("User info request: Malformed request body")
 
-        logger.info("Trying to user info with " \
+        logger.info("Trying to get user info with " \
                     "(token = {0}, gid = {1})" \
             .format(get_hex(token), gid))
 
@@ -421,23 +422,24 @@ class UpdateSubscription(RequestHandler):
                         _SectionSize.GROUP_ID * _MAX_SUB_LIST_SIZE + \
                         _SectionSize.PADDING
 
-    def _find_or_create_group(self, gid):
+    def _find_group(self, gid):
         q = self.session.query(GroupInfo).filter(GroupInfo.id == gid)
         entry = q.first()
         if not entry:
-            entry = GroupInfo(gid = gid)
+            raise BadReqError("Group not found")
         self.session.commit()
         return entry
 
     def handle(self, tr_data, conn):
+        print _MAX_AUTH_HEAD_SIZE
+        print _SectionSize.GROUP_ID * _MAX_SUB_LIST_SIZE
+        print _SectionSize.PADDING
+
         self.check_size(tr_data)
-        print get_hex(tr_data)
         logger.info("Reading update subscription data...")
         try:
             token, = struct.unpack("!32s", tr_data[:32])
-            print "a"
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
-            print "b"
             if username is None: 
                 raise struct.error
             sub_list = RequestHandler.unpack_sub_list(tail)
@@ -454,7 +456,7 @@ class UpdateSubscription(RequestHandler):
             logger.warning("Authentication failure")
             return self.pack(struct.pack("!B", _StatusCode.failure))
 
-        uauth.user.sub = map(self._find_or_create_group, sub_list)
+        uauth.user.sub = map(self._find_group, sub_list)
         self.session.commit()
         logger.info("Subscription is updated sucessfully")
 

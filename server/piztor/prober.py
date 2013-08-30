@@ -6,8 +6,8 @@ from ptp_send import *
 
 username = "haha"
 password = "haha"
-#username = "1234567890123456789012"
-#password = "world12345678901234567890"
+#username = "12345678901234567890"
+#password = "world123456789012345"
 
 if len(argv) == 2:
     host = argv[1]
@@ -20,5 +20,11 @@ if len(argv) == 3:
 token = user_auth(username, password)
 
 update_sub(token, username, 
-        [(23, 15), (23, 14)])
+        [
+            (23, 15), (23, 15), (23, 255), (23, 255),
+            (23, 15), (23, 15), (23, 255), (23, 255),
+            (23, 15), (23, 15), (23, 255), (23, 255),
+            (23, 15), (23, 15), (23, 255), (23, 255),
+            (23, 15), (23, 15), 
+            ])
 user_info(token, username, 23, 15)
