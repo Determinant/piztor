@@ -224,7 +224,12 @@ public class Main extends PiztorAct {
 					cnt = 0;
 				}
 			}
-			mapMaker.UpdateLocationOverlay(locData, false);
+			boolean hasAnimation = false;
+			if (isFirstLocation) {
+				hasAnimation = true;
+				isFirstLocation = false;
+			}
+			mapMaker.UpdateLocationOverlay(locData, hasAnimation);
 		}
 
 		@Override
@@ -334,6 +339,7 @@ public class Main extends PiztorAct {
 		mapMaker.InitMap();
 		InitTouchListenr();
 		mLocClient = new LocationClient(this);
+		mLocClient.setAK(AppMgr.strKey);
 		locData = new LocationData();
 		mLocClient.registerLocationListener(myListener);
 		LocationClientOption option = new LocationClientOption();
