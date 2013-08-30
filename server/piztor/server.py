@@ -121,7 +121,11 @@ class PushTunnel(object):
         logger.info("-- Wrote push: %s --", get_hex(front.data))
         self.blocked = True
 
+    def clear(self):
+        self.pending.clear()
+
     def connect(self, conn):
+        self.clear()
         conn.tunnel = self
         if self.conn:   # only one long-connection per user
             self.conn.transport.loseConnection()
@@ -523,11 +527,7 @@ class OpenPushTunnelHandler(RequestHandler):
             return self.pack(struct.pack("!B", _StatusCode.failure))
 
         tunnel = RequestHandler.push_tunnels[uauth.uid]
-        pt = RequestHandler.push_tunnels
-        uid = uauth.uid
-        if pt.has_key(uid):
-            tunnel = pt[uid]
-            tunnel.connect(conn)
+        tunnel.connect(conn)
 
         logger.info("Push tunnel opened successfully!")
         return self.pack(struct.pack("!B", _StatusCode.sucess))
