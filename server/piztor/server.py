@@ -29,7 +29,7 @@ engine = create_engine('mysql://' + db_path, echo = False, pool_size = 1024)
 
 class _PermCode:
     normal = 0x00
-    sectoin = 0x01
+    section = 0x01
     company = 0x02
 
 class _SectionSize:
@@ -66,7 +66,8 @@ class _OptCode:
 
 class _StatusCode:
     sucess = 0x00
-    failure = 0x01
+    auth_fail = 0x01
+    insuf_lvl = 0x02
 
 class PushData(object):
     from hashlib import sha256
@@ -84,7 +85,10 @@ class PushTextMesgData(PushData):
 class PushLocationData(PushData):
     def __init__(self, uid, lat, lng):
         self.pack(0x01, struct.pack("!Ldd", uid, lat, lng))
-                
+
+class PushMarkerData(PushData):
+    def __init__(self, lat, lng, deadline):
+        self.pack(0x02, struct.pack("!ddL", lat, lng, deadline))
 
 class PushTunnel(object):
     def __init__(self, uid):
@@ -269,7 +273,7 @@ class UserAuthHandler(RequestHandler):
                         _SectionSize.PADDING
 
     _failed_response = \
-            lambda self: self.pack(struct.pack("!B", _StatusCode.failure))
+            lambda self: self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
 
     def handle(self, tr_data, conn):
@@ -345,7 +349,7 @@ class UpdateLocationHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return self.pack(struct.pack("!B", _StatusCode.failure))
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
         loc = uauth.user.location
         loc.lat = lat
@@ -388,7 +392,7 @@ class UserInfoHandler(RequestHandler):
                         _SectionSize.GROUP_ID
 
     _failed_response = \
-            lambda self : self.pack(struct.pack("!B", _StatusCode.failure))
+            lambda self : self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
 
     def handle(self, tr_data, conn):
@@ -464,7 +468,7 @@ class UpdateSubscription(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return self.pack(struct.pack("!B", _StatusCode.failure))
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
         uauth.user.sub = map(self._find_group, sub_list)
         self.session.commit()
@@ -496,7 +500,7 @@ class UserLogoutHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return self.pack(struct.pack("!B", _StatusCode.failure))
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
         pt = RequestHandler.push_tunnels
         uid = uauth.uid
         pt[uid].close()
@@ -530,7 +534,7 @@ class OpenPushTunnelHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return self.pack(struct.pack("!B", _StatusCode.failure))
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
         tunnel = RequestHandler.push_tunnels[uauth.uid]
         tunnel.connect(conn)
@@ -565,7 +569,7 @@ class SendTextMessageHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return self.pack(struct.pack("!B", _StatusCode.failure))
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
         pt = RequestHandler.push_tunnels
         u = uauth.user
@@ -610,23 +614,27 @@ class SetMarkerHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return self.pack(struct.pack("!B", _StatusCode.failure))
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
         pt = RequestHandler.push_tunnels
         u = uauth.user
         if u.perm == _PermCode.section:
             ulist = self.session.query(UserModel) \
                 .filter(UserModel.sec_id == u.sec_id).all()
-        else if u.perm == _PermCode.section:
+        elif u.perm == _PermCode.company:
+            ulist = self.session.query(UserModel) \
+                .filter(UserModel.comp_id == u.comp_id).all()
+        else: 
+            return self.pack(struct.pack("!B", _StatusCode.insuf_lvl))
 
         for user in ulist:
             uid = user.id
             if uid == uauth.uid: continue
             if pt.has_key(uid):
                 tunnel = pt[uid]
-                tunnel.add(PushTextMesgData(mesg))
+                tunnel.add(PushMarkerData(lat, lng, deadline))
                 tunnel.push()
-        logger.info("Sent text mesg successfully!")
+        logger.info("Set marker successfully!")
         return self.pack(struct.pack("!B", _StatusCode.sucess))
 
 
@@ -638,7 +646,8 @@ class PTP(Protocol, TimeoutMixin):
                 UpdateSubscription,
                 UserLogoutHandler,
                 OpenPushTunnelHandler,
-                SendTextMessageHandler]
+                SendTextMessageHandler,
+                SetMarkerHandler]
 
     handler_num = len(handlers)
 

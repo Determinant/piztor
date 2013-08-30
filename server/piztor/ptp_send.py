@@ -79,6 +79,13 @@ def gen_send_text_mesg(token, username, mesg):
     data += chr(0)
     return pack_data(0x06, data)
 
+def gen_set_marker(token, username, lat, lng, deadline):
+    data = pack("!32s", token)
+    data += username
+    data += chr(0)
+    data += pack("!ddL", lat, lng, deadline)
+    return pack_data(0x07, data)
+
 def send(data):
     received = bytes()
     try:
@@ -166,6 +173,16 @@ def send_text_mesg(token, username, mesg):
     except error:
         logger.error("Send text mesg: can not parse the response")
 
+def set_marker(token, username, lat, lng, deadline):
+    resp = send(gen_set_marker(token, username, lat, lng, deadline))
+    try:
+        pl, optcode, status = unpack("!LBB", resp)
+        if pl != len(resp):
+            logger.error("Set marker: incorrect packet length")
+        print "status: " + str(status)
+    except error:
+        logger.error("Set marker: can not parse the response")
+
 def open_push_tunnel(token, username):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
@@ -191,6 +208,6 @@ def open_push_tunnel(token, username):
                 break
         print "received: " + str(len(received))
         pl, optcode, fingerprint = unpack("!LB32s", received[:37])
-        mesg = received[37:-1]
+        mesg = received[37:]
         logger.info("Received a push: %s", get_hex(mesg))
         sock.sendall(pack("!LB32s", 37, optcode, fingerprint))
