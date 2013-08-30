@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v2.0
+Piztor Transmission Protocol v2.0a
 ----------------------------------
 
 - Pull 
@@ -230,6 +230,23 @@ Piztor Transmission Protocol v2.0
         | STATUS |
         +--------+
 
+  - Set Marker ``0x07``
+
+    - Request
+
+      ::
+          +-------------+----8b------+------8b-----+----4b----+
+          |  AUTH_HEAD  |  LATITUDE  |  LONGITUDE  | DEADLINE |
+          +-------------+---double---+---double----+---int----+
+
+    - Response
+
+      ::
+
+          +--------+
+          | STATUS |
+          +--------+
+
 - Push Notification
 
   - General Request
@@ -263,4 +280,12 @@ Piztor Transmission Protocol v2.0
       ----+---4b----+----8b----+----8b-----+
       ... | USER_ID | LATITUDE | LONGITUDE |
       ----+---------+----------+-----------+
+
+  - Marker Push
+
+    ::
+
+      ----+----8b----+----8b-----+----4b----+
+      ... | LATITUDE | LONGITUDE | DEADLINE |
+      ----+----------+-----------+----int---+
 
