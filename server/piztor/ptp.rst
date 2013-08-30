@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v1.0b
+Piztor Transmission Protocol v2.0
 ----------------------------------
 
 - Pull 
@@ -23,9 +23,16 @@ Piztor Transmission Protocol v1.0b
   
       Notice:
   
-      - In following sections, ``LENGTH`` part is left out for clarity.
-      - ``PADDING`` has value ``0``.
-      - ``string`` type structure:
+      - In following sections, ``LENGTH`` and ``OPT_ID`` are left out for clarity.
+      - ``PADDING``:
+
+        ::
+
+            +--1b--+
+            | 0x00 |
+            +------+
+
+      - ``string`` type: 
   
         ::
   
@@ -33,113 +40,31 @@ Piztor Transmission Protocol v1.0b
             | STRING_CONTENT | PADDING |
             +----------------+---------+
   
-      - ``AUTH_HEAD`` structure:
+      - ``AUTH_HEAD`` : 
   
         ::
   
             +----32b-----+----?b----+
             | USER_TOKEN | USERNAME |
             +----raw-----+--string--+
-  
-  - Authentication 
-  
-    - Request
-  
-      :: 
-  
-          +--1b---+-----?b---+----?b----+
-          | 0x00  | USERNAME | PASSWORD |
-          +-uchar-+--string--+--string--+
-  
-    - Response
-  
-      ::
-      
-         +--1b---+---1b---+---4b----+----32b-----+
-         | 0x00  | STATUS | USER_ID | USER_TOKEN |
-         +-uchar-+--uchar-+---int---+----raw-----+
-  
-      ``STATUS`` :
-      
-      - ``0x00`` for success
-      - ``0x01`` for failure
-  
-  - Location Update
-  
-    - Request
-  
-      ::
-      
-          +--1b---+-----?b------+----8b------+------8b-----+
-          | 0x01  |  AUTH_HEAD  |  LATITUDE  |  LONGITUDE  |
-          +-uchar-+-------------+---double---+---double----+
-  
-    - Response
-  
-      ::
-  
-          +--1b---+---1b---+
-          | 0x01  | STATUS |
-          +-uchar-+--uchar-+
-  
-      ``STATUS`` :
-  
-      - ``0x00`` for success
-      - ``0x01`` for invalid token
-  
-  - Location Information
-  
-    - Request
-  
-      ::
-      
-          +--1b---+------?b------+------2b-----+
-          | 0x02  |  AUTH_HEAD   |  GROUP_ID   |
-          +-uchar-+--------------+-------------+
-  
-      ``GROUP_ID``:
+
+      - ``GROUP_ID`` :
   
       ::
   
           +---1b----+---1b---+
           | COMP_ID | SEC_ID |
           +--uchar--+-uchar--+
-  
-    - Response
-  
+
+      - ``USER_ENTRY`` :
+
       ::
   
-          +--1b---+---1b---+------20b-------+-----+
-          | 0x02  | STATUS | LOCATION_ENTRY | ... |
-          +-uchar-+-uchar--+----------------+-----+
-          
-      ``LOCATION_ENTRY`` :
-  
-      :: 
-  
-          +---4b----+----8b----+-----8b----+
-          | USER_ID | LATITUDE | LONGITUDE |
-          +---int---+--double--+--double---+
-  
-  - User Information
-  
-    - Request
-  
-      ::
-  
-          +--1b---+------?b------+------4b-----+
-          | 0x03  |  AUTH_HEAD   |   USER_ID   |
-          +-uchar-+--------------+-----int-----+
-  
-    - Response 
-  
-      ::
-  
-          +--1b---+---1b---+------?b-----+-----+
-          | 0x03  | STATUS | UINFO_ENTRY | ... |
-          +-uchar-+-uchar--+-------------+-----+
-  
-      ``UINFO_ENTRY`` : 
+          +----1b---+------?b-----+-----+---------+
+          | USER_ID | INFO_ENTRY  | ... | PADDING |
+          +--uchar--+-------------+-----+---------+
+
+      - ``INFO_ENTRY`` : 
       
       ::
   
@@ -147,64 +72,161 @@ Piztor Transmission Protocol v1.0b
           | INFO_KEY | INFO_VALUE |
           +--uchar---+------------+
   
-      ``INFO_KEY`` :
+      - ``INFO_KEY`` :
   
-      :``0x00``: gid (value is a 2-byte ``GROUP_ID``)
-      :``0x01``: sex (value is a 1-byte ``boolean``: ``0x01`` for male, ``0x00`` for female)
+        :``0x01``: uid (value is a 4-byte ``integer``)
+        :``0x02``: username (value is a ``string``)
+        :``0x03``: nickname (value is a ``string``)
+        :``0x04``: sex (value is a 1-byte ``boolean``: ``0x01`` for male, ``0x00`` for female)
+        :``0x05``: gid (value is a 2-byte ``GROUP_ID``)
+        :``0x06``: latitude (value is a 8-byte ``double`` )
+        :``0x07``: longtitude( value is a 8-byte ``double`` )
+
+      - ``SUB_LIST`` :
+
+      ::
+
+          +----------+-----+
+          | GROUP_ID | ... |
+          +----------+-----+
+ 
+  - Authentication ``0x00``
   
-  - User Logout
+    - Request
+  
+      :: 
+  
+          +-----?b---+----?b----+
+          | USERNAME | PASSWORD |
+          +--string--+--string--+
+  
+    - Response
+  
+      ::
+      
+          +---1b---+----32b-----+------------+----------+
+          | STATUS | USER_TOKEN | USER_ENTRY | SUB_LIST |
+          +--uchar-+----raw-----+------------+----------+
+  
+      ``STATUS`` :
+      
+      - ``0x00`` for success
+      - ``0x01`` for failure
+  
+  - Location Update ``0x01``
   
     - Request
   
       ::
-  
-        +--1b--+-----?b------+
-        | 0x04 |  AUTH_HEAD  |
-        +------+-------------+
+      
+          +-------------+----8b------+------8b-----+
+          |  AUTH_HEAD  |  LATITUDE  |  LONGITUDE  |
+          +-------------+---double---+---double----+
   
     - Response
   
       ::
   
-        +--1b--+---1b---+
-        | 0x04 | STATUS |
-        +------+--------+
+          +--------+
+          | STATUS |
+          +--uchar-+
   
-  - Open Push Tunnel
+      ``STATUS`` :
   
-    - Request
+      - ``0x00`` for success
+      - ``0x01`` for invalid token
   
-      ::
   
-        +--1b--+-----?b------+
-        | 0x05 |  AUTH_HEAD  |
-        +------+-------------+
-  
-    - Response
-  
-      ::
-  
-        +--1b--+---1b---+
-        | 0x05 | STATUS |
-        +------+--------+
-  
-  - Send Text Message
+  - User Information (by group) ``0x02``
   
     - Request
   
       ::
   
-        +--1b--+----?b-----+----?b----+
-        | 0x06 | AUTH_HEAD | MESSAGE  |
-        +------+-----------+--string--+
+          +--------------+------4b-----+
+          |  AUTH_HEAD   |  GROUP_ID   |
+          +--------------+-----int-----+
+  
+    - Response 
+  
+      ::
+  
+          +--------+------?b-----+-----+
+          | STATUS | USER_ENTRY  | ... |
+          +-uchar--+-------------+-----+
+
+
+  - Update Subscription ``0x03``
+
+    - Request
+
+      ::
+
+        +-----------+----------+
+        | AUTH_HEAD | SUB_LIST |
+        +-----------+----------+
+
+    - Response
+
+      ::
+
+        +--------+
+        | STATUS |
+        +--------+
+  
+  - User Logout ``0x04``
+  
+    - Request
+  
+      ::
+  
+        +-----------+
+        | AUTH_HEAD |
+        +-----------+
   
     - Response
   
       ::
   
-        +--1b--+---1b---+
-        | 0x06 | STATUS |
-        +------+--------+
+        +--------+
+        | STATUS |
+        +--------+
+  
+  - Open Push Tunnel ``0x05``
+  
+    - Request
+  
+      ::
+  
+        +-----------+
+        | AUTH_HEAD |
+        +-----------+
+  
+    - Response
+  
+      ::
+  
+        +--------+
+        | STATUS |
+        +--------+
+  
+  - Send Text Message ``0x06``
+  
+    - Request
+  
+      ::
+  
+        +-----------+----?b----+
+        | AUTH_HEAD | MESSAGE  |
+        +-----------+--string--+
+  
+    - Response
+  
+      ::
+  
+        +--------+
+        | STATUS |
+        +--------+
 
 - Push Notification
 
@@ -232,11 +254,11 @@ Piztor Transmission Protocol v1.0b
       ... | MESSAGE  |
       ----+--string--+
 
-  - User Location Update
+  - Location Update
 
     ::
 
-      ----+-------?b-------+
-      ... | LOCATION_ENTRY |
-      ----+----------------+
+      ----+---4b----+----8b----+----8b-----+
+      ... | USER_ID | LATITUDE | LONGITUDE |
+      ----+---------+----------+-----------+
 
