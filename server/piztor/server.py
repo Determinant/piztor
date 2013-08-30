@@ -35,10 +35,8 @@ class _SectionSize:
     USER_ID = 4
     USER_TOKEN = 32
     GROUP_ID = 2
-    ENTRY_CNT = 4
     LATITUDE = 8
     LONGITUDE = 8
-    LOCATION_ENTRY = USER_ID + LATITUDE + LONGITUDE
     PADDING = 1
 
 _MAX_AUTH_HEAD_SIZE = _SectionSize.USER_TOKEN + \
@@ -190,15 +188,13 @@ class UserAuthHandler(RequestHandler):
             _SectionSize.LENGTH + \
             _SectionSize.OPT_ID + \
             _SectionSize.STATUS + \
-            _SectionSize.USER_ID + \
             _SectionSize.USER_TOKEN
 
     _failed_response = \
-            struct.pack("!LBBL32s", _response_size,
-                                    _OptCode.user_auth, 
-                                    _StatusCode.failure,
-                                    0,
-                                    bytes('\x00' * 32))
+            RequestHandler.pack(
+                _OptCode.user_auth,
+                struct.pack("!B32s"_StatusCode.failure,
+                                    bytes('\x00' * 32)))
 
 
     def handle(self, tr_data, conn):

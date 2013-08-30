@@ -90,6 +90,8 @@ Piztor Transmission Protocol v2.0
           | GROUP_ID | ... | PADDING |
           +----------+-----+---------+
  
+      - If ``STATUS`` appears to be a failure, the client should ignore the rest part of the datagram
+
   - Authentication ``0x00``
   
     - Request
