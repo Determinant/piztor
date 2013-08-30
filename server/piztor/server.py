@@ -50,13 +50,13 @@ _MAX_TEXT_MESG_SIZE = 1024
 _MAX_PENDING_PUSH = 100
 
 class _OptCode:
-    user_auth = 0x00
-    location_update = 0x01
-    location_info= 0x02
-    user_info = 0x03
-    user_logout = 0x04
-    open_push_tunnel = 0x05
-    send_text_mesg = 0x06
+    user_auth =             0x00
+    update_location =       0x01
+    user_info =             0x02
+    update_subscription =   0x03
+    user_logout =           0x04
+    open_push_tunnel =      0x05
+    send_text_mesg =        0x06
 
 class _StatusCode:
     sucess = 0x00
@@ -257,7 +257,7 @@ class UserAuthHandler(RequestHandler):
                         _SectionSize.PADDING
 
     _failed_response = \
-            RequestHandler.pack(struct.pack("!B", _StatusCode.failure))
+            lambda : self.pack(struct.pack("!B", _StatusCode.failure))
 
 
     def handle(self, tr_data, conn):
@@ -282,7 +282,7 @@ class UserAuthHandler(RequestHandler):
                 .filter(UserModel.username == username).one()
         except NoResultFound:
             logger.info("No such user: {0}".format(username))
-            return self._failed_response
+            return self._failed_response()
 
         except MultipleResultsFound:
             raise DBCorruptionError()
@@ -292,7 +292,7 @@ class UserAuthHandler(RequestHandler):
             raise DBCorruptionError()
         if not uauth.check_password(password):
             logger.info("Incorrect password: {0}".format(password))
-            return self._failed_response
+            return self._failed_response()
         else:
             logger.info("Logged in sucessfully: {0}".format(username))
             uauth.regen_token()
@@ -308,7 +308,7 @@ class UserAuthHandler(RequestHandler):
 
 class UpdateLocationHandler(RequestHandler):
 
-    _optcode = _OptCode.user_auth
+    _optcode = _OptCode.update_location
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
                         _SectionSize.LATITUDE + \
                         _SectionSize.LONGITUDE
@@ -371,11 +371,12 @@ class UpdateLocationHandler(RequestHandler):
 
 class UserInfoHandler(RequestHandler):
 
+    _optcode = _OptCode.user_info
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
                         _SectionSize.USER_ID
 
     _failed_response = \
-        self.pack(struct.pack("!B", _StatusCode.failure))
+            lambda : self.pack(struct.pack("!B", _StatusCode.failure))
 
 
     def handle(self, tr_data, conn):
@@ -398,14 +399,14 @@ class UserInfoHandler(RequestHandler):
         # Auth failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return self._failed_response
+            return self._failed_response()
         # TODO: check the relationship between user and quser
         u = uauth.user 
 
         grp = self.session.query(UserModel) \
                         .filter(UserModel.sec_id == gid)
         grp += self.session.query(UserModel) \
-                        .filter(UserModel.comp_id = gid)
+                        .filter(UserModel.comp_id == gid)
 
         reply = struct.pack("!B", _StatusCode.sucess)
         for user in grp:
@@ -414,11 +415,12 @@ class UserInfoHandler(RequestHandler):
 
 class UpdateSubscription(RequestHandler):
 
+    _optcode = _OptCode.update_subscription
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
                         _SectionSize.LATITUDE + \
                         _SectionSize.LONGITUDE
 
-    def _find_or_create_group(self.gid, session):
+    def _find_or_create_group(self, gid, session):
         q = self.session.query(GroupInfo).filter(GroupInfo.id == gid)
         entry = q.first()
         if not entry:
@@ -456,6 +458,7 @@ class UpdateSubscription(RequestHandler):
 
 class UserLogoutHandler(RequestHandler):
 
+    _optcode = _OptCode.user_logout
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE
 
     def handle(self, tr_data, conn):
@@ -489,12 +492,8 @@ class UserLogoutHandler(RequestHandler):
 
 class OpenPushTunnelHandler(RequestHandler):
 
+    _optcode = _OptCode.open_push_tunnel
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE
-
-    _response_size = \
-            _SectionSize.LENGTH + \
-            _SectionSize.OPT_ID + \
-            _SectionSize.STATUS
 
     def handle(self, tr_data, conn):
         self.check_size(tr_data)
@@ -515,9 +514,7 @@ class OpenPushTunnelHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBB",  self._response_size,
-                                        _OptCode.open_push_tunnel,
-                                        _StatusCode.failure)
+            return self.pack(struct.pack("!B", _StatusCode.failure))
 
         tunnel = RequestHandler.push_tunnels[uauth.uid]
         pt = RequestHandler.push_tunnels
@@ -527,20 +524,14 @@ class OpenPushTunnelHandler(RequestHandler):
             tunnel.connect(conn)
 
         logger.info("Push tunnel opened successfully!")
-        return struct.pack("!LBB",  self._response_size,
-                                    _OptCode.open_push_tunnel,
-                                    _StatusCode.sucess)
+        return self.pack(struct.pack("!B", _StatusCode.sucess))
 
 class SendTextMessageHandler(RequestHandler):
 
+    _optcode = _OptCode.send_text_mesg
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
                         _MAX_TEXT_MESG_SIZE + \
                         _SectionSize.PADDING
-
-    _response_size = \
-            _SectionSize.LENGTH + \
-            _SectionSize.OPT_ID + \
-            _SectionSize.STATUS
 
     def handle(self, tr_data, conn):
         self.check_size(tr_data)
@@ -562,9 +553,7 @@ class SendTextMessageHandler(RequestHandler):
         # Authentication failure
         if uauth is None:
             logger.warning("Authentication failure")
-            return struct.pack("!LBB",  self._response_size,
-                                        _OptCode.send_text_mesg,
-                                        _StatusCode.failure)
+            return self.pack(struct.pack("!B", _StatusCode.failure))
 
         pt = RequestHandler.push_tunnels
         u = uauth.user
@@ -579,9 +568,7 @@ class SendTextMessageHandler(RequestHandler):
                 tunnel.add(PushTextMesgData(mesg))
                 tunnel.push()
         logger.info("Sent text mesg successfully!")
-        return struct.pack("!LBB",  self._response_size,
-                                    _OptCode.send_text_mesg,
-                                    _StatusCode.sucess)
+        return self.pack(struct.pack("!B", _StatusCode.sucess))
 
 
 class PTP(Protocol, TimeoutMixin):
