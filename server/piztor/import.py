@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from model import *
 
-path = "root:helloworld@localhost/piztor2"
+path = "root:helloworld@localhost/piztor"
 
 class UserData:
     def __init__(self, username, nickname, password, comp_no, sec_no, sex, sub):

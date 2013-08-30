@@ -19,7 +19,7 @@ from model import *
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
-db_path = "root:helloworld@localhost/piztor2"
+db_path = "root:helloworld@localhost/piztor"
 #db_path = "piztor.sqlite"
 FORMAT = "%(asctime)-15s %(message)s"
 logging.basicConfig(format = FORMAT)
