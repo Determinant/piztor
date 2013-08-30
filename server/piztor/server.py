@@ -46,7 +46,7 @@ _HEADER_SIZE = _SectionSize.LENGTH + \
                 _SectionSize.OPT_ID
 
 _MAX_TEXT_MESG_SIZE = 1024
-
+_MAX_SUB_LIST_SIZE = 10
 _MAX_PENDING_PUSH = 100
 
 class _OptCode:
@@ -224,7 +224,7 @@ class RequestHandler(object):
     @classmethod
     def pack_user_entry(cls, user):
         buff = bytes()
-        for entry_code in _code_map:
+        for entry_code in cls._code_map:
             buff += cls.pack_info_entry(user, entry_code)
         buff += chr(0)
         return buff
@@ -244,7 +244,8 @@ class RequestHandler(object):
         end = len(data) - 1
         while idx < end:
             res.append(struct.unpack("!H", 
-                        data[idx:idx + _SectionSize.GROUP_ID]))
+                        data[idx:idx + _SectionSize.GROUP_ID])[0])
+            idx += _SectionSize.GROUP_ID
         return res
 
 
@@ -257,7 +258,7 @@ class UserAuthHandler(RequestHandler):
                         _SectionSize.PADDING
 
     _failed_response = \
-            lambda : self.pack(struct.pack("!B", _StatusCode.failure))
+            lambda self: self.pack(struct.pack("!B", _StatusCode.failure))
 
 
     def handle(self, tr_data, conn):
@@ -373,7 +374,7 @@ class UserInfoHandler(RequestHandler):
 
     _optcode = _OptCode.user_info
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
-                        _SectionSize.USER_ID
+                        _SectionSize.GROUP_ID
 
     _failed_response = \
             lambda : self.pack(struct.pack("!B", _StatusCode.failure))
@@ -404,9 +405,9 @@ class UserInfoHandler(RequestHandler):
         u = uauth.user 
 
         grp = self.session.query(UserModel) \
-                        .filter(UserModel.sec_id == gid)
+                        .filter(UserModel.sec_id == gid).all()
         grp += self.session.query(UserModel) \
-                        .filter(UserModel.comp_id == gid)
+                        .filter(UserModel.comp_id == gid).all()
 
         reply = struct.pack("!B", _StatusCode.sucess)
         for user in grp:
@@ -417,10 +418,10 @@ class UpdateSubscription(RequestHandler):
 
     _optcode = _OptCode.update_subscription
     _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
-                        _SectionSize.LATITUDE + \
-                        _SectionSize.LONGITUDE
+                        _SectionSize.GROUP_ID * _MAX_SUB_LIST_SIZE + \
+                        _SectionSize.PADDING
 
-    def _find_or_create_group(self, gid, session):
+    def _find_or_create_group(self, gid):
         q = self.session.query(GroupInfo).filter(GroupInfo.id == gid)
         entry = q.first()
         if not entry:
@@ -430,19 +431,22 @@ class UpdateSubscription(RequestHandler):
 
     def handle(self, tr_data, conn):
         self.check_size(tr_data)
+        print get_hex(tr_data)
         logger.info("Reading update subscription data...")
         try:
             token, = struct.unpack("!32s", tr_data[:32])
+            print "a"
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
+            print "b"
             if username is None: 
                 raise struct.error
             sub_list = RequestHandler.unpack_sub_list(tail)
         except struct.error:
-            raise BadReqError("Location update: Malformed request body")
+            raise BadReqError("Update Subscription: Malformed request body")
 
-        logger.info("Trying to update location with "
-                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
-                .format(get_hex(token), username, lat, lng))
+        logger.info("Trying to update subscription with "
+                    "(token = {0}, username = {1}, grps = {2})"\
+                .format(get_hex(token), username, str(sub_list)))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure

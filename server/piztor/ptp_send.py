@@ -27,95 +27,57 @@ class _SectionSize:
 host = "localhost" #"localhost"
 port = 2223
 
+def pack_data(optcode, data):
+    return pack("!LB", _SectionSize.LENGTH + \
+                            _SectionSize.OPT_ID + \
+                            len(data), optcode) + data
+
 def gen_auth(username, password):
-    length = _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                len(username) + \
-                _SectionSize.PADDING + \
-                len(password) + \
-                _SectionSize.PADDING
-
-    data = pack("!LB", length, 0x00)
-    data += username
-    data += "\0"
-    data += password
-    data += "\0"
-    return data
-
-def gen_auth_head_length(token, username):
-    return _SectionSize.USER_TOKEN + \
-                 len(username) + \
-                _SectionSize.PADDING
-
+    return pack_data(0x00, username + chr(0) +  \
+                            password + chr(0))
 
 def gen_update_location(token, username, lat, lng):
-    length = _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                gen_auth_head_length(token, username) + \
-                _SectionSize.LATITUDE + \
-                _SectionSize.LONGITUDE
-
-    data = pack("!LB32s", length, 0x01, token)
+    data = pack("!32s", token)
     data += username
     data += chr(0)
     data += pack("!dd", lat, lng)
-    return data
+    return pack_data(0x01, data)
 
-def gen_request_location(token, username, comp_id, sec_id):
-    length = _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                gen_auth_head_length(token, username) + \
-                _SectionSize.GROUP_ID
-
-    data = pack("!LB32s", length, 0x02, token)
+def gen_user_info(token, username, gid):
+    data = pack("!32s", token)
     data += username
     data += chr(0)
-    data += pack("!BB", comp_id, sec_id)
-    return data
+    data += pack("!H", gid)
+    return pack_data(0x02, data)
 
-
-def gen_request_user_info(token, username, uid):
-    length = _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                gen_auth_head_length(token, username) + \
-                _SectionSize.USER_ID
-
-    data = pack("!LB32s", length, 0x03, token)
+def gen_update_sub(token, username, sub):
+    data = pack("!32s", token)
     data += username
     data += chr(0)
-    data += pack("!L", uid)
-    return data
+    for gid in sub:
+        data += pack("!H", gid)
+    data += chr(0)
+    return pack_data(0x03, data)
 
 def gen_logout(token, username):
-    length = _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                gen_auth_head_length(token, username)
-    data = pack("!LB32s", length, 0x04, token)
+    data = pack("!32s", token)
     data += username
     data += chr(0)
-    return data
+    return pack_data(0x04, data)
 
 def gen_open_push_tunnel(token, username):
-    length = _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                gen_auth_head_length(token, username)
-    data = pack("!LB32s", length, 0x05, token)
+    data = pack("!32s", token)
     data += username
     data += chr(0)
-    return data
+    return pack_data(0x05, data)
 
 def gen_send_text_mesg(token, username, mesg):
-    length = _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                gen_auth_head_length(token, username) + \
-                len(mesg) + \
-                _SectionSize.PADDING
-    data = pack("!LB32s", length, 0x06, token)
+    data = pack("!32s", token)
     data += username
     data += chr(0)
     data += mesg
     data += chr(0)
-    return data
+    return pack_data(0x06, data)
 
 def send(data):
     received = bytes()
@@ -136,33 +98,19 @@ def send(data):
         sock.close()
     return received
 
-def request_location(token, username, comp_id, sec_id):
-    resp = send(gen_request_location(token, username, comp_id, sec_id))
-    try:
-        pl, optcode, status = unpack("!LBB", resp[:6])
-        if pl != len(resp):
-            logger.error("Request location: incorrect packet length")
-        idx = 6
-        while idx < pl:
-            uid, lat, lng = unpack("!Ldd", resp[idx:idx + 20])
-            idx += 20
-            print (uid, lat, lng)
-    except error:
-        logger.error("Request location: can not parse the response")
-
 def user_auth(username, password):
     resp = send(gen_auth(username, password))
     try:
-        pl, optcode, status, uid, token = unpack("!LBBL32s", resp)
+        pl, optcode, status, token = unpack("!LBB32s", resp[:38])
         if pl != len(resp):
             logger.error("User authentication: incorrect packet length")
         print "status: " + str(status)
-        print "uid: " + str(uid)
         print "token: " + get_hex(token)
+        print get_hex(resp[38:])
     except error:
         logger.error("User authentication: can not parse the response")
 
-    return uid, token
+    return token
 
 def update_location(token, username, lat, lng):
     resp = send(gen_update_location(token, username, lat, lng)) 
@@ -176,27 +124,25 @@ def update_location(token, username, lat, lng):
         logger.error("Request location: can not parse the response")
 
 
-def request_user_info(token, username, uid):
-    resp = send(gen_request_user_info(token, username, uid))
+def user_info(token, username, comp_no, sec_no):
+    resp = send(gen_user_info(token, username, comp_no * 256 + sec_no))
+    try:
+        pl, optcode, status = unpack("!LBB", resp[:6])
+        if pl != len(resp):
+            logger.error("Request location: incorrect packet length")
+        print get_hex(resp[6:])
+    except error:
+        logger.error("Request location: can not parse the response")
+
+
+def update_sub(token, username, sub):
+    sub = map(lambda t: t[0] * 256 + t[1], sub)
+    resp = send(gen_update_sub(token, username, sub))
     try:
         pl, optcode, status = unpack("!LBB", resp[:6])
         if pl != len(resp):
             logger.error("Request user info: incorrect packet length")
-    
-        idx = 6
-        comp_id = None
-        sec_id = None
-        sex = None
-        while idx < pl:
-            info_key, = unpack("!B", resp[idx:idx + 1])
-            idx += 1
-            if info_key == 0x00:
-                comp_id, sec_id = unpack("!BB", resp[idx:idx + 2])
-                idx += 2
-            elif info_key == 0x01:
-                sex, = unpack("!B", resp[idx:idx + 1])
-                idx += 1
-        return comp_id, sec_id, sex
+        print "status: " + str(status)
     except error:
         logger.error("Request user info: can not parse the response")
 
@@ -221,17 +167,9 @@ def send_text_mesg(token, username, mesg):
         logger.error("Send text mesg: can not parse the response")
 
 def open_push_tunnel(token, username):
-
-    length = _SectionSize.LENGTH + \
-                _SectionSize.OPT_ID + \
-                gen_auth_head_length(token, username)
-    data = pack("!LB32s", length, 0x05, token)
-    data += username
-    data += chr(0)
-
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
-    sock.sendall(data)
+    sock.sendall(gen_open_push_tunnel(token, username))
     print get_hex(sock.recv(6))
     
     while True:
