@@ -73,6 +73,7 @@ public class Transam implements Runnable {
 	static final int Logout =4;
 	static final int StartPush =5;
 	static final int SendMessage =6;
+	static final int SetMarker =7;
 	
 	static final int ClosePush = -5;
 	

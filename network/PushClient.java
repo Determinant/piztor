@@ -28,8 +28,10 @@ public class PushClient {
 	
 	static final int Message = 0;
 	static final int Location = 1;
+	static final int Marker = 2;
 	static final int PushMessage =100;
 	static final int PushLocation =101;
+	static final int PushMarker =102;
 	
 	static final int Reconnect =-2;
 	
@@ -169,7 +171,27 @@ public class PushClient {
 					out.write(o);
 					out.flush();
 					break;
-				}		
+				case Marker:
+					double lat = in.readDouble();
+					double lot = in.readDouble();
+					int dtime = in.readInt(); 
+					if(LastPrint != p) {
+					Message msg = new Message();
+					msg.what = PushMessage;
+					msg.obj = new ResPushMarker(lat,lot,dtime);
+					recall.sendMessage(msg);
+					LastPrint = p;
+					}			
+					Convert.write(o,Convert.intToBytes(outlen),pos);
+					pos+=IntLength;
+					o[pos]=(byte) Message;
+					pos+=ByteLength;
+					Convert.write(o,Convert.hexStringToBytes(p),pos);
+					pos+=FingerPrintLength;
+					out.write(o);
+					out.flush();
+					break;
+				}
 			
 			} catch (IOException e) {
 			e.printStackTrace();

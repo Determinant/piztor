@@ -29,6 +29,7 @@ public class SocketClient {
 	static final int Logout =4;
 	static final int StartPush =5;
 	static final int SendMessage =6;
+	static final int SetMarker =7;
 	
 	static final int ClosePush =-5;
 	
@@ -39,6 +40,7 @@ public class SocketClient {
 	static final int GroupID =5;
 	static final int Latitude =6;
 	static final int Longitude =7;
+	static final int Level =8;
 	
 	static final int StatusFailed = 2;
 	static final int TimeOut = 1;
@@ -187,6 +189,28 @@ public class SocketClient {
 				pos+=ByteLength;
 				out.write(b);
 				break;
+			case SetMarker:
+				ReqSetMarker rsm = (ReqSetMarker) req;
+				len = IntLength+ByteLength+TokenLength+(rsm.uname).length()+ByteLength+DoubleLength+DoubleLength+IntLength;				
+				b = new byte[len];
+				Convert.write(b,Convert.intToBytes(len),pos);
+				pos+=IntLength;
+				b[pos] = (byte) tmp;
+				pos+=ByteLength;
+				Convert.write(b,Convert.hexStringToBytes(rsm.token),pos);
+				pos+=TokenLength;
+				Convert.write(b,(rsm.uname).getBytes(),pos);
+				pos+=(rsm.uname).length();
+				b[pos] = 0;
+				pos+=ByteLength;
+				Convert.write(b,Convert.doubleToBytes(rsm.latitude),pos);
+				pos+=DoubleLength;
+				Convert.write(b,Convert.doubleToBytes(rsm.longitude),pos);
+				pos+=DoubleLength;
+				Convert.write(b,Convert.intToBytes(rsm.deadline),pos);
+				pos+=IntLength;
+				out.write(b);
+				break;
 			}
 			out.flush();
 			DataInputStream in = new DataInputStream(client.getInputStream());
@@ -202,13 +226,13 @@ public class SocketClient {
 				String tk = Convert.byteToHexString(buffer);
 				outlen-=(IntLength+ByteLength+TokenLength+ByteLength);
 				int cnt = 0;
-				int uid =0,s =0;
+				int uid =0,s =0,l =0;
 				String uname ="",nname ="";
 				double lat =0.0,lot =0.0;
 				RGroup rg = null;
 				int i = 0;
 				byte[] bu = new byte[200];
-				while(cnt < 7) {
+				while(cnt < 8) {
 					int typ = in.readUnsignedByte();
 					outlen-=ByteLength;
 					switch(typ){
@@ -262,10 +286,14 @@ public class SocketClient {
 						lot = in.readDouble();
 						outlen-=DoubleLength;
 						break;
+					case Level:
+						l = in.readUnsignedByte();
+						outlen-=ByteLength;
+						break;
 					}
 					cnt++;
 				}
-				RUserInfo r = new RUserInfo(uid,uname,nname,lat,lot,rg,s);
+				RUserInfo r = new RUserInfo(uid,uname,nname,lat,lot,rg,s,l);
 				in.readUnsignedByte();
 				outlen-=ByteLength;
 				int number =0;
@@ -297,7 +325,7 @@ public class SocketClient {
 				break;
 			case UserInfo:
 				outlen-=(IntLength+ByteLength+ByteLength);
-				int uid1 =0,s1 =0;
+				int uid1 =0,s1 =0,l1 =0;
 				String uname1 ="",nname1 ="";
 				double lat1 =0.0,lot1 =0.0;
 				RGroup rg1 = null;
@@ -307,7 +335,7 @@ public class SocketClient {
 				int n = 0;
 				while(outlen > 0) {
 					int tmpcnt =0;
-					while(tmpcnt < 7) {
+					while(tmpcnt < 8) {
 						int typ = in.readUnsignedByte();
 						outlen-=ByteLength;
 						switch(typ){
@@ -361,12 +389,16 @@ public class SocketClient {
 							lot1 = in.readDouble();
 							outlen-=DoubleLength;
 							break;
+						case Level:
+							l1 = in.readUnsignedByte();
+							outlen-=ByteLength;
+							break;
 						}
 						tmpcnt++;
 					}
 					in.readUnsignedByte();
 					outlen-=ByteLength;
-					v.add(new RUserInfo(uid1,uname1,nname1,lat1,lot1,rg1,s1));
+					v.add(new RUserInfo(uid1,uname1,nname1,lat1,lot1,rg1,s1,l1));
 					n++;
 				}
 				msg.obj = new ResUserInfo(n,v);
@@ -389,6 +421,11 @@ public class SocketClient {
 			case SendMessage:
 				msg.obj = new ResSendMessage();
 				msg.what = SendMessage;
+				recall.sendMessage(msg);
+				break;
+			case SetMarker:
+				msg.obj = new ResSetMarker();
+				msg.what = SetMarker;
 				recall.sendMessage(msg);
 				break;
 			}

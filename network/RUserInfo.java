@@ -8,9 +8,10 @@ public class RUserInfo {
 	double longitude; //longitude
 	RGroup gid;          //gid
 	int sex;		//type 0 for female,type 1 for male
+	int level;       
 
 
-	RUserInfo(int u,String user,String nick,double lat,double lot,RGroup g,int s){
+	RUserInfo(int u,String user,String nick,double lat,double lot,RGroup g,int s,int l){
 		uid = u;
 		username = user;
 		nickname = nick;
@@ -18,5 +19,6 @@ public class RUserInfo {
 		longitude = lot;
 		gid = g;
 		sex =s;
+		level = l;
 	}
 }
