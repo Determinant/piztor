@@ -714,7 +714,7 @@ class PTP(Protocol, TimeoutMixin):
                     self.length = -1
                     return
                 self.setTimeout(None)
-                reactor.callFromThread(self.reponse, buff)
+                reactor.callFromThread(self.response, buff)
         except BadReqError as e:
             logger.warn("Rejected a bad request: %s", str(e))
             self.transport.loseConnection()
