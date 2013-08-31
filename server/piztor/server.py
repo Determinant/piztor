@@ -679,6 +679,13 @@ class ChangePasswordHandler(RequestHandler):
         uauth.set_password(new_pass)
         self.session.commit()
         logger.info("Password changed successfully!")
+
+        pt = RequestHandler.push_tunnels
+        uid = uauth.uid
+        pt[uid].close()
+        del pt[uid]
+        uauth.regen_token()
+
         return self.pack(struct.pack("!B",  _StatusCode.sucess))
 
 
