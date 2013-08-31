@@ -128,7 +128,7 @@ class PushTunnel(object):
         front = self.pending.popleft()
         self.pending.appendleft(front)
         self.conn.transport.write(front.data)
-        logger.info("-- Wrote push: %s --", get_hex(front.data))
+#        logger.info("-- Wrote push: %s --", get_hex(front.data))
         self.blocked = True
 
     def clear(self):
@@ -345,9 +345,9 @@ class UpdateLocationHandler(RequestHandler):
         except struct.error:
             raise BadReqError("Update location: Malformed request body")
 
-        logger.info("Trying to update location with "
-                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
-                .format(get_hex(token), username, lat, lng))
+#        logger.info("Trying to update location with "
+#                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
+#                .format(get_hex(token), username, lat, lng))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
@@ -411,9 +411,9 @@ class UserInfoHandler(RequestHandler):
         except struct.error:
             raise BadReqError("User info request: Malformed request body")
 
-        logger.info("Trying to get user info with " \
-                    "(token = {0}, gid = {1})" \
-            .format(get_hex(token), gid))
+#        logger.info("Trying to get user info with " \
+#                    "(token = {0}, gid = {1})" \
+#            .format(get_hex(token), gid))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Auth failure
@@ -464,9 +464,9 @@ class UpdateSubscription(RequestHandler):
         except struct.error:
             raise BadReqError("Update Subscription: Malformed request body")
 
-        logger.info("Trying to update subscription with "
-                    "(token = {0}, username = {1}, grps = {2})"\
-                .format(get_hex(token), username, str(sub_list)))
+#        logger.info("Trying to update subscription with "
+#                    "(token = {0}, username = {1}, grps = {2})"\
+#                .format(get_hex(token), username, str(sub_list)))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
@@ -496,9 +496,9 @@ class UserLogoutHandler(RequestHandler):
         except struct.error:
             raise BadReqError("User logout: Malformed request body")
 
-        logger.info("Trying to logout with "
-                    "(token = {0}, username = {1})"\
-                .format(get_hex(token), username))
+#        logger.info("Trying to logout with "
+#                    "(token = {0}, username = {1})"\
+#                .format(get_hex(token), username))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
@@ -530,9 +530,9 @@ class OpenPushTunnelHandler(RequestHandler):
         except struct.error:
             raise BadReqError("Open push tunnel: Malformed request body")
 
-        logger.info("Trying to open push tunnel with "
-                    "(token = {0}, username = {1})"\
-                .format(get_hex(token), username))
+#        logger.info("Trying to open push tunnel with "
+#                    "(token = {0}, username = {1})"\
+#                .format(get_hex(token), username))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
@@ -565,9 +565,9 @@ class SendTextMessageHandler(RequestHandler):
         except struct.error:
             raise BadReqError("Send text mesg: Malformed request body")
 
-        logger.info("Trying to send text mesg with "
-                    "(token = {0}, username = {1})"\
-                .format(get_hex(token), username))
+#        logger.info("Trying to send text mesg with "
+#                    "(token = {0}, username = {1})"\
+#                .format(get_hex(token), username))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
@@ -610,9 +610,9 @@ class SetMarkerHandler(RequestHandler):
         except struct.error:
             raise BadReqError("Set marker: Malformed request body")
 
-        logger.info("Trying to set marker with "
-                    "(token = {0}, username = {1})"\
-                .format(get_hex(token), username))
+#        logger.info("Trying to set marker with "
+#                    "(token = {0}, username = {1})"\
+#                .format(get_hex(token), username))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
@@ -676,6 +676,18 @@ class PTP(Protocol, TimeoutMixin):
         logger.info("A new connection is made")
         self.setTimeout(self.factory.timeout)
 
+    def response(self, buff):
+        h = PTP.handlers[self.optcode]()
+        reply = h.handle(buff[5:], self)
+#        logger.info("Wrote: %s", get_hex(reply))
+        self.transport.write(reply)
+        if self.tunnel:
+            logger.info("Blocking the client...")
+            self.tunnel.push()
+            self.length = -1
+            return
+        self.transport.loseConnection()
+
     def dataReceived(self, data):
         self.buff += data
         self.resetTimeout()
@@ -701,17 +713,8 @@ class PTP(Protocol, TimeoutMixin):
                     self.tunnel.on_receive(buff)
                     self.length = -1
                     return
-                h = PTP.handlers[self.optcode]()
-                reply = h.handle(buff[5:], self)
-                logger.info("Wrote: %s", get_hex(reply))
-                self.transport.write(reply)
-                if self.tunnel:
-                    logger.info("Blocking the client...")
-                    self.tunnel.push()
-                    self.length = -1
-                    self.setTimeout(None)
-                    return
-                self.transport.loseConnection()
+                self.setTimeout(None)
+                reactor.callFromThread(self.reponse, buff)
         except BadReqError as e:
             logger.warn("Rejected a bad request: %s", str(e))
             self.transport.loseConnection()

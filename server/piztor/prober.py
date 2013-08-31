@@ -20,7 +20,7 @@ if len(argv) == 3:
 token = user_auth(username, password)
 print "Client: " + username + "logged in"
 #open_push_tunnel(token, username)
-for i in xrange(10):
+for i in xrange(100):
     print "Client: " + username  + " updateing"
     update_location(token, username, 123.456, 123.456)
-    sleep(10)
+#    sleep(5)
