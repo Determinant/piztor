@@ -117,7 +117,6 @@ class ReqSendMessage extends Req{
 //--------------------------------------//
 
 class ReqSetMarker extends Req{
-	String msg;
 	double latitude;
 	double longitude;
 	int deadline;
@@ -127,6 +126,21 @@ class ReqSetMarker extends Req{
 		latitude = lat;
 		longitude = lot;
 		deadline = dtime;
+	}
+}
+
+//--------------------------------------//
+//			Set Password				//
+//--------------------------------------//
+
+class ReqSetPassword extends Req{
+	String oldpassword;
+	String newpassword;
+
+	ReqSetPassword(String token,String name,String oldpass,String newpass,long time,long alive){
+	super(8,token,name,time,alive);	//for type 8
+	oldpassword = oldpass;
+	newpassword = newpass;
 	}
 }
 

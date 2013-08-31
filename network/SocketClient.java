@@ -2,6 +2,7 @@ package com.macaroon.piztor;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -30,6 +31,7 @@ public class SocketClient {
 	static final int StartPush =5;
 	static final int SendMessage =6;
 	static final int SetMarker =7;
+	static final int SetPassword =8;
 	
 	static final int ClosePush =-5;
 	
@@ -42,6 +44,8 @@ public class SocketClient {
 	static final int Longitude =7;
 	static final int Level =8;
 	
+	static final int PasswordFailed =5;
+	static final int ServerFetchFailed =4;
 	static final int LevelFailed =3;
 	static final int StatusFailed = 2;
 	static final int TimeOut = 1;
@@ -53,6 +57,7 @@ public class SocketClient {
 			client = new Socket();
 			client.connect(new InetSocketAddress(site,port), retime);
 			client.setSoTimeout(retime);
+			//client.setTcpNoDelay(true);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			throw e;
@@ -212,6 +217,30 @@ public class SocketClient {
 				pos+=IntLength;
 				out.write(b);
 				break;
+			case SetPassword:
+				ReqSetPassword rsp = (ReqSetPassword) req;
+				len = IntLength+ByteLength+TokenLength+(rsp.uname).length()+ByteLength+(rsp.oldpassword).length()+ByteLength+(rsp.newpassword).length()+ByteLength;				
+				b = new byte[len];
+				Convert.write(b,Convert.intToBytes(len),pos);
+				pos+=IntLength;
+				b[pos] = (byte) tmp;
+				pos+=ByteLength;
+				Convert.write(b,Convert.hexStringToBytes(rsp.token),pos);
+				pos+=TokenLength;
+				Convert.write(b,(rsp.uname).getBytes(),pos);
+				pos+=(rsp.uname).length();
+				b[pos] = 0;
+				pos+=ByteLength;
+				Convert.write(b,(rsp.oldpassword).getBytes(),pos);
+				pos+=(rsp.oldpassword).length();
+				b[pos] = 0;
+				pos+=ByteLength;
+				Convert.write(b,(rsp.newpassword).getBytes(),pos);
+				pos+=(rsp.newpassword).length();
+				b[pos] = 0;
+				pos+=ByteLength;
+				out.write(b);
+				break;
 			}
 			out.flush();
 			DataInputStream in = new DataInputStream(client.getInputStream());
@@ -221,6 +250,7 @@ public class SocketClient {
 			int status = in.readUnsignedByte();
 			if(status == 1) return StatusFailed;
 			if(status == 2) return LevelFailed;
+			if(status == 3) return PasswordFailed;
 			switch (type) {
 			case Login:
 				byte[] buffer = new byte[32];
@@ -430,12 +460,21 @@ public class SocketClient {
 				msg.what = SetMarker;
 				recall.sendMessage(msg);
 				break;
+			case SetPassword:
+				msg.obj = new ResSetPassword();
+				msg.what = SetPassword;
+				recall.sendMessage(msg);
+				break;
 			}
 			return Success;
 
 		} catch (SocketTimeoutException e){
 			e.printStackTrace();
 			return TimeOut;			
+		} catch (EOFException e) {
+			e.printStackTrace();
+			//return ServerFetchFailed;
+			throw e;
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw e;

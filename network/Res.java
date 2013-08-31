@@ -12,6 +12,7 @@ public class Res{
 	static final int StartPush =5;
 	static final int SendMessage =6;
 	static final int SetMarker =7;
+	static final int SetPassword =8;
 	
 	static final int PushMessage =100;
 	static final int PushLocation =101;
@@ -120,6 +121,17 @@ class ResSetMarker extends Res{
 
 	ResSetMarker(){
 		super(7);	//for type 7
+	}
+}
+
+//--------------------------------------//
+//			Respond to set password    	//
+//--------------------------------------//
+
+class ResSetPassword extends Res{
+
+	ResSetPassword(){
+		super(8);	//for type 8
 	}
 }
 

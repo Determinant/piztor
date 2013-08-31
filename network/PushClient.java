@@ -48,6 +48,7 @@ public class PushClient {
 			client = new Socket();
 			client.connect(new InetSocketAddress(site,port), retime);
 			client.setSoTimeout(2000);
+			//client.setTcpNoDelay(true);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			throw e;
@@ -177,14 +178,14 @@ public class PushClient {
 					int dtime = in.readInt(); 
 					if(LastPrint != p) {
 					Message msg = new Message();
-					msg.what = PushMessage;
+					msg.what = PushMarker;
 					msg.obj = new ResPushMarker(lat,lot,dtime);
 					recall.sendMessage(msg);
 					LastPrint = p;
 					}			
 					Convert.write(o,Convert.intToBytes(outlen),pos);
 					pos+=IntLength;
-					o[pos]=(byte) Message;
+					o[pos]=(byte) Marker;
 					pos+=ByteLength;
 					Convert.write(o,Convert.hexStringToBytes(p),pos);
 					pos+=FingerPrintLength;
