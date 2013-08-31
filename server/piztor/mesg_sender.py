@@ -4,8 +4,8 @@ from time import sleep
 from sys import argv
 from ptp_send import *
 
-username = "hello"
-password = "world"
+username = "yg"
+password = "yg"
 mesg = "niu x push!"
 #username = "1234567890123456789012"
 #password = "world12345678901234567890"
@@ -21,7 +21,7 @@ if len(argv) == 4:
 
 token = user_auth(username, password)
 set_marker(token, username, 123.456, 456.123, 0x7fffffff)
-#send_text_mesg(token, username, mesg)
+send_text_mesg(token, username, mesg)
 #send_text_mesg(token, username, "a")
 #send_text_mesg(token, username, "the last")
 #update_location(token, username, 31.028616, 121.434661)

@@ -90,7 +90,7 @@ class PushLocationData(PushData):
 
 class PushMarkerData(PushData):
     def __init__(self, perm, lat, lng, deadline):
-        self.pack(0x02, struct.pack("!Bddl", lat, lng, deadline))
+        self.pack(0x02, struct.pack("!Bddl", perm, lat, lng, deadline))
 
 class PushTunnel(object):
     def __init__(self, uid):

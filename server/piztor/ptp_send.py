@@ -24,8 +24,8 @@ class _SectionSize:
     LOCATION_ENTRY = USER_ID + LATITUDE + LONGITUDE
     PADDING = 1
 
-#host = "202.120.7.4"
-host = "localhost"
+host = "202.120.7.4"
+#host = "localhost"
 port = 2223
 
 def pack_data(optcode, data):
