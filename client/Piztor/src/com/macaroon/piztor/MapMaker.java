@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
@@ -80,7 +81,7 @@ public class MapMaker {
 	boolean isGPSEnabled;
 	private int[] myIcons;
 	private Drawable[] myBM;
-	private final int iconNum = 4;
+	private final int iconNum = 9;
 
 	myApp app;
 
@@ -275,17 +276,25 @@ public class MapMaker {
 
 	public void initMyIcons() {
 		myBM[0] = context.getResources().getDrawable(R.drawable.circle_blue);
-		myBM[1] = context.getResources().getDrawable(R.drawable.circle_green);
+		myBM[1] = context.getResources().getDrawable(R.drawable.circle_red);
 		myBM[2] = context.getResources().getDrawable(R.drawable.circle_glass);
 		myBM[3] = context.getResources().getDrawable(R.drawable.circle_yellow);
 		myBM[4] = context.getResources().getDrawable(R.drawable.circle_wood);
+		myBM[5] = context.getResources().getDrawable(R.drawable.circle_green);
+		myBM[6] = context.getResources().getDrawable(R.drawable.circle_metal);
+		myBM[7] = context.getResources().getDrawable(R.drawable.circle_paper);
+		myBM[8] = context.getResources().getDrawable(R.drawable.circle_tan);
 	}
 
-	public Drawable getGroupIcon(int gid) {
-		if (gid == preMapInfo.myInfo.section)
-			return myBM[0];
-		else
-			return myBM[gid % iconNum];
+	public Drawable getGroupIcon(UserInfo userInfo) {
+		if (Main.colorMode == Main.show_by_team) {
+			if (userInfo.section == preMapInfo.myInfo.section)
+				return myBM[0];
+			else
+				return myBM[userInfo.section % iconNum + 1];
+		} else {
+			return myBM[userInfo.sex ^ preMapInfo.myInfo.sex];
+		}
 	}
 
 	/**
@@ -293,7 +302,6 @@ public class MapMaker {
 	 */
 	public void UpdateLocationOverlay(LocationData locationData,
 			boolean hasAnimation) {
-
 		mLocationOverlay.setData(locationData);
 		mMapView.refresh();
 		if (hasAnimation) {
@@ -301,6 +309,7 @@ public class MapMaker {
 					(int) (locationData.latitude * 1E6),
 					(int) (locationData.longitude * 1E6)));
 		}
+		checkMarkerTime();
 	}
 
 	boolean isInvalidLocation(GeoPoint point) {
@@ -315,7 +324,6 @@ public class MapMaker {
 	 * Update to draw other users
 	 */
 	public void UpdateMap(MapInfo mapInfo) {
-
 		if (mapInfo == null) {
 			if (mOverlay != null && mOverlay.getAllItem().size() != 0) {
 				mOverlay.removeAll();
@@ -355,7 +363,7 @@ public class MapMaker {
 						"USER_SNIPPET_HERE");
 					// TODO getDrawable
 					// /////////////////////////////
-					curItem.setMarker(getGroupIcon(i.section));
+					curItem.setMarker(getGroupIcon(i));
 					mOverlay.addItem(curItem);
 					hash.put(i.uid, curItem);
 					markerToInt.put(curItem, i.uid);
@@ -375,8 +383,9 @@ public class MapMaker {
 		if (mMapView != null) {
 			mMapView.refresh();
 		}
+		checkMarkerTime();
 	}
-
+	
 	@SuppressWarnings("deprecation")
 	public void receiveMarker(MarkerInfo markerInfo) {
 		Log.d("marker", "Marker received!");
@@ -395,6 +404,9 @@ public class MapMaker {
 			mOverlay.updateItem(nowMarker);
 			mMapView.refresh();
 			mMapController.animateTo(markerInfo.markerPoint);
+			Toast toast = Toast.makeText(context,"收到新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
+			toast.setGravity(Gravity.TOP, 0, 80);
+			toast.show();
 			return;
 		}
 		if (nowMarker == null) {
@@ -417,6 +429,9 @@ public class MapMaker {
 			mOverlay.addItem(nowMarker);
 			mMapView.refresh();
 			mMapController.animateTo(markerInfo.markerPoint);
+			Toast toast = Toast.makeText(context,"收到新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
+			toast.setGravity(Gravity.TOP, 0, 80);
+			toast.show();
 			return;
 		}
 	}
@@ -468,6 +483,9 @@ public class MapMaker {
 			mMapView.refresh();
 			mMapController.animateTo(markerPoint);
 		}
+		Toast toast = Toast.makeText(context,"创建新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
+		toast.setGravity(Gravity.TOP, 0, 80);
+		toast.show();
 	}
 
 	public GeoPoint getMakerLocation() {
@@ -485,6 +503,14 @@ public class MapMaker {
 		mMapView.refresh();
 	}
 
+	public void checkMarkerTime() {
+		if (nowMarker != null && nowMarkerTimestamp <= System.currentTimeMillis()) {
+			AlertMaker lateAlert = new AlertMaker(context, this);
+			lateAlert.showLateAlert();
+			removeMarker();
+		}
+	}
+	
 	/**
 	 * Remove all other users
 	 */

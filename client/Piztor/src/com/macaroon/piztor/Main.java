@@ -40,8 +40,10 @@ public class Main extends PiztorAct {
 	AlertMaker alertMaker;
 	GeoPoint markerPoint = null;
 	private MKMapTouchListener mapTouchListener;
-	private final int checkinRadius = 10;
-
+	public static int colorMode = 1;
+	public static int show_by_team = 1;
+	public static int show_by_sex = 2;
+	
 	/**
 	 * Locating component
 	 */
@@ -52,6 +54,7 @@ public class Main extends PiztorAct {
 	public MyLocationListener myListener = new MyLocationListener();
 	boolean isFirstLocation = true;
 	public static int GPSrefreshrate = 5;
+	private final int checkinRadius = 10;
 
 	ImageButton btnCheckin, btnFetch, btnFocus, btnSettings;
 

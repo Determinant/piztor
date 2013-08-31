@@ -1,5 +1,6 @@
 package com.macaroon.piztor;
 
+import java.io.Closeable;
 import java.util.Calendar;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -87,18 +88,33 @@ public class AlertMaker {
 				});
 		gpsDialog.show();
 	}
-
-	public long toTimestamp(int hour, int minute) {
-		calendar = Calendar.getInstance();
-		int nhour = calendar.get(Calendar.HOUR_OF_DAY);
-		int nminute = calendar.get(Calendar.MINUTE);
-		int tmp = 0;
-		if (hour > nhour) tmp = (hour - nhour) * 60 + minute - nminute;
-		else if (minute > nminute) tmp = minute - nminute;
-		timestamp = System.currentTimeMillis() + tmp * 60 * 1000;
-		return timestamp;
+	
+	public void showLateAlert() {
+		
+		closeBoard(context);
+		AlertDialog.Builder lateDialog = new AlertDialog.Builder(context);
+		lateDialog.setTitle("阿哦");
+		lateDialog.setMessage("你迟到了！");
+		lateDialog.setNeutralButton("知道了", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface arg0, int arg1) {
+				arg0.cancel();
+			}
+		});
+		lateDialog.show();
+		closeBoard(context);
 	}
 
+	public long toTimestamp(int hour, int minute) {
+		
+		calendar = Calendar.getInstance();
+		calendar.set(calendar.get(Calendar.YEAR), 
+				calendar.get(Calendar.MONTH), 
+				calendar.get(Calendar.DAY_OF_MONTH),
+				hour,minute);
+		return calendar.getTimeInMillis();
+	}
+	
 	//TODO
 	public void updateMarkerTime(int hour, int minute) {
 		Log.d("time", hour + "  " + minute);
@@ -141,6 +157,7 @@ public class AlertMaker {
 				, calendar.get(Calendar.HOUR_OF_DAY)
 				, calendar.get(Calendar.MINUTE), true);
 				markerDialog.show();
+				closeBoard(context);
 	}
 
 	public void showCheckinAlter() {

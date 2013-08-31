@@ -13,19 +13,27 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RadioGroup.OnCheckedChangeListener;import android.widget.CompoundButton;
+import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class Settings extends PiztorAct {
+	
+	public final int show_by_team = 1;
+	public final int show_by_sex = 2;
+	
 	Button logout, subscribe, account;
 	MapInfo mapInfo;
 	Transam transam;
+	private int currentRate;
+	OnCheckedChangeListener radioButtonListener = null;
+	RadioGroup radioGroup;
+	
 	// Event
 	final static int logoutButtonPressed = 10;
 	final static int logoutFailed = 11;
-	
-	private int currentRate;
 
 	static class ReCall extends Handler {
 		WeakReference<Settings> outerClass;
@@ -175,6 +183,23 @@ public class Settings extends PiztorAct {
 		actMgr.add(start, logoutButtonPressed, logout);
 		actMgr.add(logout, logoutFailed, start);
 		setContentView(R.layout.activity_settings);
+		radioGroup = (RadioGroup)this.findViewById(R.id.radioGroup);
+		if (Main.colorMode == Main.show_by_sex) radioGroup.check(R.id.show_by_sex);
+		else radioGroup.check(R.id.show_by_team);
+        radioButtonListener = new OnCheckedChangeListener() {
+			
+			@Override
+			public void onCheckedChanged(RadioGroup group, int checkedId) {
+				if (checkedId == R.id.show_by_team){
+					setColorMode(show_by_team);
+				}
+				if (checkedId == R.id.show_by_sex){
+					setColorMode(show_by_sex);
+				}
+			}
+		};
+		radioGroup.setOnCheckedChangeListener(radioButtonListener);
+        
 	}
 
 	@Override
@@ -212,10 +237,15 @@ public class Settings extends PiztorAct {
 	private void initGPSrate() {
 		currentRate = Main.GPSrefreshrate;
 		TextView text1 = (TextView) Settings.this.findViewById(R.id.settings_GPSrefreshrate);
-		text1.setText(currentRate + "s each update");
+		text1.setText(currentRate + "s一次更新");
 		SeekBar bar1 = (SeekBar) Settings.this.findViewById(R.id.settings_GPSrefreshrate_bar);
 		bar1.setProgress(currentRate);
 		bar1.setOnSeekBarChangeListener(new mySeekBarListener());
+	}
+	
+	private void setColorMode(int colorMode) {
+		Main.colorMode = colorMode;
+		Log.d("color", "switch to " + colorMode);
 	}
 	
 	@Override

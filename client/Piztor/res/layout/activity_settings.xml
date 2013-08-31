@@ -87,24 +87,22 @@
 	        android:layout_marginLeft="20dip"
 	        android:layout_marginRight="20dip"
 	        android:background="#ffc0c3c4" />
-	    
-	    <TextView
-	        android:layout_width="fill_parent"
-	        android:layout_height="fill_parent"
-	        android:layout_gravity="center"
-	        android:gravity="center"
-	        android:textSize="30dip"
-	        android:textColor="@android:color/white"
-	        android:text="@string/subscribe_info"/>
 	    <LinearLayout
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
 	        android:layout_gravity="center"
 	        android:gravity="center"
-	        android:layout_marginTop="20dip"
-	        android:layout_marginLeft="20dip"
-	        android:layout_marginRight="20dip"
+	        android:layout_marginTop="10dip"
 	        android:orientation="horizontal">
+	    <TextView
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_gravity="center"
+	        android:gravity="center"
+	        android:textSize="30dip"
+	        android:textColor="@android:color/white"
+	        android:text="@string/subscribe_info"/>
+	    
 		   	<Button
 		   	    android:id="@+id/settings_btn_subscribe"
 		   	    android:layout_width="wrap_content"
@@ -113,6 +111,45 @@
 		   	    android:text="@string/change"
 		   	    android:textSize="22dip" />
 
+	    </LinearLayout>
+	    <View
+	        android:layout_width="fill_parent"
+	        android:layout_height="1.0px"
+	        android:layout_marginTop="20dip"
+	        android:layout_marginBottom="20dip"
+	        android:layout_marginLeft="20dip"
+	        android:layout_marginRight="20dip"
+	        android:background="#ffc0c3c4" />
+	    <LinearLayout
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_gravity="center"
+	        android:gravity="center">
+		<TextView
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:textSize="20dip"
+		    android:text="@string/colormode"
+		    android:textColor="#FFFFFF"/>
+		<RadioGroup
+	        android:id="@+id/radioGroup" 
+	        android:contentDescription="@string/colormode" 
+	        android:layout_width="wrap_content" 
+	        android:layout_height="wrap_content"
+	        android:layout_marginLeft="10dip"
+	        android:orientation="horizontal">
+ 			<RadioButton 
+ 			    android:layout_width="wrap_content" 
+ 			    android:layout_height="wrap_content" 
+ 			    android:id="@+id/show_by_team" 
+ 			    android:text="@string/show_team" 
+ 			    android:checked="true"/>
+			<RadioButton 
+			    android:layout_width="wrap_content" 
+			    android:layout_height="wrap_content" 
+			    android:id="@+id/show_by_sex" 
+			    android:text="@string/show_sex"/>    
+		</RadioGroup>
 	    </LinearLayout>
 	    <View
 	        android:layout_width="fill_parent"

@@ -10,7 +10,7 @@ import android.util.Log;
 
 @SuppressLint("UseSparseArrays")
 public class myApp extends Application {
-	private static final String strKey = "E612ee541946c90d7b9add0347c9e601";
+	private static final String strKey = "8a0ae50048d103b2b8b12b7066f4ea7d";
 	BMapManager mBMapManager;
 	boolean isExiting = false;
 	boolean isLogout = false;

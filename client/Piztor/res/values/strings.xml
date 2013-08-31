@@ -9,10 +9,10 @@
     <string name="fetch">获取</string>
     <string name="checkin">签到</string>
     <string name="focus">聚焦</string>
-    <string name="show_sex">Show sex: </string>
+    <string name="show_sex">按性别</string>
     <string name="male">Male</string>
     <string name="female">Female</string>
-    <string name="show_team">Show team: </string>
+    <string name="show_team">按班级</string>
     <string name="all">All</string>
     <string name="mine">Mine</string>
     <string name="title_activity_login">Login</string>
@@ -34,9 +34,10 @@
     <string name="company">连队</string>
     <string name="section">班级</string>
     <string name="add">添加</string>
-    <string name="GPSrefreshrate">GPS刷新率</string>
+    <string name="GPSrefreshrate">GPS刷新率 每</string>
     <string name="old_password">旧密码</string>
     <string name="new_password">新密码</string>
     <string name="submit">提交</string>
+    <string name="colormode">着色方式</string>
 
 </resources>
