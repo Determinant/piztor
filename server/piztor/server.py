@@ -69,7 +69,7 @@ class _StatusCode:
     sucess = 0x00
     auth_fail = 0x01
     insuf_lvl = 0x02
-    wrong_pass = 0x02
+    wrong_pass = 0x03
 
 class PushData(object):
     from hashlib import sha256
@@ -646,7 +646,11 @@ class SetMarkerHandler(RequestHandler):
 class ChangePasswordHandler(RequestHandler):
 
     _optcode = _OptCode.change_password
-    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE
+    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
+                        MAX_PASSWORD_SIZE + \
+                        _SectionSize.PADDING + \
+                        MAX_PASSWORD_SIZE + \
+                        _SectionSize.PADDING
 
     def handle(self, tr_data, conn):
         self.check_size(tr_data)
@@ -687,7 +691,8 @@ class PTP(Protocol, TimeoutMixin):
                 UserLogoutHandler,
                 OpenPushTunnelHandler,
                 SendTextMessageHandler,
-                SetMarkerHandler]
+                SetMarkerHandler,
+                ChangePasswordHandler]
 
     handler_num = len(handlers)
 
