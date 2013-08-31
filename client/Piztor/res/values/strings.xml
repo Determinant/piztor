@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
     <string name="app_name">Piztor</string>
@@ -25,5 +26,7 @@
     <string name="update_info">My Account</string>
     <string name="subscribe_info">Subscribe information</string>
     <string name="change">Check &amp; Update</string>
+    <string name="title_activity_subscribesettings">SubscribeSettings</string>
+    <string name="title_activity_subscribe_settings">SubscribeSettings</string>
 
 </resources>

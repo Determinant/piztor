@@ -13,8 +13,19 @@ import android.location.Location;
 public class MapInfo {
 	HashMap<Integer, UserInfo> mp;
 	Vector<UserInfo> allUsers;
+	MarkerInfo markerInfo;
 	UserInfo myInfo;
 
+	
+	MapInfo copy() {
+		MapInfo res = new MapInfo();
+		res.mp = (HashMap<Integer, UserInfo>)mp.clone();
+		res.allUsers = (Vector<UserInfo>) allUsers.clone();
+		res.myInfo = myInfo.copy();
+		return res;
+	}
+	
+	
 	@SuppressLint("UseSparseArrays")
 	MapInfo() {
 		mp = new HashMap<Integer, UserInfo>();
@@ -47,12 +58,39 @@ public class MapInfo {
 	}
 }
 
+class MarkerInfo {
+	GeoPoint markerPoint;
+	long markerTimestamp;
+	int level;
+	
+	MarkerInfo copy() {
+		MarkerInfo res = new MarkerInfo();
+		res.level = level;
+		res.markerPoint = new GeoPoint(markerPoint.getLatitudeE6(), markerPoint.getLongitudeE6());
+		res.markerTimestamp = markerTimestamp;
+		return res;
+	}
+	
+}
+
 class UserInfo {
 	int uid, sex;
 	int company;		//group id
 	int section;
+	int level;
 	GeoPoint location;
 	String nickname;
+	
+	UserInfo copy() {
+		UserInfo res = new UserInfo(uid);
+		res.location = location;
+		res.nickname = nickname;
+		res.section = section;
+		res.company = company;
+		res.level = level;
+		return res;
+	}
+	
 	UserInfo(int uid) {
 		this.uid = uid;
 	}

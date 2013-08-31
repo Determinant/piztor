@@ -13,10 +13,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -24,6 +26,8 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
@@ -46,6 +50,8 @@ public class AlertMaker {
 	private GeoPoint markerPoint;
 	private MapMaker mapMaker;
 	private long timestamp;
+	 int mHour;
+	 int mMinute;
 	
 	public AlertMaker(Context cc, MapMaker mm) {
 		context =cc;
@@ -92,33 +98,40 @@ public class AlertMaker {
 		timestamp = System.currentTimeMillis() + tmp * 60 * 1000;
 		return timestamp;
 	}
-	
+
 	//TODO
 	public void updateMarkerTime(int hour, int minute) {
 		Log.d("time", hour + "  " + minute);
 		Log.d("time", "    " + toTimestamp(hour, minute));
+		mapMaker.newMarkerHour = hour;
+		mapMaker.newMarkerMinute = minute;
+		mapMaker.newMarkerTimestamp = toTimestamp(hour, minute);
 	}
 	
 	public void showMarkerAlert(GeoPoint point) {
 		
 		closeBoard(context);
+		boolean flag = false;
 		if (point == null) return;
 		markerPoint = point;
+		
 		calendar = Calendar.getInstance();
 		TimePickerDialog markerDialog = new TimePickerDialog(context
 				, new TimePickerDialog.OnTimeSetListener() {
-					
+					boolean flag = false;
 					@Override
 					public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
 						////// at least 2 minutes
-						if ((hourOfDay >= calendar.get(Calendar.HOUR_OF_DAY) && minute >= calendar.get(Calendar.MINUTE))
-								|| hourOfDay > calendar.get(Calendar.HOUR_OF_DAY)) {
-							mapMaker.DrawMarker(markerPoint);
+						if ( !flag &&
+							((hourOfDay >= calendar.get(Calendar.HOUR_OF_DAY) && minute >= calendar.get(Calendar.MINUTE))
+							|| hourOfDay > calendar.get(Calendar.HOUR_OF_DAY))) {
 							updateMarkerTime(hourOfDay, minute);
-						}
-						else {
+							mapMaker.DrawMarker(markerPoint);
+							flag = true;
+							Log.d("marker", "marker alert calls drawmarker");
+							} else if (!flag) {
 							Toast toast = Toast.makeText(context,
-									"Too early！ Give me at least 2 minutes!", Toast.LENGTH_LONG);
+								"Too early！ Give me at least 2 minutes!", Toast.LENGTH_LONG);
 							toast.show();
 							closeBoard(context);
 							showMarkerAlert(markerPoint);
@@ -127,12 +140,43 @@ public class AlertMaker {
 				}
 				, calendar.get(Calendar.HOUR_OF_DAY)
 				, calendar.get(Calendar.MINUTE), true);
-		markerDialog.show();
+				markerDialog.show();
 	}
-	
+
 	public void showCheckinAlter() {
 		closeBoard(context);
-		AlertDialog.Builder checkinDialog = new AlertDialog.Builder(context);
+		final AlertDialog.Builder checkinDialog = new AlertDialog.Builder(context);
+		LayoutInflater infaler = LayoutInflater.from(context);
+		final LinearLayout layout = (LinearLayout)infaler.inflate(R.layout.checkindialog, null);
+		checkinDialog.setView(layout);
+		checkinDialog.setNeutralButton("cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				InputMethodManager im = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                im.hideSoftInputFromWindow(layout.getWindowToken(), 0);
+				dialog.cancel();
+			}
+		});
+		final ProgressBar pbar = (ProgressBar)layout.findViewById(R.id.checkin_progress);
+		final TextView checkinInfo = (TextView)layout.findViewById(R.id.checkin_info);
+		checkinDialog.show();
+		closeBoard(context);
+		new CountDownTimer(5000, 1000) {
+
+		     public void onTick(long millisUntilFinished) {
+		    	 int ttt = (int)millisUntilFinished;
+		         pbar.setProgress(ttt);
+		     }
+
+		     public void onFinish() {
+		    	 //TODO
+		    	 pbar.setVisibility(View.GONE);
+		    	 mapMaker.removeMarker();
+		    	 Toast toast = Toast.makeText(context, "Marker checked!", 2000);
+		    	 toast.setGravity(Gravity.TOP, 0, 80);
+		    	 toast.show();
+		    	 checkinInfo.setText("Success!");
+		     }
+		  }.start();
 	}
-	
+
 }
