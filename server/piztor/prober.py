@@ -18,13 +18,10 @@ if len(argv) == 3:
 
 
 token = user_auth(username, password)
-
-update_sub(token, username, 
-        [
-            (23, 15), (23, 15), (23, 255), (23, 255),
-            (23, 15), (23, 15), (23, 255), (23, 255),
-            (23, 15), (23, 15), (23, 255), (23, 255),
-            (23, 15), (23, 15), (23, 255), (23, 255),
-            (23, 15), (23, 15), 
-            ])
-user_info(token, username, 23, 15)
+change_password(token, username, "ddd", "haha")
+#print "Client: " + username + "logged in"
+#open_push_tunnel(token, username)
+#for i in xrange(100):
+#    print "Client: " + username  + " updateing"
+#    update_location(token, username, 123.456, 123.456)
+##    sleep(5)

@@ -7,4 +7,5 @@ def get_rand_sex():
     return randint(0, 1)
 
 for i in xrange(100):
-    print i, i, get_rand_gid(), get_rand_sex()
+    print i, i, i, 23, 15, get_rand_sex(), 0
+    print "23 15"
