@@ -718,8 +718,6 @@ class PTP(Protocol, TimeoutMixin):
         except DBCorruptionError:
             logger.error("*** Database corruption ***")
             self.transport.loseConnection()
-        if self.tunnel is None:
-            self.transport.loseConnection()
 
     def connectionLost(self, reason):
         if self.tunnel:

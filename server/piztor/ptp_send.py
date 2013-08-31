@@ -24,8 +24,8 @@ class _SectionSize:
     LOCATION_ENTRY = USER_ID + LATITUDE + LONGITUDE
     PADDING = 1
 
-host = "localhost" #"localhost"
-port = 2223
+host = "202.120.7.4" #"localhost"
+port = 2224
 
 def pack_data(optcode, data):
     return pack("!LB", _SectionSize.LENGTH + \
@@ -88,12 +88,14 @@ def gen_set_marker(token, username, lat, lng, deadline):
 
 def send(data):
     received = bytes()
+    from time import time
+    begin = time()
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host, port))
         sock.sendall(data)
         while True:
-            rd, wr, err = select([sock], [], [], 10)
+            rd, wr, err = select([sock], [], [])
             if rd:
                 buff = sock.recv(4096)
                 if len(buff) == 0:
@@ -102,7 +104,10 @@ def send(data):
             else:
                 break
     finally:
+        print "closing"
+        sock.shutdown(1)
         sock.close()
+    print "Waited for {} seconds".format(str(time() - begin))
     return received
 
 def user_auth(username, password):
@@ -112,16 +117,15 @@ def user_auth(username, password):
         if pl != len(resp):
             logger.error("User authentication: incorrect packet length")
         print "status: " + str(status)
-        print "token: " + get_hex(token)
-        print get_hex(resp[38:])
+#        print "token: " + get_hex(token)
     except error:
         logger.error("User authentication: can not parse the response")
+        print get_hex(resp)
 
     return token
 
 def update_location(token, username, lat, lng):
     resp = send(gen_update_location(token, username, lat, lng)) 
-    print get_hex(resp)
     try:
         pl, optcode, status = unpack("!LBB", resp[:6])
         if pl != len(resp):
