@@ -89,8 +89,8 @@ class PushLocationData(PushData):
         self.pack(0x01, struct.pack("!Ldd", uid, lat, lng))
 
 class PushMarkerData(PushData):
-    def __init__(self, lat, lng, deadline):
-        self.pack(0x02, struct.pack("!ddl", lat, lng, deadline))
+    def __init__(self, perm, lat, lng, deadline):
+        self.pack(0x02, struct.pack("!Bddl", lat, lng, deadline))
 
 class PushTunnel(object):
     def __init__(self, uid):
@@ -638,7 +638,7 @@ class SetMarkerHandler(RequestHandler):
             if uid == uauth.uid: continue
             if pt.has_key(uid):
                 tunnel = pt[uid]
-                tunnel.add(PushMarkerData(lat, lng, deadline))
+                tunnel.add(PushMarkerData(u.perm, lat, lng, deadline))
                 tunnel.push()
         logger.info("Set marker successfully!")
         return self.pack(struct.pack("!B", _StatusCode.sucess))

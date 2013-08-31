@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v2.0b
+Piztor Transmission Protocol v2.0c
 ----------------------------------
 
 - Pull 
@@ -315,7 +315,7 @@ Piztor Transmission Protocol v2.0b
 
     ::
 
-      ----+----8b----+----8b-----+----4b----+
-      ... | LATITUDE | LONGITUDE | DEADLINE |
-      ----+----------+-----------+----int---+
+      ----+--1b---+----8b----+----8b-----+----4b----+
+      ... | LEVEL | LATITUDE | LONGITUDE | DEADLINE |
+      ----+-uchar-+----------+-----------+----int---+
 
