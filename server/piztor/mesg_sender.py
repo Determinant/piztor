@@ -20,10 +20,11 @@ if len(argv) == 4:
 
 
 token = user_auth(username, password)
-set_marker(token, username, 123.456, 456.123, 0x7fffffff)
+update_location(token, username, 31.028616, 121.434661)
+update_location(token, username, 31.028616, 121.434661)
+set_marker(token, username, 10.028716, 121.545661, 0x7fffffff)
 send_text_mesg(token, username, mesg)
 #send_text_mesg(token, username, "a")
 #send_text_mesg(token, username, "the last")
-#update_location(token, username, 31.028616, 121.434661)
 
 logout(token, username)

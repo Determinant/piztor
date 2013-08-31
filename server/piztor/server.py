@@ -115,7 +115,7 @@ class PushTunnel(object):
         length, optcode, fingerprint = struct.unpack("!LB32s", data)
         if front.finger_print != fingerprint:
             raise PiztorError
-        logger.info("-- Push data confirmed by client --")
+        logger.info("-- Push data confirmed by client %s --", str(self.uid))
         self.blocked = False
         self.push()
 
@@ -130,7 +130,7 @@ class PushTunnel(object):
         front = self.pending.popleft()
         self.pending.appendleft(front)
         self.conn.transport.write(front.data)
-#        logger.info("-- Wrote push: %s --", get_hex(front.data))
+        logger.info("-- Wrote push: %s --", get_hex(front.data))
         self.blocked = True
 
     def clear(self):
@@ -725,16 +725,23 @@ class PTP(Protocol, TimeoutMixin):
         self.setTimeout(self.factory.timeout)
 
     def response(self, buff):
-        h = PTP.handlers[self.optcode]()
-        reply = h.handle(buff[5:], self)
-#        logger.info("Wrote: %s", get_hex(reply))
-        self.transport.write(reply)
-        if self.tunnel:
-            logger.info("Blocking the client...")
-            self.tunnel.push()
-            self.length = -1
-            return
-        self.transport.loseConnection()
+        try:
+            h = PTP.handlers[self.optcode]()
+            reply = h.handle(buff[5:], self)
+#            logger.info("Wrote: %s", get_hex(reply))
+            self.transport.write(reply)
+            if self.tunnel:
+                logger.info("Blocking the client...")
+                self.tunnel.push()
+                self.length = -1
+                return
+            self.transport.loseConnection()
+        except BadReqError as e:
+            logger.warn("Rejected a bad request: %s", str(e))
+            self.transport.loseConnection()
+        except DBCorruptionError:
+            logger.error("*** Database corruption ***")
+
 
     def dataReceived(self, data):
         self.buff += data
@@ -763,11 +770,9 @@ class PTP(Protocol, TimeoutMixin):
                     return
                 self.setTimeout(None)
                 reactor.callFromThread(self.response, buff)
+                #self.response(buff)
         except BadReqError as e:
             logger.warn("Rejected a bad request: %s", str(e))
-            self.transport.loseConnection()
-        except DBCorruptionError:
-            logger.error("*** Database corruption ***")
             self.transport.loseConnection()
 
     def connectionLost(self, reason):
