@@ -63,11 +63,13 @@ class _OptCode:
     open_push_tunnel =      0x05
     send_text_mesg =        0x06
     set_marker =            0x07
+    change_password =       0x08
 
 class _StatusCode:
     sucess = 0x00
     auth_fail = 0x01
     insuf_lvl = 0x02
+    wrong_pass = 0x02
 
 class PushData(object):
     from hashlib import sha256
@@ -640,6 +642,40 @@ class SetMarkerHandler(RequestHandler):
                 tunnel.push()
         logger.info("Set marker successfully!")
         return self.pack(struct.pack("!B", _StatusCode.sucess))
+
+class ChangePasswordHandler(RequestHandler):
+
+    _optcode = _OptCode.change_password
+    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE
+
+    def handle(self, tr_data, conn):
+        self.check_size(tr_data)
+        logger.info("Reading change password data...")
+        try:
+            token, = struct.unpack("!32s", tr_data[:32])
+            username, tail = RequestHandler.trunc_padding(tr_data[32:])
+            if username is None: 
+                raise struct.error
+            old_pass, tail = RequestHandler.trunc_padding(tail)
+            new_pass = tail[:-1]
+        except struct.error:
+            raise BadReqError("User logout: Malformed request body")
+
+        logger.info("Trying to change password with "
+                    "(token = {0}, username = {1}, old_pass = {2}, new_pass = {3})"\
+                .format(get_hex(token), username, old_pass, new_pass))
+
+        uauth = RequestHandler.get_uauth(token, username, self.session)
+        # Authentication failure
+        if uauth is None:
+            logger.warning("Authentication failure")
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
+        if not uauth.check_password(old_pass):
+            return self.pack(struct.pack("!B", _StatusCode.wrong_pass))
+        uauth.set_password(new_pass)
+        self.session.commit()
+        logger.info("Password changed successfully!")
+        return self.pack(struct.pack("!B",  _StatusCode.sucess))
 
 
 class PTP(Protocol, TimeoutMixin):

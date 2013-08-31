@@ -275,7 +275,7 @@ Piztor Transmission Protocol v2.0b
 
       - ``0x00`` for success
       - ``0x01`` for invalid token
-      - ``0x02`` for wrong password
+      - ``0x03`` for wrong password
 
 - Push Notification
 
