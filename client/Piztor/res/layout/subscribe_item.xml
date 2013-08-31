@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent"
+  android:orientation="horizontal">
+  <TextView 
+      android:layout_width="wrap_content" 
+      android:layout_height="wrap_content" 
+      android:id="@+id/textView1" 
+      android:textSize="20dip"
+      android:layout_marginLeft="10dip"
+      android:layout_alignParentLeft="true" 
+      android:text="company section"/>
+  <Button 
+      android:text="remove" 
+      android:layout_width="100dip" 
+      android:layout_height="wrap_content" 
+      android:layout_alignParentRight="true"
+      android:layout_marginRight="10dip"
+      android:textColor="#FFFFFF"
+      android:background="#DB4437"
+      android:id="@+id/button_delete"
+      android:textSize="20dip"
+      />
+  <View
+     	android:layout_width="fill_parent"
+	    android:layout_height="1.0px"
+	    android:layout_below="@+id/button_delete"
+	    android:layout_marginTop="20dip"
+	    android:layout_marginBottom="20dip"
+	    android:layout_marginLeft="20dip"
+	    android:layout_marginRight="20dip"
+	    android:background="#ffc0c3c4" />
+    
+</RelativeLayout>

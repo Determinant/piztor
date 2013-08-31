@@ -370,18 +370,6 @@ public class MapMaker extends Activity {
 	}
 	
 	/**
-	 * Update marker
-	 *
-	public void UpdateMarker() {
-		mOverlay.addItem(nowMarker);
-		if (mMapView != null) {
-			mMapView.getOverlays().add(mOverlay);
-			mMapView.refresh();
-		}
-	}
-	*/
-	
-	/**
 	 * Draw a marker
 	 */
 	public void DrawMarker(GeoPoint markerPoint) {
@@ -401,6 +389,18 @@ public class MapMaker extends Activity {
 		mMapController.animateTo(markerPoint);
 	}
 
+	public GeoPoint getMakerLocation() {
+		if (nowMarker == null) return null;
+		else return nowMarker.getPoint();
+	}
+	
+	public void removeMarker() {
+		if (nowMarker == null) return;
+		mOverlay.removeItem(nowMarker);
+		nowMarker = null;
+		mMapView.refresh();
+	}
+	
 	/**
 	 * Remove all other users
 	 */

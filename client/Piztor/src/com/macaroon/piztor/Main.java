@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
@@ -31,7 +32,7 @@ import com.baidu.mapapi.utils.DistanceUtil;
 import com.baidu.platform.comapi.basestruct.GeoPoint;
 
 public class Main extends PiztorAct {
-	final static int SearchButtonPress = 1;
+	final static int CheckinButtonPress = 1;
 	final static int FocuseButtonPress = 3;
 	final static int SuccessFetch = 4;
 	final static int FailedFetch = 5;
@@ -43,6 +44,7 @@ public class Main extends PiztorAct {
 	private Calendar calendar;
 	GeoPoint markerPoint = null;
 	private MKMapTouchListener mapTouchListener;
+	private final int checkinRadius = 10;
 
 	/**
 	 * Locating component
@@ -55,7 +57,7 @@ public class Main extends PiztorAct {
 	boolean isFirstLocation = true;
 	public static int GPSrefreshrate = 5;
 
-	ImageButton btnSearch, btnFetch, btnFocus, btnSettings;
+	ImageButton btnCheckin, btnFetch, btnFocus, btnSettings;
 	MapInfo mapInfo;
 	
 	Transam transam;
@@ -130,8 +132,8 @@ public class Main extends PiztorAct {
 
 	String cause(int t) {
 		switch (t) {
-		case SearchButtonPress:
-			return "Search Button Press";
+		case CheckinButtonPress:
+			return "Checkin Button Press";
 		case FocuseButtonPress:
 			return "Focuse Button Press";
 		case SuccessFetch:
@@ -192,9 +194,21 @@ public class Main extends PiztorAct {
 				isFirstLocation = false;
 			}
 			int TMP = location.getLocType();
-			if (TMP == 61) Toast.makeText(Main.this, "Piztor : Update from GPS result (" + GPSrefreshrate + "s)", 3000).show();
-			if (TMP == 161) Toast.makeText(Main.this, "Piztor : Update from Network (" + GPSrefreshrate + "s)" , 3000).show();
-			if (TMP == 65) Toast.makeText(Main.this, "Piztor : Update from Cache (" + GPSrefreshrate + "s)", 3000).show();
+			if (TMP == 61) {
+				Toast toast = Toast.makeText(Main.this, "Piztor : Update from GPS result (" + GPSrefreshrate + "s)", 2000);
+				toast.setGravity(Gravity.TOP, 0, 80);
+				toast.show();
+			}
+			if (TMP == 161) {
+				Toast toast = Toast.makeText(Main.this, "Piztor : Update from Network (" + GPSrefreshrate + "s)", 2000);
+				toast.setGravity(Gravity.TOP, 0, 80);
+				toast.show();
+			}
+			if (TMP == 65) {
+				Toast toast = Toast.makeText(Main.this, "Piztor : Update from Cache (" + GPSrefreshrate + "s)", 2000);
+				toast.setGravity(Gravity.TOP, 0, 80);
+				toast.show();
+			}
 			mapMaker.UpdateLocationOverlay(locData, hasAnimation);
 			
 			LocationClientOption option = new LocationClientOption();
@@ -218,8 +232,7 @@ public class Main extends PiztorAct {
 		void enter(int e) {
 			System.out.println("enter start status!!!!");
 			if (e == ActMgr.Create) {
-				System.out.println(Infomation.token + "  "
-						+ Infomation.username + "   " + Infomation.myInfo.uid);
+				System.out.println(Infomation.token + "  " + Infomation.username + "   " + Infomation.myInfo.uid);
 			}
 			if (e == SuccessFetch)
 				flushMap();
@@ -270,6 +283,27 @@ public class Main extends PiztorAct {
 		mMapView.regMapTouchListner(mapTouchListener);
 	}
 
+	public void markerCheckin() {
+		if (mapMaker.getMakerLocation() == null) {
+			Toast toast = Toast.makeText(Main.this, "No marker now!", 2000);
+			toast.setGravity(Gravity.TOP, 0, 80);
+			toast.show();
+			return;
+		}
+		GeoPoint curPoint = new GeoPoint((int)(locData.latitude * 1E6), (int)(locData.longitude * 1E6));
+		double disFromMarker = DistanceUtil.getDistance(curPoint, mapMaker.getMakerLocation());
+		if (disFromMarker < locData.accuracy) {
+			mapMaker.removeMarker();
+			Toast toast = Toast.makeText(Main.this, "Marker checked!", 2000);
+			toast.setGravity(Gravity.TOP, 0, 80);
+			toast.show();
+		} else {
+			Toast toast = Toast.makeText(Main.this, "Please get closer to the marker!", 2000);
+			toast.setGravity(Gravity.TOP, 0, 80);
+			toast.show();
+		}
+	}
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "Main";
@@ -283,23 +317,10 @@ public class Main extends PiztorAct {
 		mapInfo = AppMgr.mapInfo;
 		ActStatus[] r = new ActStatus[1];
 		ActStatus startStatus = r[0] = new StartStatus();
-		// ActStatus fetchStatus = r[1] = new FetchStatus();
-		// ActStatus focusStatus = r[2] = new FocusStatus();
 		if (transam == null)
 			Log.d(LogInfo.exception, "transam = null");
 		transam.setHandler(handler);
 		actMgr = new ActMgr(this, startStatus, r);
-		// actMgr.add(startStatus, FocuseButtonPress, focusStatus);
-		// actMgr.add(startStatus, Fetch, fetchStatus);
-		// actMgr.add(startStatus, SuccessFetch, startStatus);
-		// actMgr.add(startStatus, Fetch, startStatus);
-		// actMgr.add(fetchStatus, Fetch, startStatus);
-		// actMgr.add(fetchStatus, FailedFetch, startStatus);
-		// actMgr.add(fetchStatus, SuccessFetch, startStatus);
-		// actMgr.add(focusStatus, FocuseButtonPress, startStatus);
-		// actMgr.add(focusStatus, mapViewtouched, startStatus);
-		// actMgr.add(focusStatus, SuccessFetch, focusStatus);
-		// actMgr.add(focusStatus, Fetch, focusStatus);
 		setContentView(R.layout.activity_main);
 
 		mMapView = (MapView) findViewById(R.id.bmapView);
@@ -330,17 +351,22 @@ public class Main extends PiztorAct {
 					InputMethodManager.HIDE_NOT_ALWAYS);
 	}
 
-	/*
-	 * public boolean onTap(int index) { OverlayItem item = getItem(index);
-	 * mCurItem = item; if () }
-	 */
 	@Override
 	protected void onStart() {
 		super.onStart();
 		btnFetch = (ImageButton) findViewById(R.id.footbar_btn_fetch);
 		btnFocus = (ImageButton) findViewById(R.id.footbar_btn_focus);
-		btnSearch = (ImageButton) findViewById(R.id.footbar_btn_search);
+		btnCheckin = (ImageButton) findViewById(R.id.footbar_btn_checkin);
 		btnSettings = (ImageButton) findViewById(R.id.footbar_btn_settings);
+		
+		btnCheckin.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+				markerCheckin();
+			}
+		});
+		
 		btnFetch.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {

@@ -3,6 +3,7 @@ package com.macaroon.piztor;
 import java.util.Calendar;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.zip.Inflater;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -17,6 +18,7 @@ import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -43,7 +45,8 @@ public class AlertMaker {
 	private Context context;
 	private GeoPoint markerPoint;
 	private MapMaker mapMaker;
-
+	private long timestamp;
+	
 	public AlertMaker(Context cc, MapMaker mm) {
 		context =cc;
 		mapMaker = mm;
@@ -79,6 +82,23 @@ public class AlertMaker {
 		gpsDialog.show();
 	}
 
+	public long toTimestamp(int hour, int minute) {
+		calendar = Calendar.getInstance();
+		int nhour = calendar.get(Calendar.HOUR_OF_DAY);
+		int nminute = calendar.get(Calendar.MINUTE);
+		int tmp = 0;
+		if (hour > nhour) tmp = (hour - nhour) * 60 + minute - nminute;
+		else if (minute > nminute) tmp = minute - nminute;
+		timestamp = System.currentTimeMillis() + tmp * 60 * 1000;
+		return timestamp;
+	}
+	
+	//TODO
+	public void updateMarkerTime(int hour, int minute) {
+		Log.d("time", hour + "  " + minute);
+		Log.d("time", "    " + toTimestamp(hour, minute));
+	}
+	
 	public void showMarkerAlert(GeoPoint point) {
 		
 		closeBoard(context);
@@ -92,8 +112,10 @@ public class AlertMaker {
 					public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
 						////// at least 2 minutes
 						if ((hourOfDay >= calendar.get(Calendar.HOUR_OF_DAY) && minute >= calendar.get(Calendar.MINUTE))
-								|| hourOfDay > calendar.get(Calendar.HOUR_OF_DAY))
+								|| hourOfDay > calendar.get(Calendar.HOUR_OF_DAY)) {
 							mapMaker.DrawMarker(markerPoint);
+							updateMarkerTime(hourOfDay, minute);
+						}
 						else {
 							Toast toast = Toast.makeText(context,
 									"Too early！ Give me at least 2 minutes!", Toast.LENGTH_LONG);
@@ -104,8 +126,13 @@ public class AlertMaker {
 					}
 				}
 				, calendar.get(Calendar.HOUR_OF_DAY)
-				, calendar.get(Calendar.MINUTE), false);
+				, calendar.get(Calendar.MINUTE), true);
 		markerDialog.show();
+	}
+	
+	public void showCheckinAlter() {
+		closeBoard(context);
+		AlertDialog.Builder checkinDialog = new AlertDialog.Builder(context);
 	}
 	
 }
