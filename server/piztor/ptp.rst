@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v2.0a
+Piztor Transmission Protocol v2.0b
 ----------------------------------
 
 - Pull 
@@ -254,6 +254,28 @@ Piztor Transmission Protocol v2.0a
       - ``0x00`` for success
       - ``0x01`` for invalid token
       - ``0x02`` for insufficient level
+
+  - Change Password ``0x08``
+
+    - Request
+
+      ::
+
+          +-------------+-------?b-------+-------?b-------+
+          |  AUTH_HEAD  |  OLD_PASSWORD  |  NEW_PASSWORD  |
+          +-------------+-----string-----+-----string-----+
+
+    - Response
+
+      ::
+      
+          +--------+
+          | STATUS |
+          +--------+
+
+      - ``0x00`` for success
+      - ``0x01`` for invalid token
+      - ``0x02`` for wrong password
 
 - Push Notification
 

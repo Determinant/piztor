@@ -25,7 +25,7 @@ class _SectionSize:
     PADDING = 1
 
 host = "202.120.7.4" #"localhost"
-port = 2224
+port = 2223
 
 def pack_data(optcode, data):
     return pack("!LB", _SectionSize.LENGTH + \
