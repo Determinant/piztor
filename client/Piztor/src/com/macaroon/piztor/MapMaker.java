@@ -30,7 +30,7 @@ import com.baidu.mapapi.map.PopupClickListener;
 import com.baidu.mapapi.map.PopupOverlay;
 import com.baidu.platform.comapi.basestruct.GeoPoint;
 
-public class MapMaker extends Activity {
+public class MapMaker {
 
 	// MapView controlling component
 	private MapView mMapView = null;
@@ -138,7 +138,7 @@ public class MapMaker extends Activity {
 				OverlayItem item = getItem(index);
 				UserInfo tmpInfo = preMapInfo
 						.getUserInfo(markerToInt.get(item));
-				String itemInfo = tmpInfo.company + "连" + tmpInfo.section + "班";
+				String itemInfo = tmpInfo.company + "连" + tmpInfo.section + "班 " + tmpInfo.nickname;
 				popupText.setText(itemInfo);
 				Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
 				popLay.showPopup(bitmap, item.getPoint(), 32);
@@ -180,15 +180,16 @@ public class MapMaker extends Activity {
 			}
 		});
 		int num = mOffline.scan();
-		String msg = "";
+		
 		if (num == 0) {
 			// msg =
 			// "No offline map found. It may have been loaded already or misplaced.";
 		} else {
-			msg = String.format("Loaded %d offline maps.", num);
+			Toast.makeText(context, String.format("加载了%d个离线地图包", num), 
+					Toast.LENGTH_SHORT).show();
 		}
 		Log.d("offline", "inited");
-		Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+		
 	}
 
 	/**
@@ -266,7 +267,7 @@ public class MapMaker extends Activity {
 		InitLocationOverlay();
 		InitMyOverLay();
 		InitPopup();
-		InitOfflineMap();
+		//InitOfflineMap();
 		myBM = new Drawable[20];
 		initMyIcons();
 		// InitTouchListenr();
@@ -302,6 +303,14 @@ public class MapMaker extends Activity {
 		}
 	}
 
+	boolean isInvalidLocation(GeoPoint point) {
+		if (point == null) return false;
+		if (point.getLatitudeE6() / 1E6 > 180.0 || point.getLatitudeE6() / 1E6 < -180.0
+				|| point.getLongitudeE6() > 180.0 || point.getLongitudeE6() / 1E6 < -180.0)
+			return false;
+		return true;
+	}
+	
 	/**
 	 * Update to draw other users
 	 */
@@ -324,6 +333,11 @@ public class MapMaker extends Activity {
 					markerToInt.remove(hash.get(i.uid));
 					hash.remove(i.uid);
 				}
+				if (mapInfo.getUserInfo(i.uid) != null && isInvalidLocation(mapInfo.getUserInfo(i.uid).location)) {
+					mOverlay.removeItem(hash.get(i.uid));
+					markerToInt.remove(hash.get(i.uid));
+					hash.remove(i.uid);
+				}
 			}
 		}
 		mMapView.refresh();
@@ -334,26 +348,28 @@ public class MapMaker extends Activity {
 			if (i.uid == preMapInfo.myInfo.uid)
 				continue;
 			if (hash.containsKey(i.uid) == false) {
-				GeoPoint p = new GeoPoint((int) (i.getLatitude() * 1E6),
-						(int) (i.getLongitude() * 1E6));
-				curItem = new OverlayItem(p, "USERNAME_HERE",
+				if (isInvalidLocation(i.location)) {
+					
+				} else {
+					curItem = new OverlayItem(i.location, "USERNAME_HERE",
 						"USER_SNIPPET_HERE");
-				// TODO getDrawable
-				// /////////////////////////////
-				curItem.setMarker(getGroupIcon(i.section));
-				mOverlay.addItem(curItem);
-				hash.put(i.uid, curItem);
-				markerToInt.put(curItem, i.uid);
-				// if (mMapView != null)
-				// mMapView.refresh();
+					// TODO getDrawable
+					// /////////////////////////////
+					curItem.setMarker(getGroupIcon(i.section));
+					mOverlay.addItem(curItem);
+					hash.put(i.uid, curItem);
+					markerToInt.put(curItem, i.uid);
+				}
 			} else {
-				GeoPoint p = new GeoPoint((int) (i.getLatitude() * 1E6),
-						(int) (i.getLongitude() * 1E6));
-				curItem = hash.get(i.uid);
-				curItem.setGeoPoint(p);
-				mOverlay.updateItem(curItem);
-				// if (mMapView != null)
-				// mMapView.refresh();
+				if (isInvalidLocation(i.location)) {
+					mOverlay.removeItem(hash.get(i.uid));
+					markerToInt.remove(hash.get(i.uid));
+					hash.remove(i.uid);
+				} else {
+					curItem = hash.get(i.uid);
+					curItem.setGeoPoint(i.location);
+					mOverlay.updateItem(curItem);
+				}
 			}
 		}
 		if (mMapView != null) {
@@ -488,20 +504,4 @@ public class MapMaker extends Activity {
 		clearOverlay(null);
 		mOverlay.addItem(mItems);
 	}
-
-	@Override
-	protected void onPause() {
-		mMapView.onPause();
-	}
-
-	@Override
-	protected void onResume() {
-		mMapView.onResume();
-	}
-
-	@Override
-	protected void onDestroy() {
-		mMapView.destroy();
-	}
-
 }

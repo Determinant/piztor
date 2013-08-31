@@ -3,8 +3,10 @@ package com.macaroon.piztor;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 
 import android.app.Activity;
@@ -33,7 +35,6 @@ public class SubscribeSettings extends PiztorAct {
 
     static class ReCall extends Handler {
         WeakReference<SubscribeSettings> outerClass;
-
         ReCall(SubscribeSettings activity) {
             outerClass = new WeakReference<SubscribeSettings>(activity);
         }
@@ -109,6 +110,7 @@ public class SubscribeSettings extends PiztorAct {
     private EditText edit_company;
     private EditText edit_section;
     private Vector<RGroup> listGroup;
+    private Set<Integer> recSubcribe;
     
 
     void upMapInfo(Vector<RLocation> l) {
@@ -142,28 +144,48 @@ public class SubscribeSettings extends PiztorAct {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.subscribe_settings);
+        mShowInfo = (TextView) findViewById(R.id.textView1);
+        mShowInfo.setText("若要关注整个连请将班级号留空");
+        
         listGroup = new Vector<RGroup>();
+        recSubcribe = new HashSet<Integer>();
+        
         app = (myApp) getApplication();
         app.transam.setHandler(handler);
         mListView = (ListView) findViewById(R.id.listView1);
         edit_company = (EditText) findViewById(R.id.subscribe_company);
         edit_section = (EditText) findViewById(R.id.subscribe_section);
         mList = new ArrayList<HashMap<String, Object>>();
+        
         final MySimpleAdapter simpleAdapter = new MySimpleAdapter(this, mList,
                 R.layout.subscribe_item, new String[] { "subscribe_text",
                         "btnadd" },
                 new int[] { R.id.textView1, R.id.button_add });
+        
         mListView.setAdapter(simpleAdapter);
         // TODO get current subscribe
+        
         for (RGroup i : ((myApp) getApplication()).sublist) {
+        	if (i.section == 255)
+        		recSubcribe.add(i.company);
+        }
+        for (int i : recSubcribe) {
+        	HashMap<String, Object> map = new HashMap<String, Object>();
+        	map.put("subscribe_text", i + "连");
+        	mList.add(map);
+        	
+        	RGroup listItem = new RGroup(i, 255);
+        	listGroup.add(listItem);
+        	simpleAdapter.notifyDataSetChanged();
+        }
+        for (RGroup i : ((myApp) getApplication()).sublist) {
+        	if (i.section == 255) continue;
+        	//else
             HashMap<String, Object> map = new HashMap<String, Object>();
-            int cc = i.company;
-            int ss = i.section;
-            
-            map.put("subscribe_text", cc + "连 " + ss + "班");
+            map.put("subscribe_text", i.company + "连 " + i.section + "班");
             mList.add(map);
             
-            RGroup listItem = new RGroup(cc, ss);
+            RGroup listItem = new RGroup(i.company, i.section);
             listGroup.add(listItem);
             simpleAdapter.notifyDataSetChanged();
         }
@@ -172,21 +194,75 @@ public class SubscribeSettings extends PiztorAct {
 
             @Override
             public void onClick(View v) {
-                int cc = Integer.parseInt(edit_company.getText().toString());
-                int ss = Integer.parseInt(edit_section.getText().toString());
-                HashMap<String, Object> map = new HashMap<String, Object>();
-                map.put("subscribe_text", cc + "连 " + ss + "班");
-                mList.add(map);
+            	
+            	int cc,ss;
+            	//Log.d("sub", edit_company.getText().toString() + "   " + edit_section.getText().toString());
+            	if (edit_company.getText().toString().length() == 0) {
+            		mShowInfo.setText("连号为空,请输入正确的连队、班级号(关注整个连，则班号留空)");
+            		Log.d("sub", "连号为空");
+                	return;
+            	} else {
+            		cc = Integer.parseInt(edit_company.getText().toString());
+            		if (cc <= 0 || cc > 40) {
+            			mShowInfo.setText("连号超限,请输入正确的连队、班级号(关注整个连，则班号留空)");
+            			Log.d("sub", "连号超限" + cc); 
+                		return;
+            		}
+            	}
+            	
+            	if (edit_section.getText().toString().length() == 0) {
+            		ss = 255;
+            		Log.d("sub", "订阅全连" + cc);
+            	} else {
+            		ss = Integer.parseInt(edit_section.getText().toString());
+            		if (ss <= 0 || ss > 20) {
+            			mShowInfo.setText("班号超限,请输入正确的连队、班级号(关注整个连，则班号留空)");
+            			Log.d("sub", "班号超限" + ss);
+            			return;
+            		}
+            	}
+            		
+                // TODO get real company and section number
+                if (recSubcribe.contains(cc)) return;
                 
+                if (ss == 255) {
+                	recSubcribe.add(cc);
+                	for (int i = 0; i < listGroup.size(); i++) {
+                		if (listGroup.get(i).company == cc) {
+                			listGroup.remove(i);
+                			mList.remove(i);
+                			i--;
+                			simpleAdapter.notifyDataSetChanged();
+                		}
+                	}
+                	
+                	RGroup listItem = new RGroup(cc, 255);
+                	listGroup.add(listItem);
+                	HashMap<String, Object> map = new HashMap<String, Object>();
+                	map.put("subscribe_text", cc + "连");
+                	mList.add(map);
+                	simpleAdapter.notifyDataSetChanged();
+                	subscribe();
+                	mShowInfo.setText("已关注第" + cc + "连");
+                	return;
+                }
                 RGroup listItem = new RGroup(cc, ss);
-                listGroup.add(listItem);
-                subscribe();
+                for (RGroup i : listGroup) {
+                	if (i.company == cc && i.section == ss)
+                		return;
+                }
+                	listGroup.add(listItem);
                 
-                simpleAdapter.notifyDataSetChanged();
-                mShowInfo.setText("添加了一条订阅");
+                	HashMap<String, Object> map = new HashMap<String, Object>();
+                	map.put("subscribe_text", cc + "连 " + ss + "班");
+                	mList.add(map);
+                
+                	subscribe();
+                
+                	simpleAdapter.notifyDataSetChanged();
+                	mShowInfo.setText("已关注第" + cc + "连" + ss + "班");
             }
         });
-        mShowInfo = (TextView) findViewById(R.id.textView1);
     }
 
     private class MySimpleAdapter extends SimpleAdapter {
@@ -223,19 +299,14 @@ public class SubscribeSettings extends PiztorAct {
                 // TODO Auto-generated method stub
                 super.handleMessage(msg);
                 switch (msg.what) {
-                case BUTTON_ADD:
-                    HashMap<String, Object> map = new HashMap<String, Object>();
-                    mList.add(map);
-                    notifyDataSetChanged();
-                    break;
-
                 case BUTTON_DELETE:
+                	if (listGroup.get(msg.arg1).section == 255)
+                		recSubcribe.remove(listGroup.get(msg.arg1).company);
                     mList.remove(msg.arg1);
-                    RGroup listItem = listGroup.get(msg.arg1);
                     listGroup.remove(msg.arg1);
                     subscribe();
                     notifyDataSetChanged();
-                    mShowInfo.setText("删除了第" + (msg.arg1 + 1) + "条订阅");
+                    mShowInfo.setText("删除了第" + (msg.arg1 + 1) + "条关注");
                     break;
                 }
             }

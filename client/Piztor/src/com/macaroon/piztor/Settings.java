@@ -147,7 +147,7 @@ public class Settings extends PiztorAct {
 		public void onProgressChanged(SeekBar seekBar, int progress,
 				boolean fromUser) {
 			if (progress == 0) progress = 1;
-			refreshrate.setText(progress + "s each update");
+			refreshrate.setText(progress + "s一次更新");
 			currentRate = progress;
 			Log.d("seek", "cur " + progress);
 		}
@@ -234,6 +234,13 @@ public class Settings extends PiztorAct {
 	protected void onPause() {
 		setGPSrate();
 		super.onPause();
+	}
+	
+	@Override
+	protected void onResume() {
+        super.onResume();
+        if (app.isExiting || app.isLogout)
+            finish();
 	}
 	
 	@Override

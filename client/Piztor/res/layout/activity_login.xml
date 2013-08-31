@@ -76,7 +76,7 @@
         android:layout_marginLeft="70.0dip"
         android:layout_marginRight="70.0dip" 
         android:layout_marginTop="12.0dip" 
-        android:text="login"    
+        android:text="@string/login"    
         android:layout_below="@id/user_layout" />
     
 </RelativeLayout>

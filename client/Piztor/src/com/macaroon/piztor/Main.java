@@ -41,7 +41,6 @@ public class Main extends PiztorAct {
 	GeoPoint markerPoint = null;
 	private MKMapTouchListener mapTouchListener;
 	private final int checkinRadius = 10;
-	public static int GPSrefreshrate = 5;
 
 	/**
 	 * Locating component
@@ -52,6 +51,7 @@ public class Main extends PiztorAct {
 	LocationData locData = null;
 	public MyLocationListener myListener = new MyLocationListener();
 	boolean isFirstLocation = true;
+	public static int GPSrefreshrate = 5;
 
 	ImageButton btnCheckin, btnFetch, btnFocus, btnSettings;
 
@@ -210,21 +210,21 @@ public class Main extends PiztorAct {
 			int TMP = location.getLocType();
 			if (TMP == 61) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : Update from GPS result (" + GPSrefreshrate
+						"Piztor : 由GPS更新 (刷新时间" + GPSrefreshrate
 								+ "s)", 2000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
 			}
 			if (TMP == 161) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : Update from Network (" + GPSrefreshrate
+						"Piztor : 由网络更新 (刷新时间" + GPSrefreshrate
 								+ "s)", 2000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
 			}
 			if (TMP == 65) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : Update from Cache (" + GPSrefreshrate + "s)",
+						"Piztor : 由缓存更新 (刷新时间" + GPSrefreshrate + "s)",
 						2000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
@@ -311,7 +311,7 @@ public class Main extends PiztorAct {
 	public void markerCheckin() {
 		Log.d("checkin", "ok!!!");
 		if (mapMaker.getMakerLocation() == null) {
-			Toast toast = Toast.makeText(Main.this, "No marker now!", 2000);
+			Toast toast = Toast.makeText(Main.this, "暂无路标", 2000);
 			toast.setGravity(Gravity.TOP, 0, 80);
 			toast.show();
 			return;
@@ -325,7 +325,7 @@ public class Main extends PiztorAct {
 			alertMaker.showCheckinAlter();
 		} else {
 			Toast toast = Toast.makeText(Main.this,
-					"Please get closer to the marker!", 2000);
+					"请靠近路标", 2000);
 			toast.setGravity(Gravity.TOP, 0, 80);
 			toast.show();
 		}
@@ -340,11 +340,6 @@ public class Main extends PiztorAct {
 				.getSystemService(LOCATION_SERVICE);
 		isGPSEnabled = locationManager
 				.isProviderEnabled(locationManager.GPS_PROVIDER);
-		ActStatus[] r = new ActStatus[1];
-		ActStatus startStatus = r[0] = new StartStatus();
-		transam = app.transam;
-
-		actMgr = new ActMgr(appMgr, this, startStatus, r);
 		setContentView(R.layout.activity_main);
 		app.mBMapManager.start();
 
@@ -415,11 +410,19 @@ public class Main extends PiztorAct {
 
 	@Override
 	protected void onResume() {
+		if (app.isExiting || app.isLogout)
+			finish();
+		ActStatus[] r = new ActStatus[1];
+		ActStatus startStatus = r[0] = new StartStatus();
+		actMgr = new ActMgr(appMgr, this, startStatus, r);
 		mMapView.onResume();
 		transam.setHandler(handler);
 		isFirstLocation = true;
 		mLocClient.start();
-		requestUserInfo();
+		if (app.token == null) {
+			System.out.println("fuck!!");
+		} else
+			requestUserInfo();
 		// mapMaker.onResume();
 		flushMap();
 		super.onResume();
@@ -446,7 +449,9 @@ public class Main extends PiztorAct {
 		if (mLocClient != null) {
 			mLocClient.stop();
 		}
-		// mMapView.destroy();
+		// mapMaker.mOffline.destroy();
+		mMapView.destroy();
+		app.mBMapManager.stop();
 		// while null?
 		// mMapView.destroy();
 		//
@@ -457,9 +462,8 @@ public class Main extends PiztorAct {
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
 			System.out.println("ready to exit!!!");
-			app.mBMapManager.stop();
-			appMgr.exit();
-			return true;
+			//
+			app.isExiting = true;
 		}
 		return super.onKeyDown(keyCode, event);
 	}
@@ -467,7 +471,7 @@ public class Main extends PiztorAct {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
+		// getMenuInflater().inflate(R.menu.main, menu);
 		return false;
 	}
 

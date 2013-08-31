@@ -70,16 +70,16 @@ public class AlertMaker {
 		
 		closeBoard(context);
 		AlertDialog.Builder gpsDialog = new AlertDialog.Builder(context);
-		gpsDialog.setTitle("GPS settings");
-		gpsDialog.setMessage("GPS is not enabled. Please turn it on.");
-		gpsDialog.setPositiveButton("Settings",
+		gpsDialog.setTitle("GPS设置");
+		gpsDialog.setMessage("GPS未开启，是否前去打开？");
+		gpsDialog.setPositiveButton("设置",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
 						context.startActivity(intent);
 					}
 				});
-		gpsDialog.setNegativeButton("Go without GPS",
+		gpsDialog.setNegativeButton("不使用GPS",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						dialog.cancel();
@@ -131,7 +131,7 @@ public class AlertMaker {
 							Log.d("marker", "marker alert calls drawmarker");
 							} else if (!flag) {
 							Toast toast = Toast.makeText(context,
-								"Too early！ Give me at least 2 minutes!", Toast.LENGTH_LONG);
+								"太早了!多给一点时间", Toast.LENGTH_LONG);
 							toast.show();
 							closeBoard(context);
 							showMarkerAlert(markerPoint);
@@ -149,7 +149,7 @@ public class AlertMaker {
 		LayoutInflater infaler = LayoutInflater.from(context);
 		final LinearLayout layout = (LinearLayout)infaler.inflate(R.layout.checkindialog, null);
 		checkinDialog.setView(layout);
-		checkinDialog.setNeutralButton("cancel", new DialogInterface.OnClickListener() {
+		checkinDialog.setNeutralButton("取消", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				InputMethodManager im = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
                 im.hideSoftInputFromWindow(layout.getWindowToken(), 0);
@@ -171,10 +171,10 @@ public class AlertMaker {
 		    	 //TODO
 		    	 pbar.setVisibility(View.GONE);
 		    	 mapMaker.removeMarker();
-		    	 Toast toast = Toast.makeText(context, "Marker checked!", 2000);
+		    	 Toast toast = Toast.makeText(context, "已签到!", 2000);
 		    	 toast.setGravity(Gravity.TOP, 0, 80);
 		    	 toast.show();
-		    	 checkinInfo.setText("Success!");
+		    	 checkinInfo.setText("成功!");
 		     }
 		  }.start();
 	}

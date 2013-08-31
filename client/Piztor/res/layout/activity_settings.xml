@@ -16,14 +16,21 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dip"
             android:orientation="horizontal">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_centerVertical="true"
+				android:layout_centerHorizontal="true"
+                >
         	<TextView
 	        	android:id="@+id/settings_GPSrefreshrate_text"
 	        	android:layout_width="wrap_content"
 	        	android:layout_height="wrap_content"
 	        	android:layout_gravity="center"
+	        	android:gravity="center"
 	        	android:layout_marginTop="10dip"
-	        	android:layout_marginLeft="60dip"
-	        	android:text="GPS refresh rate"
+	        	android:text="@string/GPSrefreshrate"
 	        	android:textColor="@android:color/white"
 	        	android:textSize="20dip" />
         	<TextView
@@ -32,12 +39,12 @@
             	android:layout_height="wrap_content"
             	android:textSize="20dip"
            		android:layout_marginTop="10dip"
-           		android:layout_marginLeft="20dip"
+           		android:layout_marginLeft="10dip"
             	android:layout_gravity="center_vertical"
             	android:textColor="@android:color/white"
             	android:layout_toRightOf="@+id/settings_GPSrefreshrate_text"
             	android:text="30s"/>
-
+		</LinearLayout>
 		</RelativeLayout>
 		
 	    <SeekBar

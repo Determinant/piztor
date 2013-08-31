@@ -37,6 +37,7 @@ public class Login extends PiztorAct {
 						res.uinfo.gid.section, res.uinfo.sex,
 						res.uinfo.nickname);
 				app.mapInfo.myInfo.level = res.uinfo.level;
+				app.mapInfo.myInfo.nickname = res.uinfo.nickname;
 				System.out.println("login !!!!" + res.sublist.size());
 				actMgr.trigger(AppMgr.loginSuccess);
 			} else {
@@ -85,12 +86,6 @@ public class Login extends PiztorAct {
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "login";
 		super.onCreate(savedInstanceState);
-		ActStatus[] r = new ActStatus[2];
-		r[0] = new StartStatus();
-		r[1] = new LoginStatus();
-		actMgr = new ActMgr(appMgr, this, r[0], r);
-		actMgr.add(r[0], loginButtonClick, r[1]);
-		actMgr.add(r[1], loginFailed, r[0]);
 		setContentView(R.layout.activity_login);
 	}
 
@@ -110,15 +105,23 @@ public class Login extends PiztorAct {
 
 	@Override
 	protected void onResume() {
+		if (app.isExiting)
+			finish();
+		app.isLogout = false;
 		super.onResume();
+		ActStatus[] r = new ActStatus[2];
+		r[0] = new StartStatus();
+		r[1] = new LoginStatus();
+		actMgr = new ActMgr(appMgr, this, r[0], r);
+		actMgr.add(r[0], loginButtonClick, r[1]);
+		actMgr.add(r[1], loginFailed, r[0]);
 		transam.setHandler(handler);
 	}
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			appMgr.exit();
-			return true;
+			app.isExiting = true;
 		}
 		return super.onKeyDown(keyCode, event);
 	}

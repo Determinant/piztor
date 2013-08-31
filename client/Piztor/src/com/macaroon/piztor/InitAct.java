@@ -1,17 +1,19 @@
 package com.macaroon.piztor;
 
-import com.baidu.mapapi.MKGeneralListener;
-
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
+
+import com.baidu.mapapi.MKGeneralListener;
 
 public class InitAct extends PiztorAct {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "initAct";
 		super.onCreate(savedInstanceState);
+		app.isExiting = false;
 		app.mBMapManager.init(app.getStrkey(), new MKGeneralListener() {
 			@Override
 			public void onGetNetworkState(int iError) {
@@ -33,12 +35,15 @@ public class InitAct extends PiztorAct {
 
 	@Override
 	protected void onResume() {
+		if (app.isExiting)
+			finish();
 		super.onResume();
-		if (app.token == null)
+		if (app.token == null || app.isLogout) {
 			app.appMgr.trigger(AppMgr.noToken);
+		}
 		else {
-			System.out.println("has token!!!");
 			app.appMgr.trigger(AppMgr.hasToken);
+			System.out.println("has token!!!");
 		}
 	}
 	

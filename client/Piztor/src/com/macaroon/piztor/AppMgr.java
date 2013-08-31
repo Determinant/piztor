@@ -1,11 +1,10 @@
 package com.macaroon.piztor;
 
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Stack;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import com.baidu.mapapi.BMapManager;
 
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
@@ -18,31 +17,33 @@ public class AppMgr {
 	final static int logout = 106;
 	final static int subscribe = 107;
 	final static int account = 108;
+	final static int finish = 109;
+
 	public enum ActivityStatus {
 		create, start, resume, restart, stop, pause, destroy
 	}
+
 	myApp app;
 	HashMap<Class<?>, HashMap<Integer, Class<?>>> mp;
-	HashSet<PiztorAct> acts;
+	Stack<PiztorAct> acts;
 	ActivityStatus status;
 	PiztorAct nowAct;
 
 	void addAct(PiztorAct act) {
 		if (acts == null)
-			acts = new HashSet<PiztorAct>();
-		acts.add(act);
+			acts = new Stack<PiztorAct>();
+		acts.push(act);
 	}
 
-	void removeAct(PiztorAct act) {
-		if (acts.contains(act))
-			acts.remove(act);
-		else
-			System.out.println("Piztor has a bug!!!!");
-	}
+	/*
+	 * void removeAct(PiztorAct act) { if (acts.contains(act)) acts.remove(act);
+	 * else System.out.println("Piztor has a bug!!!!"); }
+	 */
 
 	void exit() {
-		for (PiztorAct act : acts) {
-			act.finish();
+		while (!acts.isEmpty()) {
+			acts.peek().finish();
+			acts.pop();
 		}
 		app.token = null;
 		app.mBMapManager.destroy();
@@ -53,8 +54,10 @@ public class AppMgr {
 	}
 
 	void trigger(int event) {
-		Intent i = new Intent();
-		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
+		if (event == finish) {
+			nowAct.finish();
+			return;
+		}
 		if (event == errorToken)
 			app.token = null;
 		if (event == loginSuccess || event == hasToken) {
@@ -63,8 +66,13 @@ public class AppMgr {
 		}
 		if (event == logout) {
 			System.out.println("我来停一发！！！！");
+			app.isLogout = true;
 			app.mBMapManager.stop();
+			nowAct.finish();
+			return;
 		}
+		Intent i = new Intent();
+		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
 		nowAct.startActivity(i);
 	}
 
@@ -101,9 +109,10 @@ public class AppMgr {
 		addStatus(Login.class);
 		addStatus(Main.class);
 		addStatus(Settings.class);
+		addTransition(UpdateInfo.class, logout, Login.class);
 		addTransition(Settings.class, subscribe, SubscribeSettings.class);
 		addTransition(SubscribeSettings.class, logout, Login.class);
-		addTransition(Settings.class, account, AccountSettings.class);
+		addTransition(Settings.class, account, UpdateInfo.class);
 		addTransition(InitAct.class, noToken, Login.class);
 		addTransition(InitAct.class, hasToken, Main.class);
 		addTransition(InitAct.class, errorToken, Login.class);
