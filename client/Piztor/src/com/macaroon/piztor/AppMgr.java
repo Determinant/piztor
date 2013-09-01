@@ -1,35 +1,13 @@
 package com.macaroon.piztor;
 
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Stack;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
-import android.util.Log;
-
-import com.baidu.mapapi.BMapManager;
-import com.baidu.mapapi.MKGeneralListener;
 
 @SuppressLint("UseSparseArrays")
 public class AppMgr {
-
-	static final String strKey = "8a0ae50048d103b2b8b12b7066f4ea7d";
-	static BMapManager mBMapManager = null;
-
-	// Status
-	public enum ActivityStatus {
-		create, start, resume, restart, stop, pause, destroy
-	}
-
-	static ActivityStatus status;
-	static PiztorAct nowAct;
-	// TODO fix
-	static Handler handler, fromGPS;
-	static Transam transam = null;
-	static Tracker tracker = null;
-	static Thread tTransam, tGPS;
 	// Event
 	final static int noToken = 101;
 	final static int loginSuccess = 102;
@@ -37,51 +15,68 @@ public class AppMgr {
 	final static int hasToken = 104;
 	final static int toSettings = 105;
 	final static int logout = 106;
+	final static int subscribe = 107;
+	final static int account = 108;
+	final static int finish = 109;
 
-	static MapInfo mapInfo;
+	public enum ActivityStatus {
+		create, start, resume, restart, stop, pause, destroy
+	}
 
-	static HashMap<Class<?>, HashMap<Integer, Class<?>>> mp;
-	static HashSet<PiztorAct> acts;
+	myApp app;
+	HashMap<Class<?>, HashMap<Integer, Class<?>>> mp;
+	Stack<PiztorAct> acts;
+	ActivityStatus status;
+	PiztorAct nowAct;
 
-	static void addAct(PiztorAct act) {
+	void addAct(PiztorAct act) {
 		if (acts == null)
-			acts = new HashSet<PiztorAct>();
-		acts.add(act);
+			acts = new Stack<PiztorAct>();
+		acts.push(act);
 	}
 
-	static void removeAct(PiztorAct act) {
-		if (acts.contains(act))
-			acts.remove(act);
-		else
-			System.out.println("Piztor has a bug!!!!");
-	}
+	/*
+	 * void removeAct(PiztorAct act) { if (acts.contains(act)) acts.remove(act);
+	 * else System.out.println("Piztor has a bug!!!!"); }
+	 */
 
-	static void exit() {
-		for (PiztorAct act : acts) {
-			act.finish();
+	void exit() {
+		while (!acts.isEmpty()) {
+			acts.peek().finish();
+			acts.pop();
 		}
+		app.token = null;
+		app.mBMapManager.destroy();
 	}
 
-	static void setStatus(ActivityStatus st) {
+	void setStatus(ActivityStatus st) {
 		status = st;
 	}
 
-	static void trigger(int event) {
-		Intent i = new Intent();
-		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
+	void trigger(int event) {
+		if (event == finish) {
+			nowAct.finish();
+			return;
+		}
 		if (event == errorToken)
-			Infomation.token = null;
-		if (event == loginSuccess) {
-			mBMapManager.start();
-			mapInfo.clear();
+			app.token = null;
+		if (event == loginSuccess || event == hasToken) {
+			app.mBMapManager.start();
+			app.mapInfo.clear();
 		}
 		if (event == logout) {
-			mBMapManager.stop();
+			System.out.println("我来停一发！！！！");
+			app.isLogout = true;
+			app.mBMapManager.stop();
+			nowAct.finish();
+			return;
 		}
+		Intent i = new Intent();
+		i.setClass(nowAct, mp.get(nowAct.getClass()).get(event));
 		nowAct.startActivity(i);
 	}
 
-	static void add(Class<?> a, Integer event, Class<?> b) {
+	void add(Class<?> a, Integer event, Class<?> b) {
 		if (mp.containsKey(a))
 			mp.get(a).put(event, b);
 		else {
@@ -91,7 +86,7 @@ public class AppMgr {
 		}
 	}
 
-	static void addTransition(Class<?> a, int i, Class<?> b) {
+	void addTransition(Class<?> a, int i, Class<?> b) {
 		if (mp.containsKey(a)) {
 			HashMap<Integer, Class<?>> h = mp.get(a);
 			h.put(i, b);
@@ -103,38 +98,21 @@ public class AppMgr {
 		}
 	}
 
-	static void addStatus(Class<?> a) {
+	void addStatus(Class<?> a) {
 		mp.put(a, new HashMap<Integer, Class<?>>());
 	}
 
-	static void init(Context context) {
-		if (mBMapManager == null) {
-			mBMapManager = new BMapManager(context);
-			mBMapManager.init(strKey, new MKGeneralListener() {
-				@Override
-				public void onGetNetworkState(int iError) {
-					Log.d("Network", "failure");
-					System.out.println("network wocao ni ma de !!!!!!!!!");
-				}
-
-				@Override
-				public void onGetPermissionState(int iError) {
-					Log.d("Permission", "wrong key");
-					System.out.println("ju ran bu gei wo quan xian !!!!!!!!!!");
-				}
-			});
-		}
+	public AppMgr(myApp app) {
 		mp = new HashMap<Class<?>, HashMap<Integer, Class<?>>>();
-		handler = new Handler();
-		transam = new Transam(Infomation.ip, Infomation.port, handler);
-		tTransam = new Thread(transam);
-		tTransam.start();
-		mapInfo = new MapInfo();
-		Infomation.myInfo = new UserInfo(-1);
+		this.app = app;
 		addStatus(InitAct.class);
 		addStatus(Login.class);
 		addStatus(Main.class);
 		addStatus(Settings.class);
+		addTransition(UpdateInfo.class, logout, Login.class);
+		addTransition(Settings.class, subscribe, SubscribeSettings.class);
+		addTransition(SubscribeSettings.class, logout, Login.class);
+		addTransition(Settings.class, account, UpdateInfo.class);
 		addTransition(InitAct.class, noToken, Login.class);
 		addTransition(InitAct.class, hasToken, Main.class);
 		addTransition(InitAct.class, errorToken, Login.class);

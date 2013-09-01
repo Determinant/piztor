@@ -16,10 +16,7 @@ public class Login extends PiztorAct {
 
 	Button btnLogin;
 	EditText edtUser, edtPass;
-
 	int loginButtonClick = 1, retryButtonClick = 2, loginFailed = 3;
-
-	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message m) {
@@ -32,13 +29,15 @@ public class Login extends PiztorAct {
 			if (m.what == 0) {
 				ResLogin res = (ResLogin) m.obj;
 				Log.d(LogInfo.login, LogInfo.s);
-				Infomation.token = res.t;
-				Infomation.sublist = res.sublist;
-				Infomation.username = res.uinfo.username;
-				Infomation.myInfo = new UserInfo(res.uinfo.uid);
-				Infomation.myInfo.setInfo(res.uinfo.gid.company,
+				app.token = res.t;
+				app.sublist = res.sublist;
+				app.username = res.uinfo.username;
+				app.mapInfo.myInfo = new UserInfo(res.uinfo.uid);
+				app.mapInfo.myInfo.setInfo(res.uinfo.gid.company,
 						res.uinfo.gid.section, res.uinfo.sex,
 						res.uinfo.nickname);
+				app.mapInfo.myInfo.level = res.uinfo.level;
+				app.mapInfo.myInfo.nickname = res.uinfo.nickname;
 				System.out.println("login !!!!" + res.sublist.size());
 				actMgr.trigger(AppMgr.loginSuccess);
 			} else {
@@ -67,7 +66,7 @@ public class Login extends PiztorAct {
 			String pass = edtPass.getText().toString();
 			long nowtime = System.currentTimeMillis();
 			System.out.println(user + " : " + pass + "\n");
-			AppMgr.transam.send(new ReqLogin(user, pass, nowtime, 5000));
+			transam.send(new ReqLogin(user, pass, nowtime, 5000));
 		}
 
 		@Override
@@ -87,12 +86,6 @@ public class Login extends PiztorAct {
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "login";
 		super.onCreate(savedInstanceState);
-		ActStatus[] r = new ActStatus[2];
-		r[0] = new StartStatus();
-		r[1] = new LoginStatus();
-		actMgr = new ActMgr(this, r[0], r);
-		actMgr.add(r[0], loginButtonClick, r[1]);
-		actMgr.add(r[1], loginFailed, r[0]);
 		setContentView(R.layout.activity_login);
 	}
 
@@ -112,18 +105,23 @@ public class Login extends PiztorAct {
 
 	@Override
 	protected void onResume() {
+		if (app.isExiting)
+			finish();
+		app.isLogout = false;
 		super.onResume();
-		if (AppMgr.transam == null)
-			Log.d(LogInfo.exception, "transam = null");
-			AppMgr.transam.setHandler(handler);
-		
+		ActStatus[] r = new ActStatus[2];
+		r[0] = new StartStatus();
+		r[1] = new LoginStatus();
+		actMgr = new ActMgr(appMgr, this, r[0], r);
+		actMgr.add(r[0], loginButtonClick, r[1]);
+		actMgr.add(r[1], loginFailed, r[0]);
+		transam.setHandler(handler);
 	}
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			AppMgr.exit();
-			return true;
+			app.isExiting = true;
 		}
 		return super.onKeyDown(keyCode, event);
 	}

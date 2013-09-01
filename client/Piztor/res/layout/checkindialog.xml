@@ -8,12 +8,14 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:gravity="center"
-        android:text="Checking in..."/>
+        android:text="正在签到..."
+        android:id="@+id/checkin_info"/>
 
     <ProgressBar
         android:id="@+id/checkin_progress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:max="10000"
         android:layout_gravity="center"
         android:gravity="center" />
 

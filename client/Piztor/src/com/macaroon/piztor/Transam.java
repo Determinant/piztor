@@ -1,6 +1,7 @@
 package com.macaroon.piztor;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -8,61 +9,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
 
-import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
-//       Piztor Transmission Protocol v2.0 beta   //
-
-//------------------------------------------------//
-//												  //
-//				*return msg type*			      //
-//				0   for   login					  //
-//              1   for   updateLocation		  //
-//              2   for   locationRequest		  //
-//			    3   for   userinfo				  //
-//              4   for   logout                  //
-//              5   for   requestpush             //
-//              6   for   sendmessage             //
-//												  //	
-//            100   for   pushmessage	          //
-//            101   for   pushlocation            //
-//											      //
-//     ----------I'm the division line--------    //
-//                                                //
-//             -1   for   Exceptions			  //
-//   Exception (req type,ex type,exception type)  //
-//                                                //
-//    ----------I'm the division line--------     //
-//                                                //
-//				 *Request form*					  //
-//        login -- username & password			  //
-//update -- token & username & latitude & longitude//
-//getlocation -- token & username & company & section//
-//    getuserinfo -- token & userinfo & userid    //
-//       logout -- token & username               //
-//    send message -- token & username & message  //
-//												  //
-//    ----------I'm the division line--------     //
-//                                                //
-//               *Respond form*					  //
-//        login -- status & userid & token        //
-//			  update -- status                    //
-//     getlocation -- status & entrynumber & data //
-//       entry  -- userid & latitude & longitude  //
-//                                                //
-//getuserinfo -- status & uid & company & section & gender//
-//                logout -- status                //
-//			request push -- status				  //
-//          send message -- status                //
-//												  //
-//          status -- 0 for success               //
-//					  1 for failed/invalid        //				
-//												  //
-//                                                //
-//------------------------------------------------//
-
-
+//       Piztor Transmission Protocol v2.0b beta   //
 
 public class Transam implements Runnable {
 	
@@ -73,6 +23,7 @@ public class Transam implements Runnable {
 	static final int Logout =4;
 	static final int StartPush =5;
 	static final int SendMessage =6;
+	static final int SetMarker =7;
 	
 	static final int ClosePush = -5;
 	
@@ -83,41 +34,50 @@ public class Transam implements Runnable {
 	static final int EIOException =105;
 	static final int EUnknownHostException =106;
 	static final int EStatusFailedException =107;
+	static final int ELevelFailedException =108;
 	
 	static final int Reconnect =-2;
 	static final int Exception =-1;
 	static final int TimeOut =0;
 	
-	private Timer timer;
-	private Timer pushtimer;
-	private boolean running = false; 
-	private int cnt = 5;				//retry times
-	private int tcnt;				//current remain retry times
-	private int rcnt;				//current remain retry times (push)
-	private int retime = 2000;		//timeout time
-	private Req req;
-	private int p;					//port
-	private String i;				//ip
-	private Thread thread;
-	private Handler recall;					//recall
-	private Queue<Req> reqtask ;			//request task
+	static final int RPasswordFailed =5;
+	static final int RServerFetchFailed =4;
+	static final int RLevelFailed =3;
+	static final int RStatusFailed = 2;
+	static final int RTimeOut = 1;
+	static final int RSuccess = 0;
 	
-	private String itoken;
-	private String iname;
+	Timer timer;
+	Timer pushtimer;
+	boolean running = false; 
+	int cnt = 5;				//retry times
+	int tcnt;				//current remain retry times
+	int rcnt;				//current remain retry times (push)
+	int retime = 2000;		//timeout time
+	Req req;
+	int p;					//port
+	String i;				//ip
+	Thread thread;
+	Handler recall;					//recall
+	Handler handler;				//manager
+	Queue<Req> reqtask ;			//request task
 	
-	private Thread Pushthread;
-	private PushClient push;
+	String itoken;
+	String iname;
+	
+	Thread Pushthread;
+	PushClient push;
 
 	Transam(String ip, int port,Handler Recall) {
 		p = port;
 		i = ip;
 		recall = Recall;
 		reqtask = new LinkedList<Req>();
+		handler = new Manager(this);
 	}
 	
 	public void send(Req r){
-		reqtask.offer(r);
-		
+		reqtask.offer(r);	
 	}
 	
 	private void startPush(String token,String name) {
@@ -157,7 +117,6 @@ public class Transam implements Runnable {
 		if(push != null) {
 			push.setPushHandler(Recall);
 		}
-		reqtask.clear();
 	}
 	
 
@@ -191,8 +150,9 @@ public class Transam implements Runnable {
 		thread.start();
 	}
 	
+	
 	private void connectpush() {
-		reqpush r = new reqpush();
+		final reqpush r = new reqpush();
 		Pushthread = new Thread(r);
 		Pushthread.start();
 	}
@@ -216,21 +176,21 @@ public class Transam implements Runnable {
 				push = new PushClient(i,p,retime);
 				push.setPushHandler(recall);
 				int out = push.start(new ReqStartPush(itoken,iname));
-				if(out == 1) {
+				if(out == RTimeOut) {
 					push.closeSocket();
 					Message msg = new Message();
 					msg.what = Reconnect;
 					msg.obj = new ETimeOutException(5,0);
 					handler.sendMessage(msg);
 				}
-				else if (out == 2){
+				else if (out == RStatusFailed){
 					stopPush();
 					Message msg = new Message();
 					msg.what = Exception;
 					msg.obj = new EStatusFailedException(5,0);
 					recall.sendMessage(msg);
 				}
-				else {
+				else if (out == RSuccess){
 					rcnt = cnt;
 					push.listen(recall);
 				}
@@ -256,22 +216,38 @@ public class Transam implements Runnable {
 			try {
 				SocketClient client = new SocketClient(i,p,retime);
 				int out = client.sendMsg(req,recall,handler);
-				if(out == 0){													
+				if(out == RSuccess){													
 					client.closeSocket();
 					running = false;
 				}
-				else if (out == 1){
+				else if (out == RTimeOut){
 					client.closeSocket();
 					Message m = new Message();					
 					m.obj = new ETimeOutException(req.type,req.time);
 					m.what = TimeOut;
 					handler.sendMessage(m);
 				}
-				else {
+				else if (out == RLevelFailed){
+					client.closeSocket();
+					Message m = new Message();					
+					m.obj = new ELevelFailedException(req.type,req.time);
+					m.what = Exception;
+					recall.sendMessage(m);
+					running = false;
+				}
+				else if (out == RStatusFailed){
 					client.closeSocket();
 					Message msg = new Message();
 					msg.what = Exception;
-					msg.obj = new EStatusFailedException(5,0);
+					msg.obj = new EStatusFailedException(req.type,req.time);
+					recall.sendMessage(msg);
+					running = false;
+				}
+				else if (out == RPasswordFailed){
+					client.closeSocket();
+					Message msg = new Message();
+					msg.what = Exception;
+					msg.obj = new EPasswordFailedException(req.type,req.time);
 					recall.sendMessage(msg);
 					running = false;
 				}
@@ -293,65 +269,70 @@ public class Transam implements Runnable {
 	}
 
 
-	@SuppressLint("HandlerLeak")
-	private Handler handler = new Handler() {
-		public void handleMessage(Message msg) {
+	static class Manager extends Handler {
+    	WeakReference<Transam> outerClass;
+    	Manager(Transam t) {
+    		outerClass = new WeakReference<Transam>(t);
+    	}
+    	@Override
+    	public void handleMessage(Message msg) {
+    		Transam out = outerClass.get();
 			switch (msg.what) {
 			case Exception:
-				if (tcnt > 0) {
-					tcnt--;
-					System.out.println(tcnt);
-					timer = new Timer();
-					TimerTask task = new tmain();
-					timer.schedule(task,retime);
-				} else if (tcnt == 0) {
+				if (out.tcnt > 0) {
+					out.tcnt--;
+					System.out.println(out.tcnt);
+					out.timer = new Timer();
+					TimerTask task = out.new tmain();
+					out.timer.schedule(task,out.retime);
+				} else if (out.tcnt == 0) {
 					Message m = new Message();
 					m.obj = msg.obj;
 					m.what = Exception;
-					recall.sendMessage(m);
-					running = false;
+					out.recall.sendMessage(m);
+					out.running = false;
 				}
 				break;
 			case TimeOut:
-				if (tcnt > 0) {
-					tcnt--;
-					System.out.println(tcnt);
-					timer = new Timer();
-					TimerTask task = new tmain();
-					timer.schedule(task,retime);
-				} else if (tcnt == 0) {
+				if (out.tcnt > 0) {
+					out.tcnt--;
+					System.out.println(out.tcnt);
+					out.timer = new Timer();
+					TimerTask task = out.new tmain();
+					out.timer.schedule(task,out.retime);
+				} else if (out.tcnt == 0) {
 					Message m = new Message();
-					EConnectFailedException c = new EConnectFailedException(req.type,req.time);
+					EConnectFailedException c = new EConnectFailedException(out.req.type,out.req.time);
 					m.obj = c;
 					m.what = Exception;
-					recall.sendMessage(m);
-					running = false;
+					out.recall.sendMessage(m);
+					out.running = false;
 				}
 				break;
 			case Reconnect:
-				if (rcnt > 0) {
-					rcnt--;
-					System.out.println(rcnt);
-					pushtimer = new Timer();
-					TimerTask task = new pmain();
-					pushtimer.schedule(task,retime);
-				} else if (rcnt == 0) {
+				if (out.rcnt > 0) {
+					out.rcnt--;
+					System.out.println(out.rcnt);
+					out.pushtimer = new Timer();
+					TimerTask task = out.new pmain();
+					out.pushtimer.schedule(task,out.retime);
+				} else if (out.rcnt == 0) {
 					Message m = new Message();
 					EPushFailedException c = new EPushFailedException(5,0);
 					//m.obj = msg.obj;
 					m.obj = c;
 					m.what = Exception;
-					recall.sendMessage(m);
+					out.recall.sendMessage(m);
 				}
 				break;
 			case StartPush:
 				@SuppressWarnings("unchecked")
 				Vector<String> s = (Vector<String>) msg.obj;
-				startPush(s.get(1),s.get(0));
+				out.startPush(s.get(1),s.get(0));
 				System.out.println("startpush");
 				break;
 			case ClosePush:
-				stopPush();
+				out.stopPush();
 				System.out.println("closepush");
 				break;
 			}

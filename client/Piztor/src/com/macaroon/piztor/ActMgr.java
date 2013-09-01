@@ -11,8 +11,9 @@ public class ActMgr {
 	PiztorAct act;
 	ActStatus nowStatus;
 	HashMap<ActStatus, HashMap<Integer, ActStatus>> mp;
-
-	ActMgr(PiztorAct act, ActStatus nowStatus, ActStatus[] r) {
+	AppMgr appMgr;
+	ActMgr(AppMgr appMgr, PiztorAct act, ActStatus nowStatus, ActStatus[] r) {
+		this.appMgr = appMgr;  
 		this.act = act;
 		this.nowStatus = nowStatus;
 		nowStatus.enter(Create);
@@ -29,8 +30,8 @@ public class ActMgr {
 			nowStatus.leave(event);
 			nowStatus = mp.get(nowStatus).get(event);
 			nowStatus.enter(event);
-		} else if (AppMgr.mp.get(act.getClass()).containsKey(event)) {
-			AppMgr.trigger(event);
+		} else if (appMgr.mp.get(act.getClass()).containsKey(event)) {
+			appMgr.trigger(event);
 		} else {
 			System.out.println("can not trigger the event at " + act.id + " : "
 					+ event);

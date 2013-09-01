@@ -1,79 +1,46 @@
 package com.macaroon.piztor;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.Vector;
 
-import android.R.drawable;
-import android.util.Log;
-import android.util.AttributeSet;
-import android.annotation.SuppressLint;
-import android.location.Location;
-import android.location.LocationManager;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.app.Activity;  
-import android.app.AlertDialog;
+import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.res.Configuration;  
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
-import android.widget.FrameLayout;  
-import android.widget.Toast;  
-import android.view.View.OnClickListener;
-import android.widget.RadioGroup;
-import android.widget.RadioGroup.OnCheckedChangeListener;
-import android.provider.Settings;
+import android.location.LocationManager;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import com.baidu.location.BDLocation;
-import com.baidu.location.BDLocationListener;
-import com.baidu.location.LocationClient;
-import com.baidu.location.LocationClientOption;
-
-import com.baidu.mapapi.map.LocationData;
-import com.baidu.mapapi.BMapManager;  
-import com.baidu.mapapi.MKGeneralListener;
 import com.baidu.mapapi.map.ItemizedOverlay;
-import com.baidu.mapapi.map.MKMapTouchListener;
-import com.baidu.mapapi.map.MKMapViewListener;  
-import com.baidu.mapapi.map.MapController;  
-import com.baidu.mapapi.map.MapPoi;  
+import com.baidu.mapapi.map.LocationData;
+import com.baidu.mapapi.map.MKOLUpdateElement;
+import com.baidu.mapapi.map.MKOfflineMap;
+import com.baidu.mapapi.map.MKOfflineMapListener;
+import com.baidu.mapapi.map.MapController;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationOverlay;
-import com.baidu.mapapi.map.MKOLSearchRecord;
-import com.baidu.mapapi.map.MKOLUpdateElement;
 import com.baidu.mapapi.map.OverlayItem;
 import com.baidu.mapapi.map.PopupClickListener;
 import com.baidu.mapapi.map.PopupOverlay;
-import com.baidu.mapapi.map.MKOfflineMap;
-import com.baidu.mapapi.map.MKOfflineMapListener;
-import com.baidu.mapapi.search.MKPoiInfo;
-import com.baidu.mapapi.search.MKPoiResult;
-import com.baidu.platform.comapi.basestruct.GeoPoint; 
+import com.baidu.platform.comapi.basestruct.GeoPoint;
 
-public class MapMaker extends Activity {
-	
+public class MapMaker {
+
 	// MapView controlling component
 	private MapView mMapView = null;
 	MapController mMapController = null;
 	MKOfflineMap mOffline = null;
 
 	// Default center
-	private final static GeoPoint sjtuCenter = new GeoPoint((int)(31.032247 * 1E6), (int)(121.445937 * 1E6));
+	private final static GeoPoint sjtuCenter = new GeoPoint(
+			(int) (31.032247 * 1E6), (int) (121.445937 * 1E6));
 
 	// Map layers and items
 	private MyOverlay mOverlay = null;
@@ -83,12 +50,21 @@ public class MapMaker extends Activity {
 	private MapInfo preMapInfo = null;
 	private MapInfo nowMapInfo = null;
 	private Vector<UserInfo> freshManInfo = null;
+
 	// hash from uid to overlay item
 	private HashMap<Integer, OverlayItem> hash = null;
+	private HashMap<OverlayItem, Integer> markerToInt = null;
 
 	// marker layer
-	private MyOverlay markerOverlay;
 	private OverlayItem nowMarker = null;
+	static int nowMarkerHour;
+	static int nowMarkerMinute;
+	static long nowMarkerTimestamp;
+	static int newMarkerHour;
+	static int newMarkerMinute;
+	static long newMarkerTimestamp;
+	private int markerIndex;
+	private int nowMarkerLevel;
 
 	// Popup component
 	private PopupOverlay popLay = null;
@@ -99,22 +75,24 @@ public class MapMaker extends Activity {
 	private View popupLeft = null;
 	private View popupRight = null;
 
-	//misc
+	// misc
 	private Context context;
 	private LocationManager locationManager = null;
 	boolean isGPSEnabled;
 	private int[] myIcons;
 	private Drawable[] myBM;
-	private final int iconNum = 4;
+	private final int iconNum = 9;
+
+	myApp app;
 
 	/**
 	 * Constructor
 	 */
-	public MapMaker(MapView mapView, Context cc) {
-		
+	public MapMaker(MapView mapView, Context cc, myApp app) {
+		this.app = app;
 		mMapView = mapView;
 		mMapController = mMapView.getController();
-		
+
 		mMapController.setCenter(sjtuCenter);
 		mMapController.setZoom(16);
 		mMapController.setRotation(-22);
@@ -129,7 +107,7 @@ public class MapMaker extends Activity {
 	 * Layer for my location
 	 */
 	public class LocationOverlay extends MyLocationOverlay {
-		
+
 		public LocationOverlay(MapView mapView) {
 			super(mapView);
 		}
@@ -139,29 +117,30 @@ public class MapMaker extends Activity {
 	 * Layer for items(other users)
 	 */
 	public class MyOverlay extends ItemizedOverlay {
-	
+
 		public MyOverlay(Drawable defaultMaker, MapView mapView) {
 			super(defaultMaker, mapView);
 		}
-	
+
 		@Override
 		public boolean onTap(int index) {
-		
-			if (index == 0 && nowMarker != null) {
+
+			if (nowMarker != null && index == markerIndex) {
 				OverlayItem item = getItem(index);
-				//TODO
-				/////////////////////////////////////////////////////////
-				popupText.setText("hour");
-				leftText.setText("minute");
-				Bitmap bitmap [] = {
-						BMapUtil.getBitmapFromView(popupLeft),
+				// TODO
+				// ///////////////////////////////////////////////////////
+				leftText.setText(nowMarkerHour + "点");
+				popupText.setText(nowMarkerMinute + "分");
+				Bitmap bitmap[] = { BMapUtil.getBitmapFromView(popupLeft),
 						BMapUtil.getBitmapFromView(popupInfo),
-						BMapUtil.getBitmapFromView(popupRight),
-				};
-				popLay.showPopup(bitmap, item.getPoint(),32);
+						BMapUtil.getBitmapFromView(popupRight), };
+				popLay.showPopup(bitmap, item.getPoint(), 32);
 			} else {
 				OverlayItem item = getItem(index);
-				popupText.setText("UID");
+				UserInfo tmpInfo = preMapInfo
+						.getUserInfo(markerToInt.get(item));
+				String itemInfo = tmpInfo.company + "连" + tmpInfo.section + "班 " + tmpInfo.nickname;
+				popupText.setText(itemInfo);
 				Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
 				popLay.showPopup(bitmap, item.getPoint(), 32);
 			}
@@ -170,22 +149,22 @@ public class MapMaker extends Activity {
 
 		@Override
 		public boolean onTap(GeoPoint pt, MapView mapView) {
-		
-			if(popLay != null) {
+
+			if (popLay != null) {
 				popLay.hidePop();
 			}
 			return false;
 		}
 	}
-	
+
 	/**
 	 * Initialize offline map
 	 */
 	public void InitOfflineMap() {
-	
+
 		mOffline = new MKOfflineMap();
 		mOffline.init(mMapController, new MKOfflineMapListener() {
-			
+
 			@Override
 			public void onGetOfflineMapState(int type, int state) {
 				switch (type) {
@@ -202,14 +181,16 @@ public class MapMaker extends Activity {
 			}
 		});
 		int num = mOffline.scan();
-		String msg = "";
+		
 		if (num == 0) {
-			//msg = "No offline map found. It may have been loaded already or misplaced.";
+			// msg =
+			// "No offline map found. It may have been loaded already or misplaced.";
 		} else {
-			msg = String.format("Loaded %d offline maps.", num);
+			Toast.makeText(context, String.format("加载了%d个离线地图包", num), 
+					Toast.LENGTH_SHORT).show();
 		}
 		Log.d("offline", "inited");
-		Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+		
 	}
 
 	/**
@@ -229,30 +210,32 @@ public class MapMaker extends Activity {
 	 * Initialize other users layer
 	 */
 	public void InitMyOverLay() {
-		
-		//TODO
-		/////////////////////////////////////////////////////////////////
+
+		// TODO
+		// ///////////////////////////////////////////////////////////////
 		hash = new HashMap<Integer, OverlayItem>();
-		mOverlay = new MyOverlay(context.getResources().getDrawable(R.drawable.circle_red), mMapView);
+		markerToInt = new HashMap<OverlayItem, Integer>();
+		mOverlay = new MyOverlay(context.getResources().getDrawable(
+				R.drawable.circle_red), mMapView);
 		mMapView.getOverlays().add(mOverlay);
-		markerOverlay = new MyOverlay(context.getResources().getDrawable(R.drawable.marker1), mMapView);
 	}
-	
+
 	/**
 	 * Initialize popup
 	 */
 	public void InitPopup() {
-	
-		LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+		LayoutInflater inflater = (LayoutInflater) context
+				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		viewCache = inflater.inflate(R.layout.custom_text_view, null);
-		popupInfo = (View)viewCache.findViewById(R.id.popinfo);
-		popupLeft = (View)viewCache.findViewById(R.id.popleft);
-		popupRight = (View)viewCache.findViewById(R.id.popright);
-		popupText = (TextView)viewCache.findViewById(R.id.textcache);
-		leftText = (TextView)viewCache.findViewById(R.id.popleft);
+		popupInfo = (View) viewCache.findViewById(R.id.popinfo);
+		popupLeft = (View) viewCache.findViewById(R.id.popleft);
+		popupRight = (View) viewCache.findViewById(R.id.popright);
+		popupText = (TextView) viewCache.findViewById(R.id.textcache);
+		leftText = (TextView) viewCache.findViewById(R.id.popleft);
 
 		PopupClickListener popListener = new PopupClickListener() {
-		
+
 			@Override
 			public void onClickedPopup(int index) {
 				// when the popup is clicked
@@ -281,47 +264,66 @@ public class MapMaker extends Activity {
 	 * Initialize map
 	 */
 	public void InitMap() {
-	
+
 		InitLocationOverlay();
 		InitMyOverLay();
 		InitPopup();
-		InitOfflineMap();
+		//InitOfflineMap();
 		myBM = new Drawable[20];
 		initMyIcons();
-		//InitTouchListenr();
+		// InitTouchListenr();
 	}
 
 	public void initMyIcons() {
-		myBM[0] = context.getResources().getDrawable(R.drawable.circle_red);
-		myBM[1] = context.getResources().getDrawable(R.drawable.circle_green);
+		myBM[0] = context.getResources().getDrawable(R.drawable.circle_blue);
+		myBM[1] = context.getResources().getDrawable(R.drawable.circle_red);
 		myBM[2] = context.getResources().getDrawable(R.drawable.circle_glass);
 		myBM[3] = context.getResources().getDrawable(R.drawable.circle_yellow);
 		myBM[4] = context.getResources().getDrawable(R.drawable.circle_wood);
-		}
-	
-	public Drawable getGroupIcon(int gid) {
-		if (gid == Infomation.myInfo.section) return myBM[0];
-		else return myBM[gid % iconNum];
+		myBM[5] = context.getResources().getDrawable(R.drawable.circle_green);
+		myBM[6] = context.getResources().getDrawable(R.drawable.circle_metal);
+		myBM[7] = context.getResources().getDrawable(R.drawable.circle_paper);
+		myBM[8] = context.getResources().getDrawable(R.drawable.circle_tan);
 	}
-	
+
+	public Drawable getGroupIcon(UserInfo userInfo) {
+		if (Main.colorMode == Main.show_by_team) {
+			if (userInfo.section == preMapInfo.myInfo.section)
+				return myBM[0];
+			else
+				return myBM[userInfo.section % iconNum + 1];
+		} else {
+			return myBM[userInfo.sex ^ preMapInfo.myInfo.sex];
+		}
+	}
+
 	/**
 	 * Update location layer when new location is received
 	 */
-	public void UpdateLocationOverlay(LocationData locationData, boolean hasAnimation) {
-	
+	public void UpdateLocationOverlay(LocationData locationData,
+			boolean hasAnimation) {
 		mLocationOverlay.setData(locationData);
 		mMapView.refresh();
 		if (hasAnimation) {
-			mMapController.animateTo(new GeoPoint((int)(locationData.latitude * 1E6)
-						, (int)(locationData.longitude * 1E6)));
+			mMapController.animateTo(new GeoPoint(
+					(int) (locationData.latitude * 1E6),
+					(int) (locationData.longitude * 1E6)));
 		}
+		checkMarkerTime();
+	}
+
+	boolean isInvalidLocation(GeoPoint point) {
+		if (point == null) return false;
+		if (point.getLatitudeE6() / 1E6 > 180.0 || point.getLatitudeE6() / 1E6 < -180.0
+				|| point.getLongitudeE6() > 180.0 || point.getLongitudeE6() / 1E6 < -180.0)
+			return false;
+		return true;
 	}
 	
 	/**
 	 * Update to draw other users
 	 */
 	public void UpdateMap(MapInfo mapInfo) {
-	
 		if (mapInfo == null) {
 			if (mOverlay != null && mOverlay.getAllItem().size() != 0) {
 				mOverlay.removeAll();
@@ -332,84 +334,192 @@ public class MapMaker extends Activity {
 		// first remove all old users that are not here now
 		if (preMapInfo != null) {
 			for (UserInfo i : preMapInfo.getVector()) {
-				if (i.uid == Infomation.myInfo.uid) continue;
+				if (i.uid == preMapInfo.myInfo.uid)
+					continue;
 				if (mapInfo.getUserInfo(i.uid) == null) {
 					mOverlay.removeItem(hash.get(i.uid));
+					markerToInt.remove(hash.get(i.uid));
+					hash.remove(i.uid);
+				}
+				if (mapInfo.getUserInfo(i.uid) != null && isInvalidLocation(mapInfo.getUserInfo(i.uid).location)) {
+					mOverlay.removeItem(hash.get(i.uid));
+					markerToInt.remove(hash.get(i.uid));
 					hash.remove(i.uid);
 				}
 			}
 		}
 		mMapView.refresh();
+		preMapInfo = mapInfo.copy();
 
 		// then update and add items
 		for (UserInfo i : mapInfo.getVector()) {
-			if (i.uid == Infomation.myInfo.uid) continue;
-			if (hash.containsKey(i.uid) == false) {	
-				GeoPoint p = new GeoPoint((int)(i.getLatitude() * 1E6), (int)(i.getLongitude() * 1E6));
-				curItem = new OverlayItem(p, "USERNAME_HERE", "USER_SNIPPET_HERE");
-				//TODO getDrawable
-				///////////////////////////////
-				curItem.setMarker(getGroupIcon(i.section));
-				mOverlay.addItem(curItem);
-				hash.put(i.uid, curItem);
-				//if (mMapView != null)
-				//	mMapView.refresh();
+			if (i.uid == preMapInfo.myInfo.uid)
+				continue;
+			if (hash.containsKey(i.uid) == false) {
+				if (isInvalidLocation(i.location)) {
+					
+				} else {
+					curItem = new OverlayItem(i.location, "USERNAME_HERE",
+						"USER_SNIPPET_HERE");
+					// TODO getDrawable
+					// /////////////////////////////
+					curItem.setMarker(getGroupIcon(i));
+					mOverlay.addItem(curItem);
+					hash.put(i.uid, curItem);
+					markerToInt.put(curItem, i.uid);
+				}
 			} else {
-				GeoPoint p = new GeoPoint((int)(i.getLatitude() * 1E6), (int)(i.getLongitude() * 1E6));
-				curItem = hash.get(i.uid);
-				curItem.setGeoPoint(p);
-				mOverlay.updateItem(curItem);
-				//if (mMapView != null)
-				//	mMapView.refresh();
+				if (isInvalidLocation(i.location)) {
+					mOverlay.removeItem(hash.get(i.uid));
+					markerToInt.remove(hash.get(i.uid));
+					hash.remove(i.uid);
+				} else {
+					curItem = hash.get(i.uid);
+					curItem.setGeoPoint(i.location);
+					mOverlay.updateItem(curItem);
+				}
 			}
 		}
 		if (mMapView != null) {
 			mMapView.refresh();
 		}
-		preMapInfo = mapInfo;
+		checkMarkerTime();
 	}
 	
+	@SuppressWarnings("deprecation")
+	public void receiveMarker(MarkerInfo markerInfo) {
+		Log.d("marker", "Marker received!");
+		if (nowMarker != null && markerInfo.level >= nowMarkerLevel) {
+			Log.d("marker", "Old marker replaced by marker with higher level!");
+			nowMarker.setGeoPoint(markerInfo.markerPoint);
+
+			final Calendar cal = Calendar.getInstance();
+			cal.setTimeInMillis(markerInfo.markerTimestamp);
+			Date date = (Date) cal.getTime();
+			nowMarkerHour = date.getHours();
+			nowMarkerMinute = date.getMinutes();
+			nowMarkerTimestamp = markerInfo.markerTimestamp;
+			nowMarkerLevel = markerInfo.level;
+
+			mOverlay.updateItem(nowMarker);
+			mMapView.refresh();
+			mMapController.animateTo(markerInfo.markerPoint);
+			Toast toast = Toast.makeText(context,"收到新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
+			toast.setGravity(Gravity.TOP, 0, 80);
+			toast.show();
+			return;
+		}
+		if (nowMarker == null) {
+			Log.d("marker", "New marker created!");
+			nowMarker = new OverlayItem(markerInfo.markerPoint, "MARKER_NAME",
+					"");
+			nowMarker.setMarker(context.getResources().getDrawable(
+					R.drawable.marker_red));
+			System.out.println(markerInfo.markerPoint.getLatitudeE6() + " "
+					+ markerInfo.markerPoint.getLongitudeE6());
+			final Calendar cal = Calendar.getInstance();
+			cal.setTimeInMillis(markerInfo.markerTimestamp);
+			Date date = (Date) cal.getTime();
+			nowMarkerHour = date.getHours();
+			nowMarkerMinute = date.getMinutes();
+			nowMarkerTimestamp = markerInfo.markerTimestamp;
+			nowMarkerLevel = markerInfo.level;
+
+			markerIndex = mOverlay.getAllItem().size();
+			mOverlay.addItem(nowMarker);
+			mMapView.refresh();
+			mMapController.animateTo(markerInfo.markerPoint);
+			Toast toast = Toast.makeText(context,"收到新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
+			toast.setGravity(Gravity.TOP, 0, 80);
+			toast.show();
+			return;
+		}
+	}
+
+	void sendMarker() {
+		ReqSetMarker req = new ReqSetMarker(app.token, app.username, nowMarker
+				.getPoint().getLatitudeE6() / 1e6, nowMarker.getPoint()
+				.getLongitudeE6() / 1e6, (int)nowMarkerTimestamp,
+				System.currentTimeMillis(), 3000l);
+		Log.d("marker", "Sent marker" + nowMarker.getPoint().getLatitudeE6() + "   " +
+				nowMarker.getPoint().getLongitudeE6());
+		app.transam.send(req);
+	}
+
 	/**
 	 * Draw a marker
 	 */
 	public void DrawMarker(GeoPoint markerPoint) {
-	
-		if (nowMarker != null) {
+
+		if (preMapInfo == null) return;
+
+		if (nowMarker != null && preMapInfo.myInfo.level >= nowMarkerLevel) {
 			nowMarker.setGeoPoint(markerPoint);
+			nowMarkerHour = newMarkerHour;
+			nowMarkerMinute = newMarkerMinute;
+			nowMarkerTimestamp = newMarkerTimestamp;
+			nowMarkerLevel = preMapInfo.myInfo.level;
+			
+			sendMarker();
+			Log.d("marker", "Sent and replace");
 			mOverlay.updateItem(nowMarker);
 			mMapView.refresh();
 			mMapController.animateTo(markerPoint);
 			return;
+		} else if (nowMarker == null) {
+			nowMarker = new OverlayItem(markerPoint, "MARKER_NAME", "");
+			nowMarker.setMarker(context.getResources().getDrawable(
+					R.drawable.marker_red));
+			nowMarkerHour = newMarkerHour;
+			nowMarkerMinute = newMarkerMinute;
+			nowMarkerTimestamp = newMarkerTimestamp;
+			nowMarkerLevel = preMapInfo.myInfo.level;
+
+			sendMarker();
+			Log.d("marker", "Send and new");
+			markerIndex = mOverlay.getAllItem().size();
+			Log.d("marker", "my new marker created");
+			mOverlay.addItem(nowMarker);
+			mMapView.refresh();
+			mMapController.animateTo(markerPoint);
 		}
-		nowMarker = new OverlayItem(markerPoint, "MARKER_NAME", "");
-		nowMarker.setMarker(context.getResources().getDrawable(R.drawable.marker_red));
-		Log.d("marker", "new marker created");
-		mOverlay.addItem(nowMarker);
-		mMapView.refresh();
-		mMapController.animateTo(markerPoint);
+		Toast toast = Toast.makeText(context,"创建新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
+		toast.setGravity(Gravity.TOP, 0, 80);
+		toast.show();
 	}
 
 	public GeoPoint getMakerLocation() {
-		if (nowMarker == null) return null;
-		else return nowMarker.getPoint();
+		if (nowMarker == null)
+			return null;
+		else
+			return nowMarker.getPoint();
 	}
-	
+
 	public void removeMarker() {
-		if (nowMarker == null) return;
+		if (nowMarker == null)
+			return;
 		mOverlay.removeItem(nowMarker);
 		nowMarker = null;
 		mMapView.refresh();
+	}
+
+	public void checkMarkerTime() {
+		if (nowMarker != null && nowMarkerTimestamp <= System.currentTimeMillis()) {
+			AlertMaker lateAlert = new AlertMaker(context, this);
+			lateAlert.showLateAlert();
+			removeMarker();
+		}
 	}
 	
 	/**
 	 * Remove all other users
 	 */
 	public void clearOverlay(View view) {
-		
-		if(mOverlay != null && mOverlay.getAllItem().size() != 0) {
+
+		if (mOverlay != null && mOverlay.getAllItem().size() != 0) {
 			mOverlay.removeAll();
 			mMapView.refresh();
-		}	
+		}
 	}
 
 	/**
@@ -420,20 +530,4 @@ public class MapMaker extends Activity {
 		clearOverlay(null);
 		mOverlay.addItem(mItems);
 	}
-	
-	@Override
-	protected void onPause() {
-		mMapView.onPause();
-	}
-
-	@Override 
-	protected void onResume() {
-		mMapView.onResume();
-		}
-
-	@Override
-	protected void onDestroy() {
-		mMapView.destroy();
-	}
-	
 }

@@ -4,6 +4,14 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
+    <TextView 
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content" 
+        android:id="@+id/textView1" 
+        android:text="TextView" 
+        android:layout_alignParentBottom="true" 
+        android:layout_centerHorizontal="true" 
+        android:layout_marginBottom="10dp"/>
 	<RelativeLayout
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
@@ -16,7 +24,7 @@
 	        android:layout_alignParentLeft="true"
 	        android:layout_marginLeft="10dip"
 	        android:textSize="20dip"
-	        android:hint="company"
+	        android:hint="@string/company"
 	        android:phoneNumber="true"
 	 		android:id="@+id/subscribe_company"/>
 	    <EditText
@@ -25,7 +33,7 @@
 	        android:layout_marginLeft="10dip"
 	        android:layout_toRightOf="@+id/subscribe_company"
 	        android:textSize="20dip"
-	        android:hint="section"
+	        android:hint="@string/section"
 	        android:phoneNumber="true"
 	        android:id="@+id/subscribe_section"/>
 	    <Button 
@@ -33,7 +41,7 @@
         	android:layout_height="wrap_content"
 			android:layout_alignParentRight="true"
 			android:layout_marginRight="10dip"
-        	android:text="add" 
+        	android:text="@string/add" 
         	android:textColor="#FFFFFF"
         	android:background="#0F9D58"
         	android:textSize="20dip"
@@ -55,12 +63,4 @@
             android:focusable="true">
         </ListView>
     </LinearLayout>
-    <TextView 
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content" 
-        android:id="@+id/textView1" 
-        android:text="TextView" 
-        android:layout_alignParentBottom="true" 
-        android:layout_centerHorizontal="true" 
-        android:layout_marginBottom="10dp"/>
 </LinearLayout>

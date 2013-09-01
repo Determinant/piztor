@@ -11,8 +11,12 @@ public class Res{
 	static final int Logout =4;
 	static final int StartPush =5;
 	static final int SendMessage =6;
+	static final int SetMarker =7;
+	static final int SetPassword =8;
+	
 	static final int PushMessage =100;
-	static final int PushLocation =101;	
+	static final int PushLocation =101;
+	static final int PushMarker =102;
 	
 	int type;
 	Res(int t){
@@ -109,6 +113,29 @@ class ResSendMessage extends Res{
 	}
 }
 
+//--------------------------------------//
+//			Respond to set marker    	//
+//--------------------------------------//
+
+class ResSetMarker extends Res{
+
+	ResSetMarker(){
+		super(7);	//for type 7
+	}
+}
+
+//--------------------------------------//
+//			Respond to set password    	//
+//--------------------------------------//
+
+class ResSetPassword extends Res{
+
+	ResSetPassword(){
+		super(8);	//for type 8
+	}
+}
+
+
 //---------------------------------------------------------------------------------------------------//
 
 
@@ -142,5 +169,24 @@ class ResPushLocation extends Res{
 		super(101);	//for type 101
 		l = locationvec;
 		n = num;
+	}
+}
+
+//--------------------------------------//
+//		  Push Marker			    	//
+//--------------------------------------//
+
+class ResPushMarker extends Res{
+	double latitude;
+	double longitude;
+	int deadline;
+	int level;
+
+	ResPushMarker(double lat,double lot,int dtime,int lv){
+		super(102);	//for type 102
+		latitude = lat;
+		longitude = lot;
+		deadline = dtime;
+		level = lv;
 	}
 }
