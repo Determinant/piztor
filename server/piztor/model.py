@@ -11,6 +11,7 @@ _SALT_LEN = 16
 _TOKEN_LEN = 16
 MAX_USERNAME_SIZE = 20
 MAX_PASSWORD_SIZE = 20
+NOT_A_LAT = NOT_A_LNG = 300
 
 _table_typical_settings = {
         'mysql_engine' : 'InnoDB',

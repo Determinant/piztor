@@ -102,14 +102,16 @@ class PushTunnel(object):
         self.blocked = False
 
     def close(self):
+        print "closing TUNNEL"
         if self.conn:
+            print "loseConn called"
             self.conn.transport.loseConnection()
 
     def add(self, pdata):
-        logger.info("-- Push data enqued --")
+        #logger.info("-- Push data enqued --")
         self.pending.append(pdata)
         if not self.blocked and len(self.pending) > _MAX_PENDING_PUSH:
-            logger.info("-- Push queue is full, discarded an obsolete push --")
+            #logger.info("-- Push queue is full, discarded an obsolete push --")
             self.pending.popleft()  # discard old push
 
     def on_receive(self, data):
@@ -117,22 +119,22 @@ class PushTunnel(object):
         length, optcode, fingerprint = struct.unpack("!LB32s", data)
         if front.finger_print != fingerprint:
             raise PiztorError
-        logger.info("-- Push data confirmed by client %s --", str(self.uid))
+        #logger.info("-- Push data confirmed by client %s --", str(self.uid))
         self.blocked = False
         self.push()
 
     def push(self):
         if self.blocked:
             return
-        print "Pushing via " + str(self.uid)
-        print "Pending size: " + str(len(self.pending))
-        logger.info("Pushing...")
+        #print "Pushing via " + str(self.uid)
+        #print "Pending size: " + str(len(self.pending))
+        #logger.info("Pushing...")
         if (self.conn is None) or len(self.pending) == 0:
             return
         front = self.pending.popleft()
         self.pending.appendleft(front)
         self.conn.transport.write(front.data)
-        logger.info("-- Wrote push: %s --", get_hex(front.data))
+        #logger.info("-- Wrote push: %s --", get_hex(front.data))
         self.blocked = True
 
     def clear(self):
@@ -146,6 +148,7 @@ class PushTunnel(object):
         self.conn = conn
 
     def on_connection_lost(self, conn):
+        print "TUNNEL closed"
         if conn == self.conn:
             self.conn = None
 
@@ -458,9 +461,6 @@ class UpdateSubscription(RequestHandler):
         return entry
 
     def handle(self, tr_data, conn):
-        print _MAX_AUTH_HEAD_SIZE
-        print _SectionSize.GROUP_ID * _MAX_SUB_LIST_SIZE
-        print _SectionSize.PADDING
 
         self.check_size(tr_data)
         logger.info("Reading update subscription data...")
@@ -517,6 +517,35 @@ class UserLogoutHandler(RequestHandler):
         if uauth is None:
             logger.warning("Authentication failure")
             return self.pack(struct.pack("!B", _StatusCode.auth_fail))
+
+        pt = RequestHandler.push_tunnels
+        u = uauth.user
+        loc = u.location
+        loc.lat = NOT_A_LAT
+        loc.lng = NOT_A_LNG
+
+        comp = self.session.query(GroupInfo) \
+                .filter(GroupInfo.id == u.comp_id).one()
+        sec = self.session.query(GroupInfo) \
+                .filter(GroupInfo.id == u.sec_id).one()
+
+        pdata = PushLocationData(u.id, loc.lat, loc.lng)
+        for user in comp.subscribers:
+            uid = user.id
+            if uid == uauth.uid: continue
+            if pt.has_key(uid):
+                tunnel = pt[uid]
+                tunnel.add(pdata)
+                tunnel.push()
+
+        for user in sec.subscribers:
+            uid = user.id
+            if uid == uauth.uid: continue
+            if pt.has_key(uid):
+                tunnel = pt[uid]
+                tunnel.add(pdata)
+                tunnel.push()
+
         pt = RequestHandler.push_tunnels
         uid = uauth.uid
         pt[uid].close()
@@ -675,9 +704,9 @@ class ChangePasswordHandler(RequestHandler):
         except struct.error:
             raise BadReqError("User logout: Malformed request body")
 
-        logger.info("Trying to change password with "
-                    "(token = {0}, username = {1}, old_pass = {2}, new_pass = {3})"\
-                .format(get_hex(token), username, old_pass, new_pass))
+#        logger.info("Trying to change password with "
+#                    "(token = {0}, username = {1}, old_pass = {2}, new_pass = {3})"\
+#                .format(get_hex(token), username, old_pass, new_pass))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure

@@ -48,7 +48,7 @@ def import_user_data(data):
             g = find_or_create_group(int(cn), int(sn), session)
             um.sub.append(g)
         um.auth = UserAuth(user.password)
-        um.location = LocationInfo(lat = 0, lng = 0)
+        um.location = LocationInfo(lat = NOT_A_LAT, lng = NOT_A_LNG)
         session.add(um)
         session.commit()
 
