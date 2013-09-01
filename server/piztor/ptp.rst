@@ -1,4 +1,4 @@
-Piztor Transmission Protocol v2.0c
+Piztor Transmission Protocol v2.0d
 ----------------------------------
 
 - Pull 
@@ -176,6 +176,10 @@ Piztor Transmission Protocol v2.0c
         +--------+
         | STATUS |
         +--------+
+
+      - ``0x00`` for success
+      - ``0x01`` for invalid token
+      - ``0x04`` for group not found
   
   - User Logout ``0x04``
   

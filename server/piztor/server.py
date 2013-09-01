@@ -70,6 +70,7 @@ class _StatusCode:
     auth_fail = 0x01
     insuf_lvl = 0x02
     wrong_pass = 0x03
+    grp_not_found = 0x04
 
 class PushData(object):
     from hashlib import sha256
@@ -476,7 +477,10 @@ class UpdateSubscription(RequestHandler):
             logger.warning("Authentication failure")
             return self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
-        uauth.user.sub = map(self._find_group, sub_list)
+        try:
+            uauth.user.sub = map(self._find_group, sub_list)
+        except BadReqError:
+            return self.pack(struct.pack("!B", _StatusCode.grp_not_found))
         self.session.commit()
         logger.info("Subscription is updated sucessfully")
 
