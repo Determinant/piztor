@@ -129,7 +129,10 @@ public class Main extends PiztorAct {
 				out.mapMaker.receiveMarker(markerInfo);
 				break;
 			case -1:
-				out.actMgr.trigger(AppMgr.logout);
+				EException e = (EException) m.obj;
+				if (e.Etype == EException.EPushFailedException)
+					out.receiveMessage("网络不稳定～");
+				else out.actMgr.trigger(AppMgr.logout);
 			default:
 				break;
 			}
@@ -246,6 +249,7 @@ public class Main extends PiztorAct {
 			LocationClientOption option = new LocationClientOption();
 			option.setOpenGps(true);
 			option.setCoorType("bd09ll");
+			option.setPriority(LocationClientOption.GpsFirst);
 			option.setScanSpan(GPSrefreshrate * 1000);
 			mLocClient.setLocOption(option);
 		}
@@ -334,11 +338,11 @@ public class Main extends PiztorAct {
 				(int) (locData.longitude * 1E6));
 		double disFromMarker = DistanceUtil.getDistance(curPoint,
 				mapMaker.getMakerLocation());
-		if (disFromMarker < Math.max(Math.min(locData.accuracy, 20.0), (float)checkinRadius) ) {
+		if (disFromMarker < Math.max(locData.accuracy, (float)checkinRadius) ) {
 			alertMaker.showCheckinAlter();
 		} else {
 			Toast toast = Toast.makeText(Main.this,
-					String.format("请靠近路标,现在距离%.2f米", disFromMarker), 2000);
+					String.format("请靠近路标,现在距离%.2f米",disFromMarker), 2000);
 			toast.setGravity(Gravity.TOP, 0, 80);
 			toast.show();
 		}
@@ -453,7 +457,6 @@ public class Main extends PiztorAct {
 			System.out.println("fuck!!");
 		} else
 			requestUserInfo();
-		// mapMaker.onResume();
 		flushMap();
 		super.onResume();
 	}

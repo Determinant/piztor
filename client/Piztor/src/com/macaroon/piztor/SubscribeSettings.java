@@ -221,7 +221,7 @@ public class SubscribeSettings extends PiztorAct {
         	simpleAdapter.notifyDataSetChanged();
         }
         for (RGroup i : ((myApp) getApplication()).sublist) {
-        	if (i.section == 255) continue;
+        	if (recSubcribe.contains(i.company)) continue;
         	//else
             HashMap<String, Object> map = new HashMap<String, Object>();
             map.put("subscribe_text", i.company + "连 " + i.section + "班");

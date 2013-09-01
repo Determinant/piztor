@@ -311,11 +311,15 @@ public class Transam implements Runnable {
 					TimerTask task = out.new tmain();
 					out.timer.schedule(task,out.retime);
 				} else if (out.tcnt == 0) {
+					out.tcnt = out.cnt;
 					Message m = new Message();
 					m.obj = msg.obj;
 					m.what = Exception;
 					out.recall.sendMessage(m);
-					out.running = false;
+					//out.running = false;
+					out.timer = new Timer();
+					TimerTask task = out.new tmain();
+					out.timer.schedule(task,out.retime);
 				}
 				break;
 			case TimeOut:
@@ -327,11 +331,15 @@ public class Transam implements Runnable {
 					out.timer.schedule(task,out.retime);
 				} else if (out.tcnt == 0) {
 					Message m = new Message();
+					out.tcnt = out.cnt;
 					EConnectFailedException c = new EConnectFailedException(out.req.type,out.req.time);
 					m.obj = c;
 					m.what = Exception;
 					out.recall.sendMessage(m);
-					out.running = false;
+					//out.running = false;
+					out.timer = new Timer();
+					TimerTask task = out.new tmain();
+					out.timer.schedule(task,out.retime);
 				}
 				break;
 			case Reconnect:
@@ -342,13 +350,16 @@ public class Transam implements Runnable {
 					TimerTask task = out.new pmain();
 					out.pushtimer.schedule(task,out.retime);
 				} else if (out.rcnt == 0) {
-					out.pushing = false;
 					Message m = new Message();
 					EPushFailedException c = new EPushFailedException(5,0);
 					//m.obj = msg.obj;
 					m.obj = c;
 					m.what = Exception;
 					out.recall.sendMessage(m);
+					out.rcnt = out.cnt;
+					out.pushtimer = new Timer();
+					TimerTask task = out.new pmain();
+					out.pushtimer.schedule(task,out.retime);
 				}
 				break;
 			case StartPush:
