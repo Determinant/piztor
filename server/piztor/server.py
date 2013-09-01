@@ -52,7 +52,7 @@ _HEADER_SIZE = _SectionSize.LENGTH + \
 
 _MAX_TEXT_MESG_SIZE = 1024
 _MAX_SUB_LIST_SIZE = 10
-_MAX_PENDING_PUSH = 100
+_MAX_PENDING_PUSH = 10
 
 class _OptCode:
     user_auth =             0x00
@@ -107,7 +107,7 @@ class PushTunnel(object):
     def add(self, pdata):
         logger.info("-- Push data enqued --")
         self.pending.append(pdata)
-        if len(self.pending) > _MAX_PENDING_PUSH:
+        if not self.blocked and len(self.pending) > _MAX_PENDING_PUSH:
             logger.info("-- Push queue is full, discarded an obsolete push --")
             self.pending.popleft()  # discard old push
 
