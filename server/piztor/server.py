@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from collections import deque
+from time import time
 
 import struct
 import os
@@ -75,7 +76,7 @@ class _StatusCode:
 class PushData(object):
     from hashlib import sha256
     def pack(self, optcode, data):
-        self.finger_print = sha256(data).digest()
+        self.finger_print = sha256(data + struct.pack("!d", time())).digest()
         buff = struct.pack("!B32s", optcode, self.finger_print)
         buff += data
         buff = struct.pack("!L", _SectionSize.LENGTH + len(buff)) + buff
