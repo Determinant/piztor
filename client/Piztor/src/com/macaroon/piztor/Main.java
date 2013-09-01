@@ -55,7 +55,7 @@ public class Main extends PiztorAct {
 	public MyLocationListener myListener = new MyLocationListener();
 	boolean isFirstLocation = true;
 	public static int GPSrefreshrate = 20;
-	private final int checkinRadius = 10;
+	private final double checkinRadius = 10.0;
 
 	ImageButton btnCheckin, btnFetch, btnFocus, btnSettings;
 
@@ -334,11 +334,11 @@ public class Main extends PiztorAct {
 				(int) (locData.longitude * 1E6));
 		double disFromMarker = DistanceUtil.getDistance(curPoint,
 				mapMaker.getMakerLocation());
-		if (disFromMarker < locData.accuracy) {
+		if (disFromMarker < Math.max(Math.min(locData.accuracy, 20.0), (float)checkinRadius) ) {
 			alertMaker.showCheckinAlter();
 		} else {
 			Toast toast = Toast.makeText(Main.this,
-					"请靠近路标", 2000);
+					String.format("请靠近路标,现在距离%.2f米", disFromMarker), 2000);
 			toast.setGravity(Gravity.TOP, 0, 80);
 			toast.show();
 		}
@@ -376,6 +376,7 @@ public class Main extends PiztorAct {
 		mLocClient.registerLocationListener(myListener);
 		LocationClientOption option = new LocationClientOption();
 		option.setOpenGps(true);
+		option.setPriority(LocationClientOption.GpsFirst);
 		option.setCoorType("bd09ll");
 		option.setScanSpan(GPSrefreshrate * 1000);
 		mLocClient.setLocOption(option);

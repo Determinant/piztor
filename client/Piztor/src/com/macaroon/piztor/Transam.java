@@ -55,10 +55,10 @@ public class Transam implements Runnable {
 	Timer pushtimer;
 	boolean running = false; 
 	boolean pushing = false;
-	int cnt = 5;				//retry times
+	int cnt = 3;				//retry times
 	int tcnt;				//current remain retry times
 	int rcnt;				//current remain retry times (push)
-	int retime = 5000;		//timeout time
+	int retime = 10000;		//timeout time
 	Req req;
 	int p;					//port
 	String i;				//ip
