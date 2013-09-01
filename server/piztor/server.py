@@ -319,6 +319,11 @@ class UserAuthHandler(RequestHandler):
             return self._failed_response()
         else:
             logger.info("Logged in sucessfully: {0}".format(username))
+            pt = RequestHandler.push_tunnels
+            uid = uauth.uid
+            if pt.has_key(uid): # close the old push tunnel
+                pt[uid].close()
+                del pt[uid]
             uauth.regen_token()
             #logger.info("New token generated: " + get_hex(uauth.token))
             self.session.commit()
