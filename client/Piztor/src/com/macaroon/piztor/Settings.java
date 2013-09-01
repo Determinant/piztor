@@ -195,6 +195,7 @@ public class Settings extends PiztorAct {
 				}
 				if (checkedId == R.id.show_by_sex){
 					setColorMode(show_by_sex);
+					Toast.makeText(Settings.this, "蓝色表示同性，红色表示异性", Toast.LENGTH_LONG).show();
 				}
 			}
 		};

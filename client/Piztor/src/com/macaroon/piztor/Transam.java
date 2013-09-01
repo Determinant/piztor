@@ -24,6 +24,7 @@ public class Transam implements Runnable {
 	static final int StartPush =5;
 	static final int SendMessage =6;
 	static final int SetMarker =7;
+	static final int SetPassword =8;
 	
 	static final int ClosePush = -5;
 	
@@ -35,11 +36,14 @@ public class Transam implements Runnable {
 	static final int EUnknownHostException =106;
 	static final int EStatusFailedException =107;
 	static final int ELevelFailedException =108;
+	static final int EPasswordFailedException =109;
+	static final int ESubscribeFailedException =110;
 	
 	static final int Reconnect =-2;
 	static final int Exception =-1;
 	static final int TimeOut =0;
 	
+	static final int RSubscribeFailed =6; 
 	static final int RPasswordFailed =5;
 	static final int RServerFetchFailed =4;
 	static final int RLevelFailed =3;
@@ -50,10 +54,11 @@ public class Transam implements Runnable {
 	Timer timer;
 	Timer pushtimer;
 	boolean running = false; 
-	int cnt = 5;				//retry times
+	boolean pushing = false;
+	int cnt = 3;				//retry times
 	int tcnt;				//current remain retry times
 	int rcnt;				//current remain retry times (push)
-	int retime = 2000;		//timeout time
+	int retime = 10000;		//timeout time
 	Req req;
 	int p;					//port
 	String i;				//ip
@@ -62,8 +67,8 @@ public class Transam implements Runnable {
 	Handler handler;				//manager
 	Queue<Req> reqtask ;			//request task
 	
-	String itoken;
-	String iname;
+	String itoken = "";
+	String iname = "";
 	
 	Thread Pushthread;
 	PushClient push;
@@ -76,15 +81,24 @@ public class Transam implements Runnable {
 		handler = new Manager(this);
 	}
 	
-	public void send(Req r){
+	public synchronized void send(Req r){
+		if(r.type == Login){
+			if(pushing == true) {
+				stopPush();
+			}
+		}
 		reqtask.offer(r);	
 	}
 	
 	private void startPush(String token,String name) {
-		itoken = token;
-		iname = name;
-		rcnt = cnt;
-		connectpush();
+		if(pushing == false) {
+			itoken = token;
+			iname = name;
+			rcnt = cnt;
+			pushing = true;
+			System.out.println("startpush");
+			connectpush();
+		}
 	}
 	
 	private void stopPush() {
@@ -93,6 +107,8 @@ public class Transam implements Runnable {
 				push.closeSocket();
 				itoken = null;
 				iname = null;
+				pushing = false;
+				System.out.println("closepush");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -173,7 +189,7 @@ public class Transam implements Runnable {
 		public void run() {
 			try {
 				if(itoken == null || iname == null) return;
-				push = new PushClient(i,p,retime);
+				push = new PushClient(i,p,retime,recall);
 				push.setPushHandler(recall);
 				int out = push.start(new ReqStartPush(itoken,iname));
 				if(out == RTimeOut) {
@@ -184,6 +200,7 @@ public class Transam implements Runnable {
 					handler.sendMessage(msg);
 				}
 				else if (out == RStatusFailed){
+					pushing = false;
 					stopPush();
 					Message msg = new Message();
 					msg.what = Exception;
@@ -192,7 +209,7 @@ public class Transam implements Runnable {
 				}
 				else if (out == RSuccess){
 					rcnt = cnt;
-					push.listen(recall);
+					push.listen();
 				}
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
@@ -248,6 +265,14 @@ public class Transam implements Runnable {
 					Message msg = new Message();
 					msg.what = Exception;
 					msg.obj = new EPasswordFailedException(req.type,req.time);
+					recall.sendMessage(msg);
+					running = false;
+				}
+				else if (out == RSubscribeFailed){
+					client.closeSocket();
+					Message msg = new Message();
+					msg.what = Exception;
+					msg.obj = new ESubscribeFailedException(req.type,req.time);
 					recall.sendMessage(msg);
 					running = false;
 				}
@@ -317,6 +342,7 @@ public class Transam implements Runnable {
 					TimerTask task = out.new pmain();
 					out.pushtimer.schedule(task,out.retime);
 				} else if (out.rcnt == 0) {
+					out.pushing = false;
 					Message m = new Message();
 					EPushFailedException c = new EPushFailedException(5,0);
 					//m.obj = msg.obj;
@@ -329,11 +355,9 @@ public class Transam implements Runnable {
 				@SuppressWarnings("unchecked")
 				Vector<String> s = (Vector<String>) msg.obj;
 				out.startPush(s.get(1),s.get(0));
-				System.out.println("startpush");
 				break;
 			case ClosePush:
 				out.stopPush();
-				System.out.println("closepush");
 				break;
 			}
 			super.handleMessage(msg);

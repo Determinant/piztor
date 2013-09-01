@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -71,7 +72,7 @@ public class SubscribeSettings extends PiztorAct {
                 }
                 break;
             case Res.Logout:// 登出
-                out.actMgr.trigger(AppMgr.logout);
+                out.appMgr.trigger(AppMgr.logout);
                 break;
             case Res.PushMessage:
                 ResPushMessage pushMessage = (ResPushMessage) m.obj;
@@ -93,10 +94,23 @@ public class SubscribeSettings extends PiztorAct {
                 out.mapInfo.markerInfo = markerInfo;
                 break;
             case Res.Subscription:
-            	out.app.sublist = out.listGroup;
+            	out.reDraw(out.listGroup);
+            	out.app.sublist =(Vector<RGroup>) out.listGroup.clone();
             	break;
             case -1:
-                out.actMgr.trigger(AppMgr.logout);
+            	EException eException = (EException) m.obj;
+            	/////////////////TODO
+				if (eException.Etype == EException.ESubscribeFailedException) {
+					out.receiveMessage("关注信息无效");
+					for (RGroup i : out.listGroup) {
+						Log.d("sub", i.company  + "   " + i.section);
+					}
+					for(RGroup i : out.app.sublist) {
+						Log.d("sub", "***" + i.company + "   " + i.section);
+					}
+					out.reDraw(out.app.sublist);
+				}
+				else out.appMgr.trigger(AppMgr.logout);
             default:
                 break;
             }
@@ -111,7 +125,35 @@ public class SubscribeSettings extends PiztorAct {
     private EditText edit_section;
     private Vector<RGroup> listGroup;
     private Set<Integer> recSubcribe;
+    MySimpleAdapter simpleAdapter;
     
+    public void reDraw(Vector<RGroup> list) {
+    	recSubcribe = new HashSet<Integer>();
+    	listGroup = new Vector<RGroup>();
+    	for (RGroup i : list) {
+    		if (i.section == 255) {
+    			recSubcribe.add(i.company);
+    		}
+    	}
+    	mList.clear();
+    	simpleAdapter.notifyDataSetChanged();
+    	for (int i : recSubcribe) {
+    		HashMap<String, Object> map = new HashMap<String, Object>();
+        	map.put("subscribe_text", i + "连");
+        	mList.add(map);
+        	RGroup listItem = new RGroup(i, 255);
+			listGroup.add(listItem);
+        	simpleAdapter.notifyDataSetChanged();
+    	}
+    	for (RGroup i : list) {
+    		if (recSubcribe.contains(i.company)) continue;
+    		HashMap<String, Object> map = new HashMap<String, Object>();
+            map.put("subscribe_text", i.company + "连 " + i.section + "班");
+            mList.add(map);
+            listGroup.add(i);
+            simpleAdapter.notifyDataSetChanged();
+    	}
+    }
 
     void upMapInfo(Vector<RLocation> l) {
         for (RLocation i : l) {
@@ -128,9 +170,9 @@ public class SubscribeSettings extends PiztorAct {
     
     void receiveMessage(String msg) {
         Log.d("recieve message", msg);
-        Toast toast = Toast.makeText(getApplicationContext(), msg,
-                Toast.LENGTH_LONG);
-        toast.show();
+        Toast toast = Toast.makeText(getApplicationContext(),msg, 2000);
+		toast.setGravity(Gravity.TOP, 0, 120);
+		toast.show();
     }
     
     void subscribe() {
@@ -157,7 +199,7 @@ public class SubscribeSettings extends PiztorAct {
         edit_section = (EditText) findViewById(R.id.subscribe_section);
         mList = new ArrayList<HashMap<String, Object>>();
         
-        final MySimpleAdapter simpleAdapter = new MySimpleAdapter(this, mList,
+        simpleAdapter = new MySimpleAdapter(this, mList,
                 R.layout.subscribe_item, new String[] { "subscribe_text",
                         "btnadd" },
                 new int[] { R.id.textView1, R.id.button_add });
@@ -228,12 +270,13 @@ public class SubscribeSettings extends PiztorAct {
                 if (ss == 255) {
                 	recSubcribe.add(cc);
                 	for (int i = 0; i < listGroup.size(); i++) {
-                		if (listGroup.get(i).company == cc) {
-                			listGroup.remove(i);
-                			mList.remove(i);
-                			i--;
-                			simpleAdapter.notifyDataSetChanged();
-                		}
+                		if (listGroup.size() > 0)
+                			if (listGroup.get(i).company == cc) {
+                				listGroup.remove(i);
+                				mList.remove(i);
+                				i--;
+                				simpleAdapter.notifyDataSetChanged();
+                			}
                 	}
                 	
                 	RGroup listItem = new RGroup(cc, 255);

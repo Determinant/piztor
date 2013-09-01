@@ -103,6 +103,7 @@ class UserInfo {
 		this.company = company;
 		this.section = section;
 		this.sex = sex;
+		this.nickname = nickName;
 	}
 	
 	public GeoPoint getLocation(){

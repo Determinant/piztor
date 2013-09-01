@@ -5,12 +5,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Vector;
 
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 
 
@@ -42,12 +44,13 @@ public class PushClient {
 	private String LastPrint = "";
 
 	
-	public PushClient(String site, int port,int retime) throws UnknownHostException,
+	public PushClient(String site, int port,int retime, Handler handler) throws UnknownHostException,
 			IOException {
 		try {
 			client = new Socket();
 			client.connect(new InetSocketAddress(site,port), retime);
 			client.setSoTimeout(2000);
+			recall = handler;
 			//client.setTcpNoDelay(true);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -105,15 +108,13 @@ public class PushClient {
 		return client.isClosed();
 	}
 
-	public void listen(Handler recall) throws IOException{
+	public void listen() throws IOException{
 		client.setSoTimeout(0);
 		DataInputStream in = new DataInputStream(client.getInputStream());
 		DataOutputStream out = new DataOutputStream(client.getOutputStream());
-		
-		while(true){
-			try {
+		try {
+			while(true){
 				int len = in.readInt();
-				System.out.println(len);
 				int tmp = in.readUnsignedByte();
 				byte[] buffer = new byte[32];
 				in.read(buffer);
@@ -129,6 +130,7 @@ public class PushClient {
 					String m = new String(b);
 					in.readUnsignedByte();
 					if(LastPrint != p) {
+					System.out.println(p);
 					Message msg = new Message();
 					msg.what = PushMessage;
 					msg.obj = new ResPushMessage(m);
@@ -157,6 +159,7 @@ public class PushClient {
 						n++;
 					}
 					if(LastPrint != p) {
+						System.out.println(p);
 						Message msg = new Message();
 						msg.obj = new ResPushLocation(n,tmpv);
 						msg.what = PushLocation;
@@ -178,6 +181,7 @@ public class PushClient {
 					double lot = in.readDouble();
 					int dtime = in.readInt(); 
 					if(LastPrint != p) {
+					
 					Message msg = new Message();
 					msg.what = PushMarker;
 					msg.obj = new ResPushMarker(lat,lot,dtime,lv);
@@ -194,11 +198,13 @@ public class PushClient {
 					out.flush();
 					break;
 				}
-			
-			} catch (IOException e) {
+			}
+		} catch (SocketException e){
+			System.out.println("Socket closed!");
+			return;
+		} catch (IOException e) {
 			e.printStackTrace();
 			throw e;
-			}
 		}
 	}
 

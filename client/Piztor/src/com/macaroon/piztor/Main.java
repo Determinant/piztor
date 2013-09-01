@@ -14,6 +14,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
+import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -53,13 +54,14 @@ public class Main extends PiztorAct {
 	LocationData locData = null;
 	public MyLocationListener myListener = new MyLocationListener();
 	boolean isFirstLocation = true;
-	public static int GPSrefreshrate = 5;
-	private final int checkinRadius = 10;
+	public static int GPSrefreshrate = 20;
+	private final double checkinRadius = 10.0;
 
 	ImageButton btnCheckin, btnFetch, btnFocus, btnSettings;
 
 	static class ReCall extends Handler {
 		WeakReference<Main> outerClass;
+		String id = "main";
 
 		ReCall(Main activity) {
 			outerClass = new WeakReference<Main>(activity);
@@ -71,6 +73,7 @@ public class Main extends PiztorAct {
 			if (out == null) {
 				System.out.println("act被回收了");
 			}
+			Log.d("marker", "what is " + m.what);
 			switch (m.what) {
 			case Res.Login:// 上传自己信息成功or失败
 				Log.d("update location", "successfull");
@@ -122,6 +125,7 @@ public class Main extends PiztorAct {
 						(int) (pushMarker.latitude * 1e6),
 						(int) (pushMarker.longitude * 1e6));
 				markerInfo.markerTimestamp = pushMarker.deadline;
+				Log.d("marker", "Marker received!   " + pushMarker.deadline);
 				out.mapMaker.receiveMarker(markerInfo);
 				break;
 			case -1:
@@ -175,6 +179,15 @@ public class Main extends PiztorAct {
 		toast.show();
 	}
 
+	public void updateMyLocation() {
+		if (app.token != null) {
+			app.mapInfo.myInfo.setLocation(locData.latitude, locData.longitude);
+			transam.send(new ReqUpdate(app.token, app.username,
+					locData.latitude, locData.longitude, 
+					System.currentTimeMillis(), 2000));
+		}
+	}
+	
 	public class MyLocationListener implements BDLocationListener {
 		int cnt = 0;
 		GeoPoint lastPoint = null;
@@ -196,11 +209,7 @@ public class Main extends PiztorAct {
 			if (lastPoint == null || cnt > 5
 					|| DistanceUtil.getDistance(point, lastPoint) > 10) {
 				if (app.token != null) {
-					app.mapInfo.myInfo.setLocation(locData.latitude,
-							locData.longitude);
-					transam.send(new ReqUpdate(app.token, app.username,
-							locData.latitude, locData.longitude, System
-									.currentTimeMillis(), 2000));
+					updateMyLocation();
 					lastPoint = point;
 					cnt = 0;
 				}
@@ -259,7 +268,7 @@ public class Main extends PiztorAct {
 						+ app.mapInfo.myInfo.uid);
 			}
 			if (e == SuccessFetch)
-				flushMap();
+			{ }
 		}
 
 		@Override
@@ -293,6 +302,7 @@ public class Main extends PiztorAct {
 				closeBoard(Main.this);
 				if (app.mapInfo.myInfo.level != 0) {
 					alertMaker.showMarkerAlert(arg0);
+				closeBoard(Main.this);
 				}
 			}
 
@@ -324,11 +334,11 @@ public class Main extends PiztorAct {
 				(int) (locData.longitude * 1E6));
 		double disFromMarker = DistanceUtil.getDistance(curPoint,
 				mapMaker.getMakerLocation());
-		if (disFromMarker < locData.accuracy) {
+		if (disFromMarker < Math.max(Math.min(locData.accuracy, 20.0), (float)checkinRadius) ) {
 			alertMaker.showCheckinAlter();
 		} else {
 			Toast toast = Toast.makeText(Main.this,
-					"请靠近路标", 2000);
+					String.format("请靠近路标,现在距离%.2f米", disFromMarker), 2000);
 			toast.setGravity(Gravity.TOP, 0, 80);
 			toast.show();
 		}
@@ -343,7 +353,13 @@ public class Main extends PiztorAct {
 				.getSystemService(LOCATION_SERVICE);
 		isGPSEnabled = locationManager
 				.isProviderEnabled(locationManager.GPS_PROVIDER);
+		
+		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+	    requestWindowFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.activity_main);
+		setProgressBarIndeterminateVisibility(true); 
+		setProgressBarVisibility(true);
+		
 		app.mBMapManager.start();
 
 		mMapView = (MapView) findViewById(R.id.bmapView);
@@ -360,6 +376,7 @@ public class Main extends PiztorAct {
 		mLocClient.registerLocationListener(myListener);
 		LocationClientOption option = new LocationClientOption();
 		option.setOpenGps(true);
+		option.setPriority(LocationClientOption.GpsFirst);
 		option.setCoorType("bd09ll");
 		option.setScanSpan(GPSrefreshrate * 1000);
 		mLocClient.setLocOption(option);
@@ -402,7 +419,17 @@ public class Main extends PiztorAct {
 				actMgr.trigger(AppMgr.toSettings);
 			}
 		});
-
+		
+		btnFetch.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+				Toast.makeText(Main.this, "正在定位...", Toast.LENGTH_LONG).show();
+				mLocClient.requestLocation();
+				updateMyLocation();
+				focusOn();
+			}
+		});
 	}
 
 	@Override

@@ -105,6 +105,32 @@ public class AlertMaker {
 		closeBoard(context);
 	}
 
+public void showRemoveMarkerAlert() {
+		
+		closeBoard(context);
+		AlertDialog.Builder removeDialog = new AlertDialog.Builder(context);
+		removeDialog.setTitle("取消路标");
+		removeDialog.setMessage("是否取消路标？");
+		removeDialog.setPositiveButton("确定",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						mapMaker.mOverlay.removeItem(mapMaker.nowMarker);
+						mapMaker.nowMarker = null;
+						mapMaker.mMapView.refresh();
+						mapMaker.popLay.hidePop();
+					}
+				});
+		removeDialog.setNegativeButton("取消",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						mapMaker.popLay.hidePop();
+						dialog.cancel();
+					}
+				});
+		removeDialog.show();
+		closeBoard(context);
+	}
+	
 	public long toTimestamp(int hour, int minute) {
 		
 		calendar = Calendar.getInstance();
@@ -112,7 +138,7 @@ public class AlertMaker {
 				calendar.get(Calendar.MONTH), 
 				calendar.get(Calendar.DAY_OF_MONTH),
 				hour,minute);
-		return calendar.getTimeInMillis();
+		return calendar.getTimeInMillis()/1000;
 	}
 	
 	//TODO

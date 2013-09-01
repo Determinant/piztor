@@ -6,7 +6,7 @@
     <string name="hello_world">Hello world!</string>
     <string name="settings">设置</string>
     <string name="search">搜索</string>
-    <string name="fetch">获取</string>
+    <string name="fetch">上传</string>
     <string name="checkin">签到</string>
     <string name="focus">聚焦</string>
     <string name="show_sex">按性别</string>
@@ -25,7 +25,7 @@
     <string name="logout">注销</string>
     <string name="update_info">修改密码</string>
     <string name="subscribe_info">关注信息</string>
-    <string name="change">查看及修改</string>
+    <string name="change">关注信息</string>
     <string name="title_activity_subscribesettings">SubscribeSettings</string>
     <string name="title_activity_subscribe_settings">SubscribeSettings</string>
     <string name="title_activity_update_info">UpdateInfo</string>
@@ -39,5 +39,6 @@
     <string name="new_password">新密码</string>
     <string name="submit">提交</string>
     <string name="colormode">着色方式</string>
+    <string name="save">保存</string>
 
 </resources>
