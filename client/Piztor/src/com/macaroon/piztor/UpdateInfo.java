@@ -68,22 +68,16 @@ public class UpdateInfo extends PiztorAct {
 				break;
 			case Res.SetPassword:
 				ResSetPassword res = (ResSetPassword) m.obj;
-				switch (res.type) {
-				case 0:
-					out.receiveMessage("修改成功，请重新登录");
-					out.appMgr.trigger(AppMgr.logout);
-					break;
-				case 1:
-					out.appMgr.trigger(AppMgr.logout);
-					break;
-				case 3:
-					out.receiveMessage("密码错误");
-				default:
-					break;
-				}
+				out.receiveMessage("修改成功，请重新登录");
+				out.appMgr.trigger(AppMgr.logout);
 				break;
 			case -1:
-				out.appMgr.trigger(AppMgr.logout);
+				EException eException = (EException) m.obj;
+				if (eException.Etype == EException.EPasswordFailedException) 
+					out.receiveMessage("密码错误");
+				else {
+					out.appMgr.trigger(AppMgr.logout);
+				}
 				break;
 			default:
 				break;

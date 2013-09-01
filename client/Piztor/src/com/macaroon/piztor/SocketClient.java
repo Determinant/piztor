@@ -12,6 +12,7 @@ import java.util.Vector;
 
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 
 
@@ -44,6 +45,7 @@ public class SocketClient {
 	static final int Longitude =7;
 	static final int Level =8;
 	
+	static final int SubscribeFailed =6; 
 	static final int PasswordFailed =5;
 	static final int ServerFetchFailed =4;
 	static final int LevelFailed =3;
@@ -251,6 +253,7 @@ public class SocketClient {
 			if(status == 1) return StatusFailed;
 			if(status == 2) return LevelFailed;
 			if(status == 3) return PasswordFailed;
+			if(status == 4) return SubscribeFailed;
 			switch (type) {
 			case Login:
 				byte[] buffer = new byte[32];

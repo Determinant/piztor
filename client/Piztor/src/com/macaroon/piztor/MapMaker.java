@@ -34,7 +34,7 @@ import com.baidu.platform.comapi.basestruct.GeoPoint;
 public class MapMaker {
 
 	// MapView controlling component
-	private MapView mMapView = null;
+	MapView mMapView = null;
 	MapController mMapController = null;
 	MKOfflineMap mOffline = null;
 
@@ -43,7 +43,7 @@ public class MapMaker {
 			(int) (31.032247 * 1E6), (int) (121.445937 * 1E6));
 
 	// Map layers and items
-	private MyOverlay mOverlay = null;
+	MyOverlay mOverlay = null;
 	private OverlayItem curItem = null;
 	private LocationOverlay mLocationOverlay;
 	private ArrayList<OverlayItem> mItems = null;
@@ -56,7 +56,7 @@ public class MapMaker {
 	private HashMap<OverlayItem, Integer> markerToInt = null;
 
 	// marker layer
-	private OverlayItem nowMarker = null;
+	OverlayItem nowMarker = null;
 	static int nowMarkerHour;
 	static int nowMarkerMinute;
 	static long nowMarkerTimestamp;
@@ -67,7 +67,7 @@ public class MapMaker {
 	private int nowMarkerLevel;
 
 	// Popup component
-	private PopupOverlay popLay = null;
+	PopupOverlay popLay = null;
 	private TextView popupText = null;
 	private TextView leftText = null;
 	private View viewCache = null;
@@ -127,8 +127,6 @@ public class MapMaker {
 
 			if (nowMarker != null && index == markerIndex) {
 				OverlayItem item = getItem(index);
-				// TODO
-				// ///////////////////////////////////////////////////////
 				leftText.setText(nowMarkerHour + "点");
 				popupText.setText(nowMarkerMinute + "分");
 				Bitmap bitmap[] = { BMapUtil.getBitmapFromView(popupLeft),
@@ -137,8 +135,7 @@ public class MapMaker {
 				popLay.showPopup(bitmap, item.getPoint(), 32);
 			} else {
 				OverlayItem item = getItem(index);
-				UserInfo tmpInfo = preMapInfo
-						.getUserInfo(markerToInt.get(item));
+				UserInfo tmpInfo = app.mapInfo.getUserInfo(markerToInt.get(item));
 				String itemInfo = tmpInfo.company + "连" + tmpInfo.section + "班 " + tmpInfo.nickname;
 				popupText.setText(itemInfo);
 				Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
@@ -243,11 +240,13 @@ public class MapMaker {
 					// do nothing
 				}
 				if (index == 2) {
-					// remove current marker
-					mOverlay.removeItem(nowMarker);
-					nowMarker = null;
-					mMapView.refresh();
-					popLay.hidePop();
+					// remove current marker if is higher or equal level
+					if (app.mapInfo.myInfo.level >= nowMarkerLevel) {
+						AlertMaker removeAlert = new AlertMaker(context, MapMaker.this);
+						removeAlert.showRemoveMarkerAlert();
+					} else {
+						Toast.makeText(context, "权限不足", Toast.LENGTH_SHORT).show();
+					}
 				}
 			}
 		};
@@ -288,12 +287,13 @@ public class MapMaker {
 
 	public Drawable getGroupIcon(UserInfo userInfo) {
 		if (Main.colorMode == Main.show_by_team) {
-			if (userInfo.section == preMapInfo.myInfo.section)
+			if (userInfo.section == app.mapInfo.myInfo.section)
 				return myBM[0];
 			else
 				return myBM[userInfo.section % iconNum + 1];
 		} else {
-			return myBM[userInfo.sex ^ preMapInfo.myInfo.sex];
+			if (userInfo.sex == app.mapInfo.myInfo.sex) return myBM[0];
+			else return myBM[1];
 		}
 	}
 
@@ -334,7 +334,7 @@ public class MapMaker {
 		// first remove all old users that are not here now
 		if (preMapInfo != null) {
 			for (UserInfo i : preMapInfo.getVector()) {
-				if (i.uid == preMapInfo.myInfo.uid)
+				if (i.uid == app.mapInfo.myInfo.uid)
 					continue;
 				if (mapInfo.getUserInfo(i.uid) == null) {
 					mOverlay.removeItem(hash.get(i.uid));
@@ -353,7 +353,7 @@ public class MapMaker {
 
 		// then update and add items
 		for (UserInfo i : mapInfo.getVector()) {
-			if (i.uid == preMapInfo.myInfo.uid)
+			if (i.uid == app.mapInfo.myInfo.uid)
 				continue;
 			if (hash.containsKey(i.uid) == false) {
 				if (isInvalidLocation(i.location)) {
@@ -386,15 +386,13 @@ public class MapMaker {
 		checkMarkerTime();
 	}
 	
-	@SuppressWarnings("deprecation")
 	public void receiveMarker(MarkerInfo markerInfo) {
-		Log.d("marker", "Marker received!");
 		if (nowMarker != null && markerInfo.level >= nowMarkerLevel) {
 			Log.d("marker", "Old marker replaced by marker with higher level!");
 			nowMarker.setGeoPoint(markerInfo.markerPoint);
 
 			final Calendar cal = Calendar.getInstance();
-			cal.setTimeInMillis(markerInfo.markerTimestamp);
+			cal.setTimeInMillis(markerInfo.markerTimestamp * 1000);
 			Date date = (Date) cal.getTime();
 			nowMarkerHour = date.getHours();
 			nowMarkerMinute = date.getMinutes();
@@ -418,7 +416,7 @@ public class MapMaker {
 			System.out.println(markerInfo.markerPoint.getLatitudeE6() + " "
 					+ markerInfo.markerPoint.getLongitudeE6());
 			final Calendar cal = Calendar.getInstance();
-			cal.setTimeInMillis(markerInfo.markerTimestamp);
+			cal.setTimeInMillis(markerInfo.markerTimestamp * 1000);
 			Date date = (Date) cal.getTime();
 			nowMarkerHour = date.getHours();
 			nowMarkerMinute = date.getMinutes();
@@ -437,12 +435,13 @@ public class MapMaker {
 	}
 
 	void sendMarker() {
+		Log.d("marker", "Marker prepare!   " + nowMarkerTimestamp);
 		ReqSetMarker req = new ReqSetMarker(app.token, app.username, nowMarker
 				.getPoint().getLatitudeE6() / 1e6, nowMarker.getPoint()
 				.getLongitudeE6() / 1e6, (int)nowMarkerTimestamp,
 				System.currentTimeMillis(), 3000l);
-		Log.d("marker", "Sent marker" + nowMarker.getPoint().getLatitudeE6() + "   " +
-				nowMarker.getPoint().getLongitudeE6());
+
+		Log.d("marker", "Marker sent!   " + req.deadline);
 		app.transam.send(req);
 	}
 
@@ -451,14 +450,12 @@ public class MapMaker {
 	 */
 	public void DrawMarker(GeoPoint markerPoint) {
 
-		if (preMapInfo == null) return;
-
-		if (nowMarker != null && preMapInfo.myInfo.level >= nowMarkerLevel) {
+		if (nowMarker != null && app.mapInfo.myInfo.level >= nowMarkerLevel) {
 			nowMarker.setGeoPoint(markerPoint);
 			nowMarkerHour = newMarkerHour;
 			nowMarkerMinute = newMarkerMinute;
 			nowMarkerTimestamp = newMarkerTimestamp;
-			nowMarkerLevel = preMapInfo.myInfo.level;
+			nowMarkerLevel = app.mapInfo.myInfo.level;
 			
 			sendMarker();
 			Log.d("marker", "Sent and replace");
@@ -473,7 +470,7 @@ public class MapMaker {
 			nowMarkerHour = newMarkerHour;
 			nowMarkerMinute = newMarkerMinute;
 			nowMarkerTimestamp = newMarkerTimestamp;
-			nowMarkerLevel = preMapInfo.myInfo.level;
+			nowMarkerLevel = app.mapInfo.myInfo.level;
 
 			sendMarker();
 			Log.d("marker", "Send and new");
@@ -504,7 +501,7 @@ public class MapMaker {
 	}
 
 	public void checkMarkerTime() {
-		if (nowMarker != null && nowMarkerTimestamp <= System.currentTimeMillis()) {
+		if (nowMarker != null && nowMarkerTimestamp <= System.currentTimeMillis() / 1000) {
 			AlertMaker lateAlert = new AlertMaker(context, this);
 			lateAlert.showLateAlert();
 			removeMarker();
