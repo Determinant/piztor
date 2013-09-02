@@ -889,7 +889,7 @@ class GameStartHandler(RequestHandler):
 
         for user in self.session.query(UserModel) \
                 .filter(UserModel.comp_id == u.comp_id):
-            user.regen_token()
+            user.auth.regen_token()
 
         logger.info("GAME START!")
         self.session.commit()
