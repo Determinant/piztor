@@ -885,6 +885,12 @@ class GameStartHandler(RequestHandler):
                 tunnel.add(PushScoreData(team1.score, team2.score))
                 tunnel.push()
 
+        logger.info("Forcing logout...")
+
+        for user in self.session.query(UserModel) \
+                .filter(UserModel.comp_id == u.comp_id):
+            user.regen_token()
+
         logger.info("GAME START!")
         self.session.commit()
         return self.pack(struct.pack("!B",  _StatusCode.sucess))
