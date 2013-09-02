@@ -1,6 +1,6 @@
 from sqlalchemy import Table, Column
-from sqlalchemy import Integer, String, Float, ForeignKey, Boolean
-from sqlalchemy.dialects.mysql import BLOB, TINYINT
+from sqlalchemy import Integer, String, ForeignKey, Boolean
+from sqlalchemy.dialects.mysql import BLOB, TINYINT, DOUBLE
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 from exc import *
@@ -82,8 +82,8 @@ class LocationInfo(Base):
 
     uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'),
                 primary_key = True)
-    lat = Column(Float(precesion = 64), nullable = False)
-    lng = Column(Float(precesion = 64), nullable = False)
+    lat = Column(DOUBLE, nullable = False)
+    lng = Column(DOUBLE, nullable = False)
     user = relationship("UserModel", uselist = False,
             backref = backref("location", uselist = False,
                 cascade = "all, delete-orphan"))
