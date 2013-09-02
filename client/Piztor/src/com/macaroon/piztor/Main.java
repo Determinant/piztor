@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.baidu.location.BDLocation;
@@ -45,6 +46,8 @@ public class Main extends PiztorAct {
 	public static int show_by_team = 1;
 	public static int show_by_sex = 2;
 	
+	TextView settingsText;
+	
 	/**
 	 * Locating component
 	 */
@@ -54,7 +57,7 @@ public class Main extends PiztorAct {
 	LocationData locData = null;
 	public MyLocationListener myListener = new MyLocationListener();
 	boolean isFirstLocation = true;
-	public static int GPSrefreshrate = 20;
+	public static int GPSrefreshrate = 5;
 	private final double checkinRadius = 10.0;
 
 	ImageButton btnCheckin, btnFetch, btnFocus, btnSettings;
@@ -120,16 +123,44 @@ public class Main extends PiztorAct {
 			case Res.PushMarker:
 				ResPushMarker pushMarker = (ResPushMarker) m.obj;
 				MarkerInfo markerInfo = new MarkerInfo();
-				markerInfo.level = pushMarker.level;
+				markerInfo.level = pushMarker.marker.level;
 				markerInfo.markerPoint = new GeoPoint(
-						(int) (pushMarker.latitude * 1e6),
-						(int) (pushMarker.longitude * 1e6));
-				markerInfo.markerTimestamp = pushMarker.deadline;
-				Log.d("marker", "Marker received!   " + pushMarker.deadline);
+						(int) (pushMarker.marker.latitude * 1e6),
+						(int) (pushMarker.marker.longitude * 1e6));
+				markerInfo.markerTimestamp = pushMarker.marker.deadline;
+				markerInfo.score = pushMarker.marker.score;
+				markerInfo.markerId = pushMarker.marker.markerID;
+				
+				System.out.println("markerInfo  " + markerInfo.markerId + " " + markerInfo.markerPoint.getLatitudeE6() + "   " + markerInfo.markerPoint.getLongitudeE6());
 				out.mapMaker.receiveMarker(markerInfo);
 				break;
+			case Res.PushRemoveMarker:
+				ResPushRemoveMarker res = (ResPushRemoveMarker) m.obj;
+				out.mapInfo.removeMarker(res.MarkerID);
+				Log.d("remove", "push remove marker");
+				out.flushMap();
+				break;
+			case Res.Checkin:
+				ResCheckin checkin = (ResCheckin) m.obj;
+				out.receiveMessage("签到成功！");
+				break;
+			case Res.PushScore:
+				ResPushScore pushScore = (ResPushScore) m.obj;
+				if (out.mapInfo.myInfo.section == 1) {
+					out.mapInfo.myScore = pushScore.AScore;
+					out.mapInfo.otherScore = pushScore.BScore;
+				} else {
+					out.mapInfo.myScore = pushScore.BScore;
+					out.mapInfo.otherScore = pushScore.AScore;
+				}
+				break;
 			case -1:
-				out.actMgr.trigger(AppMgr.logout);
+				EException e = (EException) m.obj;
+				if (e.Etype == EException.EPushFailedException)
+					out.receiveMessage("网络不稳定～");
+				else if (e.Etype == EException.ECheckinFailedException)
+					out.receiveMessage("路点已过期！");
+				else out.actMgr.trigger(AppMgr.logout);
 			default:
 				break;
 			}
@@ -165,7 +196,6 @@ public class Main extends PiztorAct {
 		}
 	}
 
-	// TODO flush map view
 	void flushMap() {
 		if (mapMaker != null)
 			mapMaker.UpdateMap(mapInfo);
@@ -174,8 +204,8 @@ public class Main extends PiztorAct {
 	}
 
 	void receiveMessage(String msg) {
-		Toast toast = Toast.makeText(getApplicationContext(), msg,
-				Toast.LENGTH_LONG);
+		Toast toast = Toast.makeText(getApplicationContext(), msg, 5000);
+		toast.setGravity(Gravity.TOP, 0, 80);
 		toast.show();
 	}
 
@@ -222,22 +252,19 @@ public class Main extends PiztorAct {
 			int TMP = location.getLocType();
 			if (TMP == 61) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : 由GPS更新 (刷新时间" + GPSrefreshrate
-								+ "s)", 2000);
+						"Piztor : 由GPS更新 (刷新时间" + GPSrefreshrate + "s)", 2000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
 			}
 			if (TMP == 161) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : 由网络更新 (刷新时间" + GPSrefreshrate
-								+ "s)", 2000);
+						"Piztor : 由网络更新 (刷新时间" + GPSrefreshrate + "s)", 2000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
 			}
 			if (TMP == 65) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : 由缓存更新 (刷新时间" + GPSrefreshrate + "s)",
-						2000);
+						"Piztor : 由缓存更新 (刷新时间" + GPSrefreshrate + "s)",2000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
 			}
@@ -246,6 +273,7 @@ public class Main extends PiztorAct {
 			LocationClientOption option = new LocationClientOption();
 			option.setOpenGps(true);
 			option.setCoorType("bd09ll");
+			option.setPriority(LocationClientOption.GpsFirst);
 			option.setScanSpan(GPSrefreshrate * 1000);
 			mLocClient.setLocOption(option);
 		}
@@ -293,54 +321,30 @@ public class Main extends PiztorAct {
 		mapMaker.mMapController.animateTo(app.mapInfo.myInfo.location);
 	}
 
-	public void InitTouchListenr() {
-
-		mapTouchListener = new MKMapTouchListener() {
-
-			@Override
-			public void onMapLongClick(GeoPoint arg0) {
-				closeBoard(Main.this);
-				if (app.mapInfo.myInfo.level != 0) {
-					alertMaker.showMarkerAlert(arg0);
-				closeBoard(Main.this);
-				}
-			}
-
-			@Override
-			public void onMapDoubleClick(GeoPoint arg0) {
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void onMapClick(GeoPoint arg0) {
-				// TODO Auto-generated method stub
-
-			}
-		};
-		mMapView.regMapTouchListner(mapTouchListener);
-	}
-
 	public void markerCheckin() {
-		Log.d("checkin", "ok!!!");
-		if (mapMaker.getMakerLocation() == null) {
-			Toast toast = Toast.makeText(Main.this, "暂无路标", 2000);
-			toast.setGravity(Gravity.TOP, 0, 80);
-			toast.show();
-			return;
-		}
+		double minDis = 1000.0;
+		int mid = -1;
 		mLocClient.requestLocation();
 		GeoPoint curPoint = new GeoPoint((int) (locData.latitude * 1E6),
 				(int) (locData.longitude * 1E6));
-		double disFromMarker = DistanceUtil.getDistance(curPoint,
-				mapMaker.getMakerLocation());
-		if (disFromMarker < Math.max(Math.min(locData.accuracy, 20.0), (float)checkinRadius) ) {
-			alertMaker.showCheckinAlter();
-		} else {
+		for (MarkerInfo i : app.mapInfo.markerInfo) {
+			double disFromMarker = DistanceUtil.getDistance(curPoint, i.markerPoint);
+			if (disFromMarker < minDis) {
+				minDis = disFromMarker;
+				mid = i.markerId;
+			}
+		}
+		//TODO
+		
+		if (minDis > 15.0 || mid == -1) {
 			Toast toast = Toast.makeText(Main.this,
-					String.format("请靠近路标,现在距离%.2f米", disFromMarker), 2000);
+					String.format("请靠近路标,现在距离%.2f米",minDis), 4000);
 			toast.setGravity(Gravity.TOP, 0, 80);
 			toast.show();
+		} else {
+			mapMaker.mMapController.animateTo(app.mapInfo.getMarkerInfo(mid).markerPoint);
+			alertMaker.mid = mid;
+			alertMaker.showCheckinAlter();
 		}
 	}
 
@@ -351,9 +355,6 @@ public class Main extends PiztorAct {
 		handler = new ReCall(this);
 		locationManager = (LocationManager) this
 				.getSystemService(LOCATION_SERVICE);
-		isGPSEnabled = locationManager
-				.isProviderEnabled(locationManager.GPS_PROVIDER);
-		
 		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 	    requestWindowFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.activity_main);
@@ -362,14 +363,19 @@ public class Main extends PiztorAct {
 		
 		app.mBMapManager.start();
 
+		settingsText = (TextView) findViewById(R.id.footbar_btn_settings_text);
+		
+		if (app.mapInfo.myInfo.level < 2) 
+			settingsText.setText("得分");
+		
 		mMapView = (MapView) findViewById(R.id.bmapView);
 		mapMaker = new MapMaker(mMapView, Main.this, app);
 		mapMaker.InitMap();
 		alertMaker = new AlertMaker(Main.this, mapMaker);
+		isGPSEnabled = locationManager.isProviderEnabled(locationManager.GPS_PROVIDER);
 		if (isGPSEnabled == false)
 			alertMaker.showSettingsAlert();
 		mapMaker.clearOverlay(mMapView);
-		InitTouchListenr();
 		mLocClient = new LocationClient(this);
 		mLocClient.setAK(myApp.getStrkey());
 		locData = new LocationData();
@@ -416,7 +422,16 @@ public class Main extends PiztorAct {
 		btnSettings.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				actMgr.trigger(AppMgr.toSettings);
+				if (app.mapInfo.myInfo.level >= 2 && !app.gameStarted) {
+					app.gameStarted = true;
+					settingsText.setText("得分");
+					//TODO
+					ReqGameStart req = new ReqGameStart(app.token, app.username, System.currentTimeMillis(), 10 * 1000);
+					transam.send(req);
+				}
+				else {
+					alertMaker.showScores();
+				}
 			}
 		});
 		
@@ -428,6 +443,7 @@ public class Main extends PiztorAct {
 				mLocClient.requestLocation();
 				updateMyLocation();
 				focusOn();
+				Log.d("jingdu", "发送的坐标" + locData.latitude + "  " + locData.longitude);
 			}
 		});
 	}
@@ -449,11 +465,15 @@ public class Main extends PiztorAct {
 		transam.setHandler(handler);
 		isFirstLocation = true;
 		mLocClient.start();
+		
+		isGPSEnabled = locationManager.isProviderEnabled(locationManager.GPS_PROVIDER);
+		if (isGPSEnabled == false)
+			alertMaker.showSettingsAlert();
+		
 		if (app.token == null) {
 			System.out.println("fuck!!");
 		} else
 			requestUserInfo();
-		// mapMaker.onResume();
 		flushMap();
 		super.onResume();
 	}

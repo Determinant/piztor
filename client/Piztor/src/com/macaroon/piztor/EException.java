@@ -14,6 +14,7 @@ public class EException extends Exception {
 	static final int ELevelFailedException =108;
 	static final int EPasswordFailedException =109;
 	static final int ESubscribeFailedException =110;
+	static final int ECheckinFailedException =111;
 	
 	private static final long serialVersionUID = 100L;
 		int Rtype;
@@ -97,4 +98,9 @@ public class EException extends Exception {
 		}		
 	}
 	
-	
+	class ECheckinFailedException extends EException{
+		private static final long serialVersionUID = 111L;
+		public ECheckinFailedException(int t,long timep) {  
+			super(111,t,timep);
+		}		
+	}

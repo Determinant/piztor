@@ -12,7 +12,6 @@ import java.util.Vector;
 
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 
 
@@ -33,6 +32,8 @@ public class SocketClient {
 	static final int SendMessage =6;
 	static final int SetMarker =7;
 	static final int SetPassword =8;
+	static final int Checkin =9;
+	static final int GameStart =10;
 	
 	static final int ClosePush =-5;
 	
@@ -45,6 +46,7 @@ public class SocketClient {
 	static final int Longitude =7;
 	static final int Level =8;
 	
+	static final int CheckinFailed =7;
 	static final int SubscribeFailed =6; 
 	static final int PasswordFailed =5;
 	static final int ServerFetchFailed =4;
@@ -243,6 +245,40 @@ public class SocketClient {
 				pos+=ByteLength;
 				out.write(b);
 				break;
+			case Checkin:
+				ReqCheckin rck = (ReqCheckin) req;
+				len = IntLength+ByteLength+TokenLength+(rck.uname).length()+ByteLength+ByteLength;				
+				b = new byte[len];
+				Convert.write(b,Convert.intToBytes(len),pos);
+				pos+=IntLength;
+				b[pos] = (byte) tmp;
+				pos+=ByteLength;
+				Convert.write(b,Convert.hexStringToBytes(rck.token),pos);
+				pos+=TokenLength;
+				Convert.write(b,(rck.uname).getBytes(),pos);
+				pos+=(rck.uname).length();
+				b[pos] = 0;
+				pos+=ByteLength;
+				b[pos] = (byte) rck.markerID;
+				pos+=ByteLength;
+				out.write(b);
+				break;
+			case GameStart:
+				ReqGameStart rgs = (ReqGameStart) req;
+				len = IntLength+ByteLength+TokenLength+(rgs.uname).length()+ByteLength;				
+				b = new byte[len];
+				Convert.write(b,Convert.intToBytes(len),pos);
+				pos+=IntLength;
+				b[pos] = (byte) tmp;
+				pos+=ByteLength;
+				Convert.write(b,Convert.hexStringToBytes(rgs.token),pos);
+				pos+=TokenLength;
+				Convert.write(b,(rgs.uname).getBytes(),pos);
+				pos+=(rgs.uname).length();
+				b[pos] = 0;
+				pos+=ByteLength;
+				out.write(b);
+				break;
 			}
 			out.flush();
 			DataInputStream in = new DataInputStream(client.getInputStream());
@@ -254,6 +290,7 @@ public class SocketClient {
 			if(status == 2) return LevelFailed;
 			if(status == 3) return PasswordFailed;
 			if(status == 4) return SubscribeFailed;
+			if(status == 5) return CheckinFailed;
 			switch (type) {
 			case Login:
 				byte[] buffer = new byte[32];
@@ -333,15 +370,30 @@ public class SocketClient {
 				outlen-=ByteLength;
 				int number =0;
 				Vector<RGroup> vrg = new Vector<RGroup>();
-				while(outlen > 1) {
+				while(true) {
 					int com = in.readUnsignedByte();
+					if(com == 0)break;
 					int sec = in.readUnsignedByte();
 					vrg.add(new RGroup(com,sec));
 					outlen-=ByteLength*2;
 					number++;
 				}
-				in.readUnsignedByte();
-				msg.obj = new ResLogin(tk, r, vrg, number);
+				outlen-=ByteLength;
+				Vector<RMarker> vrm = new Vector<RMarker>();
+				while(outlen > IntLength + IntLength){
+					
+					int lv = in.readUnsignedByte();
+					double lati = in.readDouble();
+					double logi = in.readDouble();
+					int dtime = in.readInt(); 
+					int mid = in.readUnsignedByte();
+					int score = in.readInt();
+					vrm.add(new RMarker(lati,logi,dtime,lv,mid,score));
+					outlen -= (ByteLength + DoubleLength + DoubleLength + IntLength + ByteLength + IntLength);
+				}
+				int as = in.readInt();
+				int bs = in.readInt();
+				msg.obj = new ResLogin(tk, r, vrg, number,vrm, as, bs);
 				msg.what = Login;
 				recall.sendMessage(msg);
 				Vector<String> vs = new Vector<String>();
@@ -465,6 +517,16 @@ public class SocketClient {
 			case SetPassword:
 				msg.obj = new ResSetPassword();
 				msg.what = SetPassword;
+				recall.sendMessage(msg);
+				break;
+			case Checkin:
+				msg.obj = new ResCheckin();
+				msg.what = Checkin;
+				recall.sendMessage(msg);
+				break;
+			case GameStart:
+				msg.obj = new ResGameStart();
+				msg.what = GameStart;
 				recall.sendMessage(msg);
 				break;
 			}

@@ -48,6 +48,7 @@ public class Settings extends PiztorAct {
 			if (out == null) {
 				System.out.println("act被回收了");
 			}
+			/*
 			switch (m.what) {
 			case Res.Login:// 上传自己信息成功or失败
 				Log.d("update location", "successfull");
@@ -101,6 +102,7 @@ public class Settings extends PiztorAct {
 			default:
 				break;
 			}
+			*/
 		}
 	}
 	ReCall handler = new ReCall(this);

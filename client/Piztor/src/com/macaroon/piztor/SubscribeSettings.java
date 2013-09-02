@@ -39,7 +39,8 @@ public class SubscribeSettings extends PiztorAct {
         ReCall(SubscribeSettings activity) {
             outerClass = new WeakReference<SubscribeSettings>(activity);
         }
-
+        
+        /*
         @Override
         public void handleMessage(Message m) {
             SubscribeSettings out = outerClass.get();
@@ -115,6 +116,7 @@ public class SubscribeSettings extends PiztorAct {
                 break;
             }
         }
+        */
     }
     ReCall handler = new ReCall(this);
     
@@ -221,7 +223,7 @@ public class SubscribeSettings extends PiztorAct {
         	simpleAdapter.notifyDataSetChanged();
         }
         for (RGroup i : ((myApp) getApplication()).sublist) {
-        	if (i.section == 255) continue;
+        	if (recSubcribe.contains(i.company)) continue;
         	//else
             HashMap<String, Object> map = new HashMap<String, Object>();
             map.put("subscribe_text", i.company + "连 " + i.section + "班");
