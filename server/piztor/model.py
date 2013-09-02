@@ -1,6 +1,6 @@
 from sqlalchemy import Table, Column
-from sqlalchemy import Integer, String, Float, ForeignKey, Boolean
-from sqlalchemy.dialects.mysql import BLOB, TINYINT
+from sqlalchemy import Integer, String, ForeignKey, Boolean
+from sqlalchemy.dialects.mysql import BLOB, TINYINT, DOUBLE
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 from exc import *
@@ -12,6 +12,9 @@ _TOKEN_LEN = 16
 MAX_USERNAME_SIZE = 20
 MAX_PASSWORD_SIZE = 20
 NOT_A_LAT = NOT_A_LNG = 300
+MARKER_FRESH = 0x00
+MARKER_DISPLAYED = 0x01
+MARKER_CHECKED = 0x02
 
 _table_typical_settings = {
         'mysql_engine' : 'InnoDB',
@@ -24,7 +27,7 @@ class _TableName:   # avoid typoes
     UserAuth = 'user_auth'
     GroupInfo = 'group_info'
     GroupSub = 'group_sub'
-
+    MarkerInfo = 'marker_info'
 
 class GroupInfo(Base):
     __tablename__ = _TableName.GroupInfo
@@ -32,9 +35,7 @@ class GroupInfo(Base):
 
     id = Column(Integer, primary_key = True)
     subscribers = None
-
-    def __init__(self, gid):
-        self.id = gid
+    score = Column(Integer, nullable = False)
 
 group_sub = Table(_TableName.GroupSub, Base.metadata,
         Column('uid', Integer, ForeignKey(_TableName.UserModel + '.id')),
@@ -82,8 +83,8 @@ class LocationInfo(Base):
 
     uid = Column(Integer, ForeignKey(_TableName.UserModel + '.id'),
                 primary_key = True)
-    lat = Column(Float(precesion = 64), nullable = False)
-    lng = Column(Float(precesion = 64), nullable = False)
+    lat = Column(DOUBLE, nullable = False)
+    lng = Column(DOUBLE, nullable = False)
     user = relationship("UserModel", uselist = False,
             backref = backref("location", uselist = False,
                 cascade = "all, delete-orphan"))
@@ -136,4 +137,13 @@ class UserAuth(Base):
     def get_token(self):
         return self.token
 
+class MarkerInfo(Base):
+    __tablename__ = _TableName.MarkerInfo
+    __table_args__ = _table_typical_settings
+
+    id = Column(Integer, primary_key = True)
+    lat = Column(DOUBLE, nullable = False)
+    lng = Column(DOUBLE, nullable = False)
+    status = Column(TINYINT)
+    score = Column(Integer)
 

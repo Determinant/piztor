@@ -24,8 +24,8 @@ class _SectionSize:
     LOCATION_ENTRY = USER_ID + LATITUDE + LONGITUDE
     PADDING = 1
 
-host = "202.120.7.4"
-#host = "localhost"
+#host = "202.120.7.4"
+host = "localhost"
 port = 2223
 
 def pack_data(optcode, data):
@@ -80,11 +80,11 @@ def gen_send_text_mesg(token, username, mesg):
     data += chr(0)
     return pack_data(0x06, data)
 
-def gen_set_marker(token, username, lat, lng, deadline):
+def gen_set_marker(token, username, lat, lng, deadline, mid, score):
     data = pack("!32s", token)
     data += username
     data += chr(0)
-    data += pack("!ddL", lat, lng, deadline)
+    data += pack("!ddLBL", lat, lng, deadline, mid, score)
     return pack_data(0x07, data)
 
 def gen_change_password(token, username, old_pass, new_pass):
@@ -96,6 +96,19 @@ def gen_change_password(token, username, old_pass, new_pass):
     data += new_pass
     data += chr(0)
     return pack_data(0x08, data)
+
+def gen_check_in(token, username, mid):
+    data = pack("!32s", token)
+    data += username
+    data += chr(0)
+    data += pack("!B", mid)
+    return pack_data(0x09, data)
+
+def gen_game_start(token, username):
+    data = pack("!32s", token)
+    data += username
+    data += chr(0)
+    return pack_data(0x0a, data)
 
 def send(data):
     received = bytes()
@@ -128,6 +141,7 @@ def user_auth(username, password):
         if pl != len(resp):
             logger.error("User authentication: incorrect packet length")
         print "status: " + str(status)
+        print get_hex(resp[38:])
 #        print "token: " + get_hex(token)
     except error:
         logger.error("User authentication: can not parse the response")
@@ -188,8 +202,9 @@ def send_text_mesg(token, username, mesg):
     except error:
         logger.error("Send text mesg: can not parse the response")
 
-def set_marker(token, username, lat, lng, deadline):
-    resp = send(gen_set_marker(token, username, lat, lng, deadline))
+def set_marker(token, username, lat, lng, deadline, mid, score):
+    resp = send(gen_set_marker(token, username, lat, lng, deadline,
+                                mid, score))
     try:
         pl, optcode, status = unpack("!LBB", resp)
         if pl != len(resp):
@@ -207,6 +222,27 @@ def change_password(token, username, old_pass, new_pass):
         print "status: " + str(status)
     except error:
         logger.error("Change password: can not pase the response")
+
+def check_in(token, username, mid):
+    resp = send(gen_check_in(token, username, mid))
+    try:
+        pl, optcode, status = unpack("!LBB", resp)
+        if pl != len(resp):
+            logger.error("Check-in: incorrect packet length")
+        print "status: " + str(status)
+    except error:
+        logger.error("Check-in: can not pase the response")
+
+def game_start(token, username):
+    resp = send(gen_game_start(token, username))
+    try:
+        pl, optcode, status = unpack("!LBB", resp)
+        if pl != len(resp):
+            logger.error("Game-start: incorrect packet length")
+        print "status: " + str(status)
+    except error:
+        logger.error("Game-start: can not parse the response")
+
 
 def open_push_tunnel(token, username):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -4,8 +4,8 @@ from time import sleep
 from sys import argv
 from ptp_send import *
 
-username = "haha"
-password = "haha"
+username = "yg"
+password = "yg"
 #username = "12345678901234567890"
 #password = "world123456789012345"
 
@@ -18,7 +18,9 @@ if len(argv) == 3:
 
 
 token = user_auth(username, password)
-change_password(token, username, "ddd", "haha")
+game_start(token, username)
+#check_in(token, username, 0x23)
+#change_password(token, username, "ddd", "haha")
 #print "Client: " + username + "logged in"
 #open_push_tunnel(token, username)
 #for i in xrange(100):

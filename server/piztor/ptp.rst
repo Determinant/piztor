@@ -1,5 +1,5 @@
-Piztor Transmission Protocol v2.0d
-----------------------------------
+Piztor Transmission Protocol v2.0d for game
+-------------------------------------------
 
 - Pull 
 
@@ -281,6 +281,29 @@ Piztor Transmission Protocol v2.0d
       - ``0x01`` for invalid token
       - ``0x03`` for wrong password
 
+  - Check-in ``0x09``
+
+    - Request
+
+      ::
+
+          +-------------+----1b-----+
+          |  AUTH_HEAD  | MARKER_ID |
+          +-------------+---uchar---+
+
+    - Response
+
+      ::
+      
+          +--------+
+          | STATUS |
+          +--------+
+
+      - ``0x00`` for success
+      - ``0x01`` for invalid token
+      - ``0x05`` for check-in failure 
+
+
 - Push Notification
 
   - General Request
@@ -319,7 +342,14 @@ Piztor Transmission Protocol v2.0d
 
     ::
 
-      ----+--1b---+----8b----+----8b-----+----4b----+
-      ... | LEVEL | LATITUDE | LONGITUDE | DEADLINE |
-      ----+-uchar-+----------+-----------+----int---+
+      ----+--1b---+----8b----+----8b-----+----4b----+----1b-----+---4b--+
+      ... | LEVEL | LATITUDE | LONGITUDE | DEADLINE | MARKER_ID | SCORE |
+      ----+-uchar-+----------+-----------+----int---+---uchar---+--int--+
 
+   - Marker Removal Push
+
+    ::
+
+      ----+----1b-----+
+      ... | MARKER_ID |
+      ----+-----------+

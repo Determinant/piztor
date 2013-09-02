@@ -44,6 +44,7 @@ class _SectionSize:
     LONGITUDE = 8
     PADDING = 1
     DEADLINE = 4
+    MARKER_ID = 1
 
 _MAX_AUTH_HEAD_SIZE = _SectionSize.USER_TOKEN + \
                       MAX_USERNAME_SIZE + \
@@ -54,6 +55,7 @@ _HEADER_SIZE = _SectionSize.LENGTH + \
 _MAX_TEXT_MESG_SIZE = 1024
 _MAX_SUB_LIST_SIZE = 10
 _MAX_PENDING_PUSH = 10
+_INIT_MARKER_NUM = 2
 
 class _OptCode:
     user_auth =             0x00
@@ -65,6 +67,8 @@ class _OptCode:
     send_text_mesg =        0x06
     set_marker =            0x07
     change_password =       0x08
+    check_in =              0x09
+    game_start =            0x0A
 
 class _StatusCode:
     sucess = 0x00
@@ -72,6 +76,7 @@ class _StatusCode:
     insuf_lvl = 0x02
     wrong_pass = 0x03
     grp_not_found = 0x04
+    checkin_fail = 0x05
 
 class PushData(object):
     from hashlib import sha256
@@ -91,8 +96,16 @@ class PushLocationData(PushData):
         self.pack(0x01, struct.pack("!Ldd", uid, lat, lng))
 
 class PushMarkerData(PushData):
-    def __init__(self, perm, lat, lng, deadline):
-        self.pack(0x02, struct.pack("!Bddl", perm, lat, lng, deadline))
+    def __init__(self, perm, lat, lng, deadline, mid, score):
+        self.pack(0x02, struct.pack("!BddlBL", perm, lat, lng, deadline, 
+                                            mid, score))
+class PushMarkerRemovalData(PushData):
+    def __init__(self, mid):
+        self.pack(0x03, struct.pack("!B", mid))
+
+class PushScoreData(PushData):
+    def __init__(self, score1, score2):
+        self.pack(0x04, struct.pack("!LL", score1, score2))
 
 class PushTunnel(object):
     def __init__(self, uid):
@@ -126,8 +139,8 @@ class PushTunnel(object):
     def push(self):
         if self.blocked:
             return
-        #print "Pushing via " + str(self.uid)
-        #print "Pending size: " + str(len(self.pending))
+        print "Pushing via " + str(self.uid)
+        print "Pending size: " + str(len(self.pending))
         #logger.info("Pushing...")
         if (self.conn is None) or len(self.pending) == 0:
             return
@@ -335,6 +348,17 @@ class UserAuthHandler(RequestHandler):
             # USER_ENTRY
             reply += RequestHandler.pack_user_entry(user)
             reply += RequestHandler.pack_sub_list(user)
+            score1 = self.session.query(GroupInfo) \
+                        .filter(GroupInfo.id == 5889).one().score
+            score2 = self.session.query(GroupInfo) \
+                        .filter(GroupInfo.id == 5890).one().score
+            
+            for mrk in self.session.query(MarkerInfo).all():
+                if mrk.status != MARKER_DISPLAYED:
+                    continue
+                reply += struct.pack("!BddlBL", 2, mrk.lat, mrk.lng, 0x7fffffff, 
+                                            mrk.id, mrk.score)
+            reply += struct.pack("!LL", score1, score2)
             return self.pack(reply)
 
 
@@ -357,9 +381,9 @@ class UpdateLocationHandler(RequestHandler):
         except struct.error:
             raise BadReqError("Update location: Malformed request body")
 
-#        logger.info("Trying to update location with "
-#                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
-#                .format(get_hex(token), username, lat, lng))
+        logger.info("Trying to update location with "
+                    "(token = {0}, username = {1}, lat = {2}, lng = {3})"\
+                .format(get_hex(token), username, lat, lng))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
@@ -384,15 +408,6 @@ class UpdateLocationHandler(RequestHandler):
         pdata = PushLocationData(u.id, lat, lng)
         for user in comp.subscribers:
             uid = user.id
-            if uid == uauth.uid: continue
-            if pt.has_key(uid):
-                tunnel = pt[uid]
-                tunnel.add(pdata)
-                tunnel.push()
-
-        for user in sec.subscribers:
-            uid = user.id
-            if uid == uauth.uid: continue
             if pt.has_key(uid):
                 tunnel = pt[uid]
                 tunnel.add(pdata)
@@ -638,6 +653,32 @@ class SetMarkerHandler(RequestHandler):
                         _SectionSize.LATITUDE + \
                         _SectionSize.LONGITUDE + \
                         _SectionSize.DEADLINE
+    @classmethod
+    def push_new_marker(cls, u, session):
+        left = session.query(MarkerInfo) \
+                .filter(MarkerInfo.status == MARKER_FRESH).all()
+        if len(left) == 0:
+            logger.warn("All markers have been used!")
+            return
+        marker = left[0]
+        marker.status = MARKER_DISPLAYED
+        session.commit()
+        pdata = PushMarkerData(perm = 2, lat = marker.lat, \
+                                         lng = marker.lng, \
+                                         deadline = 0x7fffffff, \
+                                         mid = marker.id, \
+                                         score = marker.score)
+        ulist = session.query(UserModel) \
+                    .filter(UserModel.comp_id == u.comp_id).all()
+
+        pt = RequestHandler.push_tunnels
+        for user in ulist:
+            uid = user.id
+            if pt.has_key(uid):
+                tunnel = pt[uid]
+                tunnel.add(pdata)
+                tunnel.push()
+
 
     def handle(self, tr_data, conn):
         self.check_size(tr_data)
@@ -645,15 +686,15 @@ class SetMarkerHandler(RequestHandler):
         try:
             token, = struct.unpack("!32s", tr_data[:32])
             username, tail = RequestHandler.trunc_padding(tr_data[32:])
-            lat, lng, deadline = struct.unpack("!ddl", tail)
+            lat, lng, deadline, mid, score = struct.unpack("!ddlBL", tail)
             if username is None: 
                 raise struct.error
         except struct.error:
             raise BadReqError("Set marker: Malformed request body")
 
-#        logger.info("Trying to set marker with "
-#                    "(token = {0}, username = {1})"\
-#                .format(get_hex(token), username))
+        logger.info("Trying to set marker with "
+                    "(token = {0}, username = {1})"\
+                .format(get_hex(token), username))
 
         uauth = RequestHandler.get_uauth(token, username, self.session)
         # Authentication failure
@@ -661,24 +702,8 @@ class SetMarkerHandler(RequestHandler):
             logger.warning("Authentication failure")
             return self.pack(struct.pack("!B", _StatusCode.auth_fail))
 
-        pt = RequestHandler.push_tunnels
-        u = uauth.user
-        if u.perm == _PermCode.section:
-            ulist = self.session.query(UserModel) \
-                .filter(UserModel.sec_id == u.sec_id).all()
-        elif u.perm == _PermCode.company:
-            ulist = self.session.query(UserModel) \
-                .filter(UserModel.comp_id == u.comp_id).all()
-        else: 
-            return self.pack(struct.pack("!B", _StatusCode.insuf_lvl))
+        SetMarkerHandler.push_new_marker(uauth.user, self.session)
 
-        for user in ulist:
-            uid = user.id
-            if uid == uauth.uid: continue
-            if pt.has_key(uid):
-                tunnel = pt[uid]
-                tunnel.add(PushMarkerData(u.perm, lat, lng, deadline))
-                tunnel.push()
         logger.info("Set marker successfully!")
         return self.pack(struct.pack("!B", _StatusCode.sucess))
 
@@ -727,6 +752,143 @@ class ChangePasswordHandler(RequestHandler):
 
         return self.pack(struct.pack("!B",  _StatusCode.sucess))
 
+class CheckInHandler(RequestHandler):
+
+    _optcode = _OptCode.check_in
+    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE + \
+                        _SectionSize.MARKER_ID
+
+    def handle(self, tr_data, conn):
+        self.check_size(tr_data)
+        logger.info("Reading check-in data...")
+        try:
+            token, = struct.unpack("!32s", tr_data[:32])
+            username, tail = RequestHandler.trunc_padding(tr_data[32:])
+            if username is None: 
+                raise struct.error
+            mid, = struct.unpack("!B", tail)
+        except struct.error:
+            raise BadReqError("Check-in: Malformed request body")
+
+        logger.info("Trying to check-in with "
+                    "(token = {0}, username = {1}, mid = {2})"\
+                .format(get_hex(token), username, str(mid)))
+
+        uauth = RequestHandler.get_uauth(token, username, self.session)
+        # Authentication failure
+        if uauth is None:
+            logger.warning("Authentication failure")
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
+
+        try:
+            marker = self.session.query(MarkerInfo) \
+                .filter(MarkerInfo.id == mid).one()
+        except NoResultFound:
+            raise BadReqError("Check-in: no such marker")
+
+        if marker.status != MARKER_DISPLAYED:
+            return self.pack(struct.pack("!B", _StatusCode.checkin_fail))
+        marker.status = MARKER_CHECKED
+
+        pt = RequestHandler.push_tunnels
+        u = uauth.user
+
+        comp = self.session.query(GroupInfo) \
+                .filter(GroupInfo.id == u.comp_id).one()
+        sec = self.session.query(GroupInfo) \
+                .filter(GroupInfo.id == u.sec_id).one()
+
+        sec.score += marker.score
+        logger.info("Player {0} got score: {1}".format(username, str(marker.score)))
+
+        score1 = self.session.query(GroupInfo) \
+                    .filter(GroupInfo.id == 5889).one().score
+        score2 = self.session.query(GroupInfo) \
+                    .filter(GroupInfo.id == 5890).one().score
+
+        pdata = PushMarkerRemovalData(mid)
+        for user in comp.subscribers:
+            uid = user.id
+            if pt.has_key(uid):
+                tunnel = pt[uid]
+                tunnel.add(pdata)
+                tunnel.add(PushScoreData(score1, score2))
+                tunnel.push()
+
+        SetMarkerHandler.push_new_marker(u, self.session)
+
+        logger.info("User checked in successfully!")
+        self.session.commit()
+        return self.pack(struct.pack("!B",  _StatusCode.sucess))
+
+class GameStartHandler(RequestHandler):
+
+    _optcode = _OptCode.game_start
+    _max_tr_data_size = _MAX_AUTH_HEAD_SIZE
+
+    def handle(self, tr_data, conn):
+        self.check_size(tr_data)
+        logger.info("Reading game-start data...")
+        try:
+            token, = struct.unpack("!32s", tr_data[:32])
+            username, tail = RequestHandler.trunc_padding(tr_data[32:])
+            if username is None: 
+                raise struct.error
+        except struct.error:
+            raise BadReqError("Game-start: Malformed request body")
+
+        logger.info("Trying to game-start with "
+                    "(token = {0}, username = {1})"\
+                .format(get_hex(token), username))
+
+        uauth = RequestHandler.get_uauth(token, username, self.session)
+        # Authentication failure
+        if uauth is None:
+            logger.warning("Authentication failure")
+            return self.pack(struct.pack("!B", _StatusCode.auth_fail))
+
+
+        pt = RequestHandler.push_tunnels
+        u = uauth.user
+
+        if u.perm != 2:
+            logger.warning("Insufficient privilege")
+            return self.pack(struct.pack("!B", _StatusCode.insuf_lvl))
+
+        team1 = self.session.query(GroupInfo) \
+                .filter(GroupInfo.id == 5889).one()
+        team2 = self.session.query(GroupInfo) \
+                .filter(GroupInfo.id == 5890).one()
+
+        team1.score = 0
+        team2.score = 0
+
+        for mrk in self.session.query(MarkerInfo).all():
+            mrk.status = MARKER_FRESH
+
+        users1 = self.session.query(UserModel) \
+                    .filter(UserModel.sec_id == team1.id)
+
+        users2 = self.session.query(UserModel) \
+                    .filter(UserModel.sec_id == team2.id)
+        
+        for i in xrange(_INIT_MARKER_NUM):
+            SetMarkerHandler.push_new_marker(u, self.session)
+
+        comp = self.session.query(GroupInfo) \
+                .filter(GroupInfo.id == u.comp_id).one()
+
+        for user in comp.subscribers:
+            uid = user.id
+            if pt.has_key(uid):
+                tunnel = pt[uid]
+                tunnel.add(PushScoreData(team1.score, team2.score))
+                tunnel.push()
+
+        logger.info("GAME START!")
+        self.session.commit()
+        return self.pack(struct.pack("!B",  _StatusCode.sucess))
+
 
 class PTP(Protocol, TimeoutMixin):
 
@@ -738,7 +900,9 @@ class PTP(Protocol, TimeoutMixin):
                 OpenPushTunnelHandler,
                 SendTextMessageHandler,
                 SetMarkerHandler,
-                ChangePasswordHandler]
+                ChangePasswordHandler,
+                CheckInHandler,
+                GameStartHandler]
 
     handler_num = len(handlers)
 

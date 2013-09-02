@@ -16,6 +16,12 @@ class UserData:
         self.perm = perm
         self.sub = sub
 
+class MarkerData:
+    def __init__(self, lat, lng, score):
+        self.lat = lat
+        self.lng = lng
+        self.score = score
+
 def create_database():
     engine = create_engine('mysql://' + path, echo = True)
     Base.metadata.drop_all(engine)
@@ -26,7 +32,7 @@ def find_or_create_group(comp_no, sec_no, session):
     q = session.query(GroupInfo).filter(GroupInfo.id == gid)
     entry = q.first()
     if not entry:
-        entry = GroupInfo(gid = gid)
+        entry = GroupInfo(id = gid, score = 0)
     return entry
 
 
@@ -52,11 +58,22 @@ def import_user_data(data):
         session.add(um)
         session.commit()
 
+def import_marker_data(data):
+    engine = create_engine('mysql://' + path, echo = True)
+    Session = sessionmaker(bind = engine)
+    session = Session()
+
+    for marker in data:
+        mk = MarkerInfo(lat = marker.lat, lng = marker.lng, 
+                        status = MARKER_FRESH, score = marker.score)
+        session.add(mk)
+        session.commit()
+
 if __name__ == '__main__':
 
     from sys import argv, exit
-    if len(argv) != 2:
-        print "Usage: " + argv[0] + " FILE"
+    if len(argv) != 3:
+        print "Usage: " + argv[0] + " FILE1 FILE2"
         exit(0) 
 
     data = list()
@@ -64,10 +81,9 @@ if __name__ == '__main__':
         while True:
             line = f.readline().split()
             if len(line) == 0: break
-            idx = 0
             comp_no = line[3]
             sec_no = line[4]
-            sub = [ (comp_no, sec_no), (comp_no, 0xff) ]
+            sub = [ (comp_no, 0xff), (comp_no, sec_no) ]
             data.append(UserData(username = line[0], 
                                 nickname = line[1],
                                 password = line[0],
@@ -76,7 +92,13 @@ if __name__ == '__main__':
                                 sex = line[2],
                                 perm = line[5],
                                 sub = sub))
-
+    data2 = list()
+    with open(argv[2], 'r') as f:
+        while True:
+            line = f.readline().split()
+            if len(line) == 0: break
+            data2.append(MarkerData(lat = line[0], lng = line[1], score = line[2]))
 
     create_database()
     import_user_data(data)
+    import_marker_data(data2)

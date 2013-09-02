@@ -26,7 +26,7 @@ def find_or_create_group(comp_no, sec_no, session):
     q = session.query(GroupInfo).filter(GroupInfo.id == gid)
     entry = q.first()
     if not entry:
-        entry = GroupInfo(gid = gid)
+        entry = GroupInfo(gid = gid, score = 0)
     return entry
 
 
