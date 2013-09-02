@@ -25,6 +25,7 @@ public class Transam implements Runnable {
 	static final int SendMessage =6;
 	static final int SetMarker =7;
 	static final int SetPassword =8;
+	static final int Checkin =9;
 	
 	static final int ClosePush = -5;
 	
@@ -38,11 +39,13 @@ public class Transam implements Runnable {
 	static final int ELevelFailedException =108;
 	static final int EPasswordFailedException =109;
 	static final int ESubscribeFailedException =110;
+	static final int ECheckinFailedException =111;
 	
 	static final int Reconnect =-2;
 	static final int Exception =-1;
 	static final int TimeOut =0;
 	
+	static final int RCheckinFailed =7;
 	static final int RSubscribeFailed =6; 
 	static final int RPasswordFailed =5;
 	static final int RServerFetchFailed =4;
@@ -276,6 +279,14 @@ public class Transam implements Runnable {
 					recall.sendMessage(msg);
 					running = false;
 				}
+				else if (out == RCheckinFailed){
+					client.closeSocket();
+					Message msg = new Message();
+					msg.what = Exception;
+					msg.obj = new ECheckinFailedException(req.type,req.time);
+					recall.sendMessage(msg);
+					running = false;
+				}
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 				Message msg = new Message();
@@ -311,11 +322,14 @@ public class Transam implements Runnable {
 					TimerTask task = out.new tmain();
 					out.timer.schedule(task,out.retime);
 				} else if (out.tcnt == 0) {
+					out.tcnt = out.cnt;
 					Message m = new Message();
 					m.obj = msg.obj;
 					m.what = Exception;
 					out.recall.sendMessage(m);
-					out.running = false;
+					out.timer = new Timer();
+					TimerTask task = out.new tmain();
+					out.timer.schedule(task,out.retime);
 				}
 				break;
 			case TimeOut:
@@ -326,12 +340,15 @@ public class Transam implements Runnable {
 					TimerTask task = out.new tmain();
 					out.timer.schedule(task,out.retime);
 				} else if (out.tcnt == 0) {
+					out.tcnt = out.cnt;
 					Message m = new Message();
 					EConnectFailedException c = new EConnectFailedException(out.req.type,out.req.time);
 					m.obj = c;
 					m.what = Exception;
 					out.recall.sendMessage(m);
-					out.running = false;
+					out.timer = new Timer();
+					TimerTask task = out.new tmain();
+					out.timer.schedule(task,out.retime);
 				}
 				break;
 			case Reconnect:
@@ -342,13 +359,16 @@ public class Transam implements Runnable {
 					TimerTask task = out.new pmain();
 					out.pushtimer.schedule(task,out.retime);
 				} else if (out.rcnt == 0) {
-					out.pushing = false;
+					out.rcnt = out.cnt;
 					Message m = new Message();
 					EPushFailedException c = new EPushFailedException(5,0);
 					//m.obj = msg.obj;
 					m.obj = c;
 					m.what = Exception;
 					out.recall.sendMessage(m);
+					out.pushtimer = new Timer();
+					TimerTask task = out.new pmain();
+					out.pushtimer.schedule(task,out.retime);
 				}
 				break;
 			case StartPush:

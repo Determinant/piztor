@@ -13,10 +13,14 @@ public class Res{
 	static final int SendMessage =6;
 	static final int SetMarker =7;
 	static final int SetPassword =8;
+	static final int Checkin =9;
+	static final int GameStart = 10;
 	
 	static final int PushMessage =100;
 	static final int PushLocation =101;
 	static final int PushMarker =102;
+	static final int PushRemoveMarker =103;
+	static final int PushScore =104;
 	
 	int type;
 	Res(int t){
@@ -33,13 +37,18 @@ class ResLogin extends Res{
 	RUserInfo uinfo;      //userinfo
 	Vector<RGroup> sublist;   //list of users subscribed
 	int subscribeNumber;   //number of users subscribed
+	Vector<RMarker> markerlist;
+	int AScore, BScore;
 
-	ResLogin(String token,RUserInfo rui,Vector<RGroup> slist,int subn){
+	ResLogin(String token,RUserInfo rui,Vector<RGroup> slist,int subn,Vector<RMarker> m, int as, int bs){
 		super(0);	//for type 0
 		t = token;
 		uinfo = rui;
 		sublist = slist;
 		subscribeNumber = subn;
+		markerlist = m;
+		AScore = as;
+		BScore = bs;
 	}
 }
 
@@ -135,6 +144,19 @@ class ResSetPassword extends Res{
 	}
 }
 
+class ResCheckin extends Res{
+
+	ResCheckin(){
+		super(9);	//for type 9
+	}
+}
+
+class ResGameStart extends Res{
+
+	ResGameStart(){
+		super(10);	//for type 10
+	}
+}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -177,16 +199,29 @@ class ResPushLocation extends Res{
 //--------------------------------------//
 
 class ResPushMarker extends Res{
-	double latitude;
-	double longitude;
-	int deadline;
-	int level;
-
-	ResPushMarker(double lat,double lot,int dtime,int lv){
+	RMarker marker;
+	ResPushMarker(double lat,double lot,int dtime,int lv,int markerid,int s){
 		super(102);	//for type 102
-		latitude = lat;
-		longitude = lot;
-		deadline = dtime;
-		level = lv;
+		marker = new RMarker(lat,lot,dtime,lv,markerid,s);
+	}
+}
+
+class ResPushRemoveMarker extends Res{
+	int MarkerID;
+
+	ResPushRemoveMarker(int id){
+		super(103);	//for type 103
+		MarkerID =id;
+	}
+}
+
+class ResPushScore extends Res{
+	int AScore;
+	int BScore;
+
+	ResPushScore(int a,int b){
+		super(104);	//for type 104
+		AScore = a;
+		BScore = b;
 	}
 }

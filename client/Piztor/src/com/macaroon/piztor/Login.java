@@ -1,5 +1,7 @@
 package com.macaroon.piztor;
 
+import com.baidu.platform.comapi.basestruct.GeoPoint;
+
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,8 +11,11 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.view.Window;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 public class Login extends PiztorAct {
@@ -39,7 +44,22 @@ public class Login extends PiztorAct {
 						res.uinfo.nickname);
 				app.mapInfo.myInfo.level = res.uinfo.level;
 				app.mapInfo.myInfo.nickname = res.uinfo.nickname;
-				System.out.println("login !!!!" + res.sublist.size());
+				for (RMarker i : res.markerlist) {
+					MarkerInfo mInfo = new MarkerInfo();
+					mInfo.level = i.level;
+					mInfo.markerId = i.markerID;
+					mInfo.markerPoint = new GeoPoint((int)(i.latitude * 1E6), (int)(i.longitude * 1E6));
+					mInfo.score = i.score;
+					mInfo.markerTimestamp = i.deadline;
+					app.mapInfo.addMarkerInfo(mInfo);
+				}
+				if (app.mapInfo.myInfo.section == 1) {
+					app.mapInfo.myScore = res.AScore;
+					app.mapInfo.otherScore = res.BScore;
+				} else {
+					app.mapInfo.myScore = res.BScore;
+					app.mapInfo.otherScore = res.AScore;
+				}
 				actMgr.trigger(AppMgr.loginSuccess);
 			} else {
 				System.out.println("login handler reveive other info   :  "
@@ -87,11 +107,13 @@ public class Login extends PiztorAct {
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "login";
 		super.onCreate(savedInstanceState);
-		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-	    requestWindowFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.activity_login);
-		setProgressBarIndeterminateVisibility(true); 
-		setProgressBarVisibility(true);
+		ImageView imageView = (ImageView) findViewById(R.id.login_img);
+		AlphaAnimation alphaUp = new AlphaAnimation(0.0f, 1.0f);
+		alphaUp.setDuration(2000);
+		alphaUp.setStartOffset(500);
+		alphaUp.setFillAfter(true);
+		imageView.startAnimation(alphaUp);
 	}
 
 	@Override

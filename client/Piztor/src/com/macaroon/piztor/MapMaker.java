@@ -9,8 +9,10 @@ import java.util.Vector;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
+import android.os.DropBoxManager.Entry;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -21,8 +23,6 @@ import android.widget.Toast;
 import com.baidu.mapapi.map.ItemizedOverlay;
 import com.baidu.mapapi.map.LocationData;
 import com.baidu.mapapi.map.MKOLUpdateElement;
-import com.baidu.mapapi.map.MKOfflineMap;
-import com.baidu.mapapi.map.MKOfflineMapListener;
 import com.baidu.mapapi.map.MapController;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationOverlay;
@@ -36,7 +36,6 @@ public class MapMaker {
 	// MapView controlling component
 	MapView mMapView = null;
 	MapController mMapController = null;
-	MKOfflineMap mOffline = null;
 
 	// Default center
 	private final static GeoPoint sjtuCenter = new GeoPoint(
@@ -47,24 +46,22 @@ public class MapMaker {
 	private OverlayItem curItem = null;
 	private LocationOverlay mLocationOverlay;
 	private ArrayList<OverlayItem> mItems = null;
-	private MapInfo preMapInfo = null;
-	private MapInfo nowMapInfo = null;
-	private Vector<UserInfo> freshManInfo = null;
 
 	// hash from uid to overlay item
-	private HashMap<Integer, OverlayItem> hash = null;
-	private HashMap<OverlayItem, Integer> markerToInt = null;
+	private HashMap<Integer, OverlayItem> userToItem = null;
+	private HashMap<OverlayItem, Integer> itemToUser = null;
 
 	// marker layer
-	OverlayItem nowMarker = null;
-	static int nowMarkerHour;
-	static int nowMarkerMinute;
-	static long nowMarkerTimestamp;
-	static int newMarkerHour;
-	static int newMarkerMinute;
-	static long newMarkerTimestamp;
-	private int markerIndex;
-	private int nowMarkerLevel;
+	/*
+	 * OverlayItem nowMarker = null; static int nowMarkerHour; static int
+	 * nowMarkerMinute; static long nowMarkerTimestamp; static int
+	 * newMarkerHour; static int newMarkerMinute; static long
+	 * newMarkerTimestamp; private int markerIndex; private int nowMarkerLevel;
+	 */
+	HashMap<Integer, OverlayItem> markerToItem;
+	// from mid to item
+	HashMap<OverlayItem, Integer> itemToMarker;
+	// from item to mid
 
 	// Popup component
 	PopupOverlay popLay = null;
@@ -124,19 +121,24 @@ public class MapMaker {
 
 		@Override
 		public boolean onTap(int index) {
-
-			if (nowMarker != null && index == markerIndex) {
+			
+			if (app.mapInfo.markerInfo != null
+					&& itemToMarker.containsKey(mOverlay.getItem(index))) {
+				Log.d("marker", "on tap" + index);
 				OverlayItem item = getItem(index);
-				leftText.setText(nowMarkerHour + "点");
-				popupText.setText(nowMarkerMinute + "分");
-				Bitmap bitmap[] = { BMapUtil.getBitmapFromView(popupLeft),
-						BMapUtil.getBitmapFromView(popupInfo),
-						BMapUtil.getBitmapFromView(popupRight), };
+				MarkerInfo mInfo = app.mapInfo.getMarkerInfo(itemToMarker
+						.get(item));
+				leftText.setText("哈");
+				popupText.setText("分数：" + mInfo.score);
+				Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
 				popLay.showPopup(bitmap, item.getPoint(), 32);
-			} else {
+			} 
+			if (itemToUser.containsKey(mOverlay.getItem(index))){
 				OverlayItem item = getItem(index);
-				UserInfo tmpInfo = app.mapInfo.getUserInfo(markerToInt.get(item));
-				String itemInfo = tmpInfo.company + "连" + tmpInfo.section + "班 " + tmpInfo.nickname;
+				UserInfo tmpInfo = app.mapInfo.getUserInfo(itemToUser
+						.get(item));
+				String itemInfo = tmpInfo.company + "连" + tmpInfo.section
+						+ "班 " + tmpInfo.nickname;
 				popupText.setText(itemInfo);
 				Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
 				popLay.showPopup(bitmap, item.getPoint(), 32);
@@ -152,42 +154,6 @@ public class MapMaker {
 			}
 			return false;
 		}
-	}
-
-	/**
-	 * Initialize offline map
-	 */
-	public void InitOfflineMap() {
-
-		mOffline = new MKOfflineMap();
-		mOffline.init(mMapController, new MKOfflineMapListener() {
-
-			@Override
-			public void onGetOfflineMapState(int type, int state) {
-				switch (type) {
-				case MKOfflineMap.TYPE_DOWNLOAD_UPDATE:
-					MKOLUpdateElement update = mOffline.getUpdateInfo(state);
-					break;
-				case MKOfflineMap.TYPE_NEW_OFFLINE:
-					Log.d("offline", String.format("add offline map %d", state));
-					break;
-				case MKOfflineMap.TYPE_VER_UPDATE:
-					Log.d("offline", String.format("new offline map version"));
-					break;
-				}
-			}
-		});
-		int num = mOffline.scan();
-		
-		if (num == 0) {
-			// msg =
-			// "No offline map found. It may have been loaded already or misplaced.";
-		} else {
-			Toast.makeText(context, String.format("加载了%d个离线地图包", num), 
-					Toast.LENGTH_SHORT).show();
-		}
-		Log.d("offline", "inited");
-		
 	}
 
 	/**
@@ -210,8 +176,11 @@ public class MapMaker {
 
 		// TODO
 		// ///////////////////////////////////////////////////////////////
-		hash = new HashMap<Integer, OverlayItem>();
-		markerToInt = new HashMap<OverlayItem, Integer>();
+		userToItem = new HashMap<Integer, OverlayItem>();
+		markerToItem = new HashMap<Integer, OverlayItem>();
+		itemToMarker = new HashMap<OverlayItem, Integer>();
+		itemToUser = new HashMap<OverlayItem, Integer>();
+		
 		mOverlay = new MyOverlay(context.getResources().getDrawable(
 				R.drawable.circle_red), mMapView);
 		mMapView.getOverlays().add(mOverlay);
@@ -240,13 +209,7 @@ public class MapMaker {
 					// do nothing
 				}
 				if (index == 2) {
-					// remove current marker if is higher or equal level
-					if (app.mapInfo.myInfo.level >= nowMarkerLevel) {
-						AlertMaker removeAlert = new AlertMaker(context, MapMaker.this);
-						removeAlert.showRemoveMarkerAlert();
-					} else {
-						Toast.makeText(context, "权限不足", Toast.LENGTH_SHORT).show();
-					}
+					// do nothing
 				}
 			}
 		};
@@ -267,7 +230,6 @@ public class MapMaker {
 		InitLocationOverlay();
 		InitMyOverLay();
 		InitPopup();
-		//InitOfflineMap();
 		myBM = new Drawable[20];
 		initMyIcons();
 		// InitTouchListenr();
@@ -286,22 +248,15 @@ public class MapMaker {
 	}
 
 	public Drawable getGroupIcon(UserInfo userInfo) {
-		if (Main.colorMode == Main.show_by_team) {
-			if (userInfo.section == app.mapInfo.myInfo.section)
-				return myBM[0];
-			else
-				return myBM[userInfo.section % iconNum + 1];
-		} else {
-			if (userInfo.sex == app.mapInfo.myInfo.sex) return myBM[0];
-			else return myBM[1];
-		}
+		if (userInfo.section == app.mapInfo.myInfo.section)
+			return myBM[0];
+		else return myBM[1];
 	}
 
 	/**
 	 * Update location layer when new location is received
 	 */
-	public void UpdateLocationOverlay(LocationData locationData,
-			boolean hasAnimation) {
+	public void UpdateLocationOverlay(LocationData locationData, boolean hasAnimation) {
 		mLocationOverlay.setData(locationData);
 		mMapView.refresh();
 		if (hasAnimation) {
@@ -309,72 +264,123 @@ public class MapMaker {
 					(int) (locationData.latitude * 1E6),
 					(int) (locationData.longitude * 1E6)));
 		}
-		checkMarkerTime();
 	}
 
 	boolean isInvalidLocation(GeoPoint point) {
-		if (point == null) return false;
-		if (point.getLatitudeE6() / 1E6 > 180.0 || point.getLatitudeE6() / 1E6 < -180.0
-				|| point.getLongitudeE6() > 180.0 || point.getLongitudeE6() / 1E6 < -180.0)
+		if (point == null)
+			return false;
+		if (point.getLatitudeE6() / 1E6 > 180
+				|| point.getLatitudeE6() / 1E6 < -180
+				|| point.getLongitudeE6() > 180
+				|| point.getLongitudeE6() / 1E6 < -180)
 			return false;
 		return true;
 	}
-	
+
 	/**
 	 * Update to draw other users
 	 */
 	public void UpdateMap(MapInfo mapInfo) {
+
 		if (mapInfo == null) {
 			if (mOverlay != null && mOverlay.getAllItem().size() != 0) {
 				mOverlay.removeAll();
 			}
 			return;
 		}
-		freshManInfo = new Vector<UserInfo>();
+
 		// first remove all old users that are not here now
-		if (preMapInfo != null) {
-			for (UserInfo i : preMapInfo.getVector()) {
-				if (i.uid == app.mapInfo.myInfo.uid)
-					continue;
-				if (mapInfo.getUserInfo(i.uid) == null) {
-					mOverlay.removeItem(hash.get(i.uid));
-					markerToInt.remove(hash.get(i.uid));
-					hash.remove(i.uid);
-				}
-				if (mapInfo.getUserInfo(i.uid) != null && isInvalidLocation(mapInfo.getUserInfo(i.uid).location)) {
-					mOverlay.removeItem(hash.get(i.uid));
-					markerToInt.remove(hash.get(i.uid));
-					hash.remove(i.uid);
-				}
+
+		Vector<Integer> delList = new Vector<Integer>();
+
+		for (java.util.Map.Entry<Integer, OverlayItem> i : userToItem.entrySet()) {
+			if (mapInfo.getUserInfo(i.getKey()) == null) {
+				delList.add(i.getKey());
 			}
 		}
+		for (int i : delList) {
+			mOverlay.removeItem(userToItem.get(i));
+			itemToUser.remove(userToItem.get(i));
+		}
+		for (int i : delList) {
+			userToItem.remove(i);
+		}
 		mMapView.refresh();
-		preMapInfo = mapInfo.copy();
 
+		delList = new Vector<Integer>();
+
+		for (java.util.Map.Entry<Integer, OverlayItem> i : markerToItem.entrySet()) {
+			if (mapInfo.getMarkerInfo(i.getKey()) == null) {
+				delList.add(i.getKey());
+			}
+		}
+		// i is mid
+		Log.d("kram", "before del overlay " + mOverlay.getAllItem().size());
+		for (int i : delList) {
+			mOverlay.removeItem(markerToItem.get(i));
+			itemToMarker.remove(markerToItem.get(i));
+		}
+		// i is mid
+		for (int i : delList) {
+			Log.d("kram", "remove id " + i);
+			markerToItem.remove(i);
+			
+		}
+		for (java.util.Map.Entry<Integer, OverlayItem> i : markerToItem.entrySet()) {
+			Log.d("kram", "current marker " + i.getKey());
+		}
+		for (MarkerInfo i : mapInfo.markerInfo) {
+			Log.d("kram", "current makerInfo " + i.markerId);
+		}
+		
+		Log.d("kram", "after del overlay " + mOverlay.getAllItem().size());
+		mMapView.refresh();
+		
 		// then update and add items
+		
+		Log.d("kram", "before update overlay " + mOverlay.getAllItem().size());
+		int cnt = 0;
+		for (MarkerInfo i : mapInfo.markerInfo) {
+			if (markerToItem.containsKey(i.markerId) == false) {
+				Log.d("kram", "add id " + i.markerId);
+				cnt ++;
+				curItem = new OverlayItem(i.markerPoint, "MARKERNAME_HERE",
+						"MARKER_SNIPPET_HERE");
+				Log.d("jingdu", "收到的坐标" + i.markerPoint.getLatitudeE6() / 1E6 + "  " + i.markerPoint.getLongitudeE6() / 1E6);
+				Drawable d = context.getResources().getDrawable(R.drawable.marker_red);
+				//d.mutate().setAlpha(10);
+				curItem.setMarker(d);
+				mOverlay.addItem(curItem);
+				markerToItem.put(i.markerId, curItem);
+				itemToMarker.put(curItem, i.markerId);
+			}
+		}
+		Log.d("kram", "added " + cnt);
+		Log.d("kram", "after update overlay " + mOverlay.getAllItem().size());
+
 		for (UserInfo i : mapInfo.getVector()) {
 			if (i.uid == app.mapInfo.myInfo.uid)
 				continue;
-			if (hash.containsKey(i.uid) == false) {
+			if (userToItem.containsKey(i.uid) == false) {
 				if (isInvalidLocation(i.location)) {
-					
+
 				} else {
 					curItem = new OverlayItem(i.location, "USERNAME_HERE",
-						"USER_SNIPPET_HERE");
+							"USER_SNIPPET_HERE");
 					// TODO getDrawable
 					// /////////////////////////////
 					curItem.setMarker(getGroupIcon(i));
 					mOverlay.addItem(curItem);
-					hash.put(i.uid, curItem);
-					markerToInt.put(curItem, i.uid);
+					userToItem.put(i.uid, curItem);
+					itemToUser.put(curItem, i.uid);
 				}
 			} else {
 				if (isInvalidLocation(i.location)) {
-					mOverlay.removeItem(hash.get(i.uid));
-					markerToInt.remove(hash.get(i.uid));
-					hash.remove(i.uid);
+					mOverlay.removeItem(userToItem.get(i.uid));
+					itemToUser.remove(userToItem.get(i.uid));
+					userToItem.remove(i.uid);
 				} else {
-					curItem = hash.get(i.uid);
+					curItem = userToItem.get(i.uid);
 					curItem.setGeoPoint(i.location);
 					mOverlay.updateItem(curItem);
 				}
@@ -383,131 +389,13 @@ public class MapMaker {
 		if (mMapView != null) {
 			mMapView.refresh();
 		}
-		checkMarkerTime();
 	}
-	
+
 	public void receiveMarker(MarkerInfo markerInfo) {
-		if (nowMarker != null && markerInfo.level >= nowMarkerLevel) {
-			Log.d("marker", "Old marker replaced by marker with higher level!");
-			nowMarker.setGeoPoint(markerInfo.markerPoint);
-
-			final Calendar cal = Calendar.getInstance();
-			cal.setTimeInMillis(markerInfo.markerTimestamp * 1000);
-			Date date = (Date) cal.getTime();
-			nowMarkerHour = date.getHours();
-			nowMarkerMinute = date.getMinutes();
-			nowMarkerTimestamp = markerInfo.markerTimestamp;
-			nowMarkerLevel = markerInfo.level;
-
-			mOverlay.updateItem(nowMarker);
-			mMapView.refresh();
-			mMapController.animateTo(markerInfo.markerPoint);
-			Toast toast = Toast.makeText(context,"收到新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
-			toast.setGravity(Gravity.TOP, 0, 80);
-			toast.show();
-			return;
-		}
-		if (nowMarker == null) {
-			Log.d("marker", "New marker created!");
-			nowMarker = new OverlayItem(markerInfo.markerPoint, "MARKER_NAME",
-					"");
-			nowMarker.setMarker(context.getResources().getDrawable(
-					R.drawable.marker_red));
-			System.out.println(markerInfo.markerPoint.getLatitudeE6() + " "
-					+ markerInfo.markerPoint.getLongitudeE6());
-			final Calendar cal = Calendar.getInstance();
-			cal.setTimeInMillis(markerInfo.markerTimestamp * 1000);
-			Date date = (Date) cal.getTime();
-			nowMarkerHour = date.getHours();
-			nowMarkerMinute = date.getMinutes();
-			nowMarkerTimestamp = markerInfo.markerTimestamp;
-			nowMarkerLevel = markerInfo.level;
-
-			markerIndex = mOverlay.getAllItem().size();
-			mOverlay.addItem(nowMarker);
-			mMapView.refresh();
-			mMapController.animateTo(markerInfo.markerPoint);
-			Toast toast = Toast.makeText(context,"收到新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
-			toast.setGravity(Gravity.TOP, 0, 80);
-			toast.show();
-			return;
-		}
+		app.mapInfo.addMarkerInfo(markerInfo);
+		UpdateMap(app.mapInfo);
 	}
 
-	void sendMarker() {
-		Log.d("marker", "Marker prepare!   " + nowMarkerTimestamp);
-		ReqSetMarker req = new ReqSetMarker(app.token, app.username, nowMarker
-				.getPoint().getLatitudeE6() / 1e6, nowMarker.getPoint()
-				.getLongitudeE6() / 1e6, (int)nowMarkerTimestamp,
-				System.currentTimeMillis(), 3000l);
-
-		Log.d("marker", "Marker sent!   " + req.deadline);
-		app.transam.send(req);
-	}
-
-	/**
-	 * Draw a marker
-	 */
-	public void DrawMarker(GeoPoint markerPoint) {
-
-		if (nowMarker != null && app.mapInfo.myInfo.level >= nowMarkerLevel) {
-			nowMarker.setGeoPoint(markerPoint);
-			nowMarkerHour = newMarkerHour;
-			nowMarkerMinute = newMarkerMinute;
-			nowMarkerTimestamp = newMarkerTimestamp;
-			nowMarkerLevel = app.mapInfo.myInfo.level;
-			
-			sendMarker();
-			Log.d("marker", "Sent and replace");
-			mOverlay.updateItem(nowMarker);
-			mMapView.refresh();
-			mMapController.animateTo(markerPoint);
-			return;
-		} else if (nowMarker == null) {
-			nowMarker = new OverlayItem(markerPoint, "MARKER_NAME", "");
-			nowMarker.setMarker(context.getResources().getDrawable(
-					R.drawable.marker_red));
-			nowMarkerHour = newMarkerHour;
-			nowMarkerMinute = newMarkerMinute;
-			nowMarkerTimestamp = newMarkerTimestamp;
-			nowMarkerLevel = app.mapInfo.myInfo.level;
-
-			sendMarker();
-			Log.d("marker", "Send and new");
-			markerIndex = mOverlay.getAllItem().size();
-			Log.d("marker", "my new marker created");
-			mOverlay.addItem(nowMarker);
-			mMapView.refresh();
-			mMapController.animateTo(markerPoint);
-		}
-		Toast toast = Toast.makeText(context,"创建新路标,集合时间:" + nowMarkerHour + ":" + nowMarkerMinute, 5000);
-		toast.setGravity(Gravity.TOP, 0, 80);
-		toast.show();
-	}
-
-	public GeoPoint getMakerLocation() {
-		if (nowMarker == null)
-			return null;
-		else
-			return nowMarker.getPoint();
-	}
-
-	public void removeMarker() {
-		if (nowMarker == null)
-			return;
-		mOverlay.removeItem(nowMarker);
-		nowMarker = null;
-		mMapView.refresh();
-	}
-
-	public void checkMarkerTime() {
-		if (nowMarker != null && nowMarkerTimestamp <= System.currentTimeMillis() / 1000) {
-			AlertMaker lateAlert = new AlertMaker(context, this);
-			lateAlert.showLateAlert();
-			removeMarker();
-		}
-	}
-	
 	/**
 	 * Remove all other users
 	 */

@@ -138,9 +138,25 @@ class ReqSetPassword extends Req{
 	String newpassword;
 
 	ReqSetPassword(String token,String name,String oldpass,String newpass,long time,long alive){
-	super(8,token,name,time,alive);	//for type 8
-	oldpassword = oldpass;
-	newpassword = newpass;
+		super(8,token,name,time,alive);	//for type 8
+		oldpassword = oldpass;
+		newpassword = newpass;
+	}
+}
+
+class ReqCheckin extends Req{
+	int markerID;
+	
+	ReqCheckin(String token,String name,int markerid,long time,long alive){
+		super(9,token,name,time,alive);		//for type 9
+		markerID = markerid;
+	}
+}
+
+class ReqGameStart extends Req{
+	
+	ReqGameStart(String token,String name,long time,long alive){
+		super(10,token,name,time,alive);		//for type 10
 	}
 }
 

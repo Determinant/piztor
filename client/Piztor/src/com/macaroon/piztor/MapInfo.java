@@ -1,5 +1,6 @@
 package com.macaroon.piztor;
 
+import java.io.Flushable;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -12,24 +13,21 @@ import android.location.Location;
 
 public class MapInfo {
 	HashMap<Integer, UserInfo> mp;
+	HashMap<Integer, MarkerInfo> pm;
 	Vector<UserInfo> allUsers;
-	MarkerInfo markerInfo;
+	Vector<MarkerInfo> markerInfo;
 	UserInfo myInfo;
-
-	
-	MapInfo copy() {
-		MapInfo res = new MapInfo();
-		res.mp = (HashMap<Integer, UserInfo>)mp.clone();
-		res.allUsers = (Vector<UserInfo>) allUsers.clone();
-		res.myInfo = myInfo.copy();
-		return res;
-	}
-	
+	myApp app;
+	int myScore, otherScore;
 	
 	@SuppressLint("UseSparseArrays")
-	MapInfo() {
+	MapInfo(myApp ap) {
 		mp = new HashMap<Integer, UserInfo>();
 		allUsers = new Vector<UserInfo>();
+		markerInfo = new Vector<MarkerInfo>();
+		pm = new HashMap<Integer, MarkerInfo>();
+		app  = ap;
+		myScore = otherScore = 0;
 	}
 
 	void clear() {
@@ -41,6 +39,11 @@ public class MapInfo {
 		allUsers.add(userInfo);
 		mp.put(userInfo.uid, userInfo);
 	}
+	
+	void addMarkerInfo(MarkerInfo mInfo) {
+		markerInfo.add(mInfo);
+		pm.put(mInfo.markerId, mInfo);
+	}
 
 	UserInfo getUserInfo(int uid) {
 		if (mp.containsKey(uid))
@@ -49,6 +52,27 @@ public class MapInfo {
 			return null;
 	}
 
+	MarkerInfo getMarkerInfo(int mid) {
+		if (pm.containsKey(mid))
+			return pm.get(mid);
+		else 
+			return null;
+	}
+
+	void sendCheckin(int mid) {
+		if (pm.containsKey(mid)) {
+			ReqCheckin req = new ReqCheckin(app.token, app.username, mid, System.currentTimeMillis(), 10 * 1000);
+			app.transam.send(req);
+		}
+	}
+	
+	void removeMarker(int mid) {
+		if (pm.containsKey(mid)) {
+			markerInfo.remove(pm.get(mid));
+			pm.remove(mid);
+		}
+	}
+	
 	public Vector<UserInfo> getVector() {
 		return allUsers;
 	}
@@ -61,6 +85,8 @@ public class MapInfo {
 class MarkerInfo {
 	GeoPoint markerPoint;
 	long markerTimestamp;
+	int score;
+	int markerId;
 	int level;
 	
 	MarkerInfo copy() {

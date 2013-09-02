@@ -51,8 +51,9 @@ public class AlertMaker {
 	private GeoPoint markerPoint;
 	private MapMaker mapMaker;
 	private long timestamp;
-	 int mHour;
-	 int mMinute;
+	int mHour;
+	int mMinute;
+	int mid;
 	
 	public AlertMaker(Context cc, MapMaker mm) {
 		context =cc;
@@ -72,18 +73,12 @@ public class AlertMaker {
 		closeBoard(context);
 		AlertDialog.Builder gpsDialog = new AlertDialog.Builder(context);
 		gpsDialog.setTitle("GPS设置");
-		gpsDialog.setMessage("GPS未开启，是否前去打开？");
+		gpsDialog.setMessage("请开启GPS定位");
 		gpsDialog.setPositiveButton("设置",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
 						context.startActivity(intent);
-					}
-				});
-		gpsDialog.setNegativeButton("不使用GPS",
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						dialog.cancel();
 					}
 				});
 		gpsDialog.show();
@@ -104,32 +99,6 @@ public class AlertMaker {
 		lateDialog.show();
 		closeBoard(context);
 	}
-
-public void showRemoveMarkerAlert() {
-		
-		closeBoard(context);
-		AlertDialog.Builder removeDialog = new AlertDialog.Builder(context);
-		removeDialog.setTitle("取消路标");
-		removeDialog.setMessage("是否取消路标？");
-		removeDialog.setPositiveButton("确定",
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						mapMaker.mOverlay.removeItem(mapMaker.nowMarker);
-						mapMaker.nowMarker = null;
-						mapMaker.mMapView.refresh();
-						mapMaker.popLay.hidePop();
-					}
-				});
-		removeDialog.setNegativeButton("取消",
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						mapMaker.popLay.hidePop();
-						dialog.cancel();
-					}
-				});
-		removeDialog.show();
-		closeBoard(context);
-	}
 	
 	public long toTimestamp(int hour, int minute) {
 		
@@ -140,65 +109,29 @@ public void showRemoveMarkerAlert() {
 				hour,minute);
 		return calendar.getTimeInMillis()/1000;
 	}
-	
-	//TODO
-	public void updateMarkerTime(int hour, int minute) {
-		Log.d("time", hour + "  " + minute);
-		Log.d("time", "    " + toTimestamp(hour, minute));
-		mapMaker.newMarkerHour = hour;
-		mapMaker.newMarkerMinute = minute;
-		mapMaker.newMarkerTimestamp = toTimestamp(hour, minute);
-	}
-	
-	public void showMarkerAlert(GeoPoint point) {
-		
-		closeBoard(context);
-		boolean flag = false;
-		if (point == null) return;
-		markerPoint = point;
-		
-		calendar = Calendar.getInstance();
-		TimePickerDialog markerDialog = new TimePickerDialog(context
-				, new TimePickerDialog.OnTimeSetListener() {
-					boolean flag = false;
-					@Override
-					public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-						////// at least 2 minutes
-						if ( !flag &&
-							((hourOfDay >= calendar.get(Calendar.HOUR_OF_DAY) && minute >= calendar.get(Calendar.MINUTE))
-							|| hourOfDay > calendar.get(Calendar.HOUR_OF_DAY))) {
-							updateMarkerTime(hourOfDay, minute);
-							mapMaker.DrawMarker(markerPoint);
-							flag = true;
-							Log.d("marker", "marker alert calls drawmarker");
-							} else if (!flag) {
-							Toast toast = Toast.makeText(context,
-								"太早了!多给一点时间", Toast.LENGTH_LONG);
-							toast.show();
-							closeBoard(context);
-							showMarkerAlert(markerPoint);
-						}
-					}
-				}
-				, calendar.get(Calendar.HOUR_OF_DAY)
-				, calendar.get(Calendar.MINUTE), true);
-				markerDialog.show();
-				closeBoard(context);
-	}
 
+	public void showScores() {
+		closeBoard(context);
+		AlertDialog.Builder scoreDialog = new AlertDialog.Builder(context);
+		scoreDialog.setTitle("得分");
+		scoreDialog.setMessage("我方vs对方 - " + mapMaker.app.mapInfo.myScore + " vs " + mapMaker.app.mapInfo.otherScore);
+		scoreDialog.setNeutralButton("确定", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface arg0, int arg1) {
+				arg0.cancel();
+			}
+		});
+		scoreDialog.show();
+		closeBoard(context);
+	}
+	
 	public void showCheckinAlter() {
 		closeBoard(context);
 		final AlertDialog.Builder checkinDialog = new AlertDialog.Builder(context);
 		LayoutInflater infaler = LayoutInflater.from(context);
 		final LinearLayout layout = (LinearLayout)infaler.inflate(R.layout.checkindialog, null);
 		checkinDialog.setView(layout);
-		checkinDialog.setNeutralButton("取消", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				InputMethodManager im = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-                im.hideSoftInputFromWindow(layout.getWindowToken(), 0);
-				dialog.cancel();
-			}
-		});
+		
 		final ProgressBar pbar = (ProgressBar)layout.findViewById(R.id.checkin_progress);
 		final TextView checkinInfo = (TextView)layout.findViewById(R.id.checkin_info);
 		checkinDialog.show();
@@ -211,15 +144,31 @@ public void showRemoveMarkerAlert() {
 		     }
 
 		     public void onFinish() {
-		    	 //TODO
-		    	 pbar.setVisibility(View.GONE);
-		    	 mapMaker.removeMarker();
-		    	 Toast toast = Toast.makeText(context, "已签到!", 2000);
-		    	 toast.setGravity(Gravity.TOP, 0, 80);
-		    	 toast.show();
-		    	 checkinInfo.setText("成功!");
+		    	 pbar.setVisibility(View.GONE);;
+		    	 mapMaker.app.mapInfo.sendCheckin(mid);
+		    	 checkinInfo.setText("签到已提交");
 		     }
 		  }.start();
+			closeBoard(context);
 	}
-
+	
+	public void showStartAlter() {
+		closeBoard(context);
+		AlertDialog.Builder startDialog = new AlertDialog.Builder(context);
+		startDialog.setTitle("开始游戏");
+		startDialog.setMessage("是否开始游戏？");
+		startDialog.setPositiveButton("确定",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						mapMaker.app.gameStarted = true;
+					}
+				});
+		startDialog.setNegativeButton("取消",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.cancel();
+					}
+				});
+		startDialog.show();
+	}
 }

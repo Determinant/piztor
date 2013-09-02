@@ -12,7 +12,6 @@ import java.util.Vector;
 
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 
 
@@ -31,9 +30,13 @@ public class PushClient {
 	static final int Message = 0;
 	static final int Location = 1;
 	static final int Marker = 2;
+	static final int Remove =3;
+	static final int Score =4;
 	static final int PushMessage =100;
 	static final int PushLocation =101;
 	static final int PushMarker =102;
+	static final int PushRemoveMarker =103;
+	static final int PushScore =104;
 	
 	static final int Reconnect =-2;
 	
@@ -44,7 +47,7 @@ public class PushClient {
 	private String LastPrint = "";
 
 	
-	public PushClient(String site, int port,int retime, Handler handler) throws UnknownHostException,
+	public PushClient(String site, int port,int retime,Handler handler) throws UnknownHostException,
 			IOException {
 		try {
 			client = new Socket();
@@ -180,17 +183,58 @@ public class PushClient {
 					double lat = in.readDouble();
 					double lot = in.readDouble();
 					int dtime = in.readInt(); 
+					int mid = in.readUnsignedByte();
+					int score = in.readInt();
 					if(LastPrint != p) {
-					
+					System.out.println(p);
 					Message msg = new Message();
 					msg.what = PushMarker;
-					msg.obj = new ResPushMarker(lat,lot,dtime,lv);
+					msg.obj = new ResPushMarker(lat,lot,dtime,lv,mid,score);
 					recall.sendMessage(msg);
 					LastPrint = p;
 					}			
 					Convert.write(o,Convert.intToBytes(outlen),pos);
 					pos+=IntLength;
 					o[pos]=(byte) Marker;
+					pos+=ByteLength;
+					Convert.write(o,Convert.hexStringToBytes(p),pos);
+					pos+=FingerPrintLength;
+					out.write(o);
+					out.flush();
+					break;
+				case Remove:
+					int id = in.readUnsignedByte();
+					if(LastPrint != p) {
+					System.out.println(p);
+					Message msg = new Message();
+					msg.what = PushRemoveMarker;
+					msg.obj = new ResPushRemoveMarker(id);
+					recall.sendMessage(msg);
+					LastPrint = p;
+					}			
+					Convert.write(o,Convert.intToBytes(outlen),pos);
+					pos+=IntLength;
+					o[pos]=(byte) Remove;
+					pos+=ByteLength;
+					Convert.write(o,Convert.hexStringToBytes(p),pos);
+					pos+=FingerPrintLength;
+					out.write(o);
+					out.flush();
+					break;
+				case Score:
+					int as = in.readInt();
+					int bs = in.readInt();
+					if(LastPrint != p) {
+					System.out.println(p);
+					Message msg = new Message();
+					msg.what = PushScore;
+					msg.obj = new ResPushScore(as,bs);
+					recall.sendMessage(msg);
+					LastPrint = p;
+					}			
+					Convert.write(o,Convert.intToBytes(outlen),pos);
+					pos+=IntLength;
+					o[pos]=(byte) Score;
 					pos+=ByteLength;
 					Convert.write(o,Convert.hexStringToBytes(p),pos);
 					pos+=FingerPrintLength;

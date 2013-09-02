@@ -10,14 +10,14 @@ import android.util.Log;
 
 @SuppressLint("UseSparseArrays")
 public class myApp extends Application {
-	private static final String strKey = "8a0ae50048d103b2b8b12b7066f4ea7d";
+	private static final String strKey = "579bf85175473ea618258a7a3d3ba63b";
 	BMapManager mBMapManager;
 	boolean isExiting = false;
 	boolean isLogout = false;
 	String ip = "202.120.7.4";
 //	static String ip = "69.85.86.42";
-//	static String ip = "192.168.1.101";
-	int port = 2223;
+//	static String ip = "192.168.1.171";
+	int port = 2224;
 	String token = null;
 	String username = null;
 	Vector<RGroup> sublist;
@@ -29,12 +29,13 @@ public class myApp extends Application {
 	Thread tTransam;
 
 	MapInfo mapInfo;
+	boolean gameStarted = false;
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
 		System.out.println("我执行了，好开心~~~~~~~~~~");
-		mapInfo = new MapInfo();
+		mapInfo = new MapInfo(this);
 		mBMapManager = new BMapManager(this);
 
 		appMgr = new AppMgr(this);

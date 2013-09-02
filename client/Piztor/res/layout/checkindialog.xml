@@ -13,7 +13,7 @@
 
     <ProgressBar
         android:id="@+id/checkin_progress"
-        android:layout_width="wrap_content"
+        android:layout_width="200dip"
         android:layout_height="wrap_content"
         android:max="10000"
         android:layout_gravity="center"
