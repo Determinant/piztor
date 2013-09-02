@@ -9,8 +9,10 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.view.Window;
+import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 public class Login extends PiztorAct {
@@ -87,11 +89,13 @@ public class Login extends PiztorAct {
 	protected void onCreate(Bundle savedInstanceState) {
 		id = "login";
 		super.onCreate(savedInstanceState);
-		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-	    requestWindowFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.activity_login);
-		setProgressBarIndeterminateVisibility(true); 
-		setProgressBarVisibility(true);
+		ImageView imageView = (ImageView) findViewById(R.id.login_img);
+		AlphaAnimation alphaUp = new AlphaAnimation(0.0f, 1.0f);
+		alphaUp.setDuration(2000);
+		alphaUp.setStartOffset(500);
+		alphaUp.setFillAfter(true);
+		imageView.startAnimation(alphaUp);
 	}
 
 	@Override

@@ -36,7 +36,7 @@ public class Main extends PiztorAct {
 	final static int FailedFetch = 5;
 	final static int mapViewtouched = 7;
 
-	MapMaker mapMaker = null;
+	static MapMaker mapMaker = null;
 	MapView mMapView;
 	AlertMaker alertMaker;
 	GeoPoint markerPoint = null;
@@ -44,11 +44,12 @@ public class Main extends PiztorAct {
 	public static int colorMode = 1;
 	public static int show_by_team = 1;
 	public static int show_by_sex = 2;
+	public static int locateMode = LocationClientOption.GpsFirst;
 	
 	/**
 	 * Locating component
 	 */
-	LocationManager locationManager;
+	static LocationManager locationManager;
 	boolean isGPSEnabled;
 	LocationClient mLocClient;
 	LocationData locData = null;
@@ -249,7 +250,7 @@ public class Main extends PiztorAct {
 			LocationClientOption option = new LocationClientOption();
 			option.setOpenGps(true);
 			option.setCoorType("bd09ll");
-			option.setPriority(LocationClientOption.GpsFirst);
+			option.setPriority(locateMode);
 			option.setScanSpan(GPSrefreshrate * 1000);
 			mLocClient.setLocOption(option);
 		}
@@ -380,7 +381,7 @@ public class Main extends PiztorAct {
 		mLocClient.registerLocationListener(myListener);
 		LocationClientOption option = new LocationClientOption();
 		option.setOpenGps(true);
-		option.setPriority(LocationClientOption.GpsFirst);
+		option.setPriority(locateMode);
 		option.setCoorType("bd09ll");
 		option.setScanSpan(GPSrefreshrate * 1000);
 		mLocClient.setLocOption(option);
