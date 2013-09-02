@@ -84,6 +84,7 @@ public class AlertMaker {
 		gpsDialog.setNegativeButton("不使用GPS",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
+						Main.locateMode = LocationClientOption.NetWorkFirst;
 						dialog.cancel();
 					}
 				});

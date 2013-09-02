@@ -6,9 +6,9 @@
     <string name="hello_world">Hello world!</string>
     <string name="settings">设置</string>
     <string name="search">搜索</string>
-    <string name="fetch">上传</string>
+    <string name="fetch">更新</string>
     <string name="checkin">签到</string>
-    <string name="focus">聚焦</string>
+    <string name="focus">定位</string>
     <string name="show_sex">按性别</string>
     <string name="male">Male</string>
     <string name="female">Female</string>
@@ -34,11 +34,14 @@
     <string name="company">连队</string>
     <string name="section">班级</string>
     <string name="add">添加</string>
-    <string name="GPSrefreshrate">GPS刷新率 每</string>
+    <string name="GPSrefreshrate">定位刷新率 每</string>
     <string name="old_password">旧密码</string>
     <string name="new_password">新密码</string>
     <string name="submit">提交</string>
     <string name="colormode">着色方式</string>
     <string name="save">保存</string>
+    <string name="locatemode">定位方式</string>
+    <string name="gps_first">GPS优先</string>
+    <string name="network_first">网络优先</string>
 
 </resources>

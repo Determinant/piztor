@@ -3,6 +3,7 @@ package com.macaroon.piztor;
 import java.lang.ref.WeakReference;
 import java.util.Vector;
 
+import com.baidu.location.LocationClientOption;
 import com.baidu.platform.comapi.basestruct.GeoPoint;
 
 import android.annotation.SuppressLint;
@@ -28,8 +29,10 @@ public class Settings extends PiztorAct {
 	MapInfo mapInfo;
 	Transam transam;
 	private int currentRate;
-	OnCheckedChangeListener radioButtonListener = null;
-	RadioGroup radioGroup;
+	OnCheckedChangeListener colorButtonListener = null;
+	OnCheckedChangeListener locateButtonListener = null;
+	static RadioGroup colorRadioGroup;
+	static RadioGroup locateRadioGroup;
 	
 	// Event
 	final static int logoutButtonPressed = 10;
@@ -183,10 +186,10 @@ public class Settings extends PiztorAct {
 		actMgr.add(start, logoutButtonPressed, logout);
 		actMgr.add(logout, logoutFailed, start);
 		setContentView(R.layout.activity_settings);
-		radioGroup = (RadioGroup)this.findViewById(R.id.radioGroup);
-		if (Main.colorMode == Main.show_by_sex) radioGroup.check(R.id.show_by_sex);
-		else radioGroup.check(R.id.show_by_team);
-        radioButtonListener = new OnCheckedChangeListener() {
+		colorRadioGroup = (RadioGroup)this.findViewById(R.id.colorRadioGroup);
+		if (Main.colorMode == Main.show_by_sex) colorRadioGroup.check(R.id.show_by_sex);
+		else colorRadioGroup.check(R.id.show_by_team);
+        colorButtonListener = new OnCheckedChangeListener() {
 			
 			@Override
 			public void onCheckedChanged(RadioGroup group, int checkedId) {
@@ -199,8 +202,35 @@ public class Settings extends PiztorAct {
 				}
 			}
 		};
-		radioGroup.setOnCheckedChangeListener(radioButtonListener);
-        
+		colorRadioGroup.setOnCheckedChangeListener(colorButtonListener);
+		
+		locateRadioGroup = (RadioGroup)this.findViewById(R.id.locateRadioGroup);
+		if (Main.locateMode == LocationClientOption.GpsFirst) locateRadioGroup.check(R.id.gps_first);
+		else locateRadioGroup.check(R.id.network_first);
+        locateButtonListener = new OnCheckedChangeListener() {
+			
+			@Override
+			public void onCheckedChanged(RadioGroup group, int checkedId) {
+				if (checkedId == R.id.gps_first){
+					boolean isGPSEnabled = Main.locationManager
+							.isProviderEnabled(Main.locationManager.GPS_PROVIDER);
+					if (isGPSEnabled)
+						Main.locateMode = LocationClientOption.GpsFirst;
+					else {
+						AlertMaker alertMaker = new AlertMaker(Settings.this, Main.mapMaker);
+						alertMaker.showSettingsAlert();
+						isGPSEnabled = Main.locationManager
+								.isProviderEnabled(Main.locationManager.GPS_PROVIDER);
+						if (! isGPSEnabled) group.check(R.id.network_first);
+					}
+				}
+				if (checkedId == R.id.network_first){
+					Main.locateMode = LocationClientOption.NetWorkFirst;
+				}
+			}
+		};
+		locateRadioGroup.setOnCheckedChangeListener(locateButtonListener);
+		
 	}
 
 	@Override

@@ -101,7 +101,7 @@ public class SubscribeSettings extends PiztorAct {
             	EException eException = (EException) m.obj;
             	/////////////////TODO
 				if (eException.Etype == EException.ESubscribeFailedException) {
-					out.receiveMessage("关注信息无效");
+					out.receiveMessage("关注信息无效,可能暂无此连队或班级信息");
 					for (RGroup i : out.listGroup) {
 						Log.d("sub", i.company  + "   " + i.section);
 					}
