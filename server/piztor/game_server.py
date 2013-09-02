@@ -20,7 +20,7 @@ from model import *
 def get_hex(data):
     return "".join([hex(ord(c))[2:].zfill(2) for c in data])
 
-db_path = "root:helloworld@localhost/piztor"
+db_path = "root:helloworld@localhost/piztor2"
 #db_path = "piztor.sqlite"
 FORMAT = "%(asctime)-15s %(message)s"
 logging.basicConfig(format = FORMAT)
@@ -55,7 +55,7 @@ _HEADER_SIZE = _SectionSize.LENGTH + \
 _MAX_TEXT_MESG_SIZE = 1024
 _MAX_SUB_LIST_SIZE = 10
 _MAX_PENDING_PUSH = 10
-_INIT_MARKER_NUM = 2
+_INIT_MARKER_NUM = 5
 
 class _OptCode:
     user_auth =             0x00
