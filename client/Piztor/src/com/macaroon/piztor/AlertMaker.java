@@ -51,8 +51,9 @@ public class AlertMaker {
 	private GeoPoint markerPoint;
 	private MapMaker mapMaker;
 	private long timestamp;
-	 int mHour;
-	 int mMinute;
+	int mHour;
+	int mMinute;
+	myApp app;
 	
 	public AlertMaker(Context cc, MapMaker mm) {
 		context =cc;
@@ -192,7 +193,7 @@ public void showRemoveMarkerAlert() {
 		LayoutInflater infaler = LayoutInflater.from(context);
 		final LinearLayout layout = (LinearLayout)infaler.inflate(R.layout.checkindialog, null);
 		checkinDialog.setView(layout);
-		checkinDialog.setNeutralButton("取消", new DialogInterface.OnClickListener() {
+		checkinDialog.setNeutralButton("确定", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				InputMethodManager im = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
                 im.hideSoftInputFromWindow(layout.getWindowToken(), 0);

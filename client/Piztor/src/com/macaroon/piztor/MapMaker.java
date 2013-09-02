@@ -11,6 +11,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
+import android.os.DropBoxManager.Entry;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -21,8 +22,6 @@ import android.widget.Toast;
 import com.baidu.mapapi.map.ItemizedOverlay;
 import com.baidu.mapapi.map.LocationData;
 import com.baidu.mapapi.map.MKOLUpdateElement;
-import com.baidu.mapapi.map.MKOfflineMap;
-import com.baidu.mapapi.map.MKOfflineMapListener;
 import com.baidu.mapapi.map.MapController;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationOverlay;
@@ -36,7 +35,6 @@ public class MapMaker {
 	// MapView controlling component
 	MapView mMapView = null;
 	MapController mMapController = null;
-	MKOfflineMap mOffline = null;
 
 	// Default center
 	private final static GeoPoint sjtuCenter = new GeoPoint(
@@ -155,42 +153,6 @@ public class MapMaker {
 	}
 
 	/**
-	 * Initialize offline map
-	 */
-	public void InitOfflineMap() {
-
-		mOffline = new MKOfflineMap();
-		mOffline.init(mMapController, new MKOfflineMapListener() {
-
-			@Override
-			public void onGetOfflineMapState(int type, int state) {
-				switch (type) {
-				case MKOfflineMap.TYPE_DOWNLOAD_UPDATE:
-					MKOLUpdateElement update = mOffline.getUpdateInfo(state);
-					break;
-				case MKOfflineMap.TYPE_NEW_OFFLINE:
-					Log.d("offline", String.format("add offline map %d", state));
-					break;
-				case MKOfflineMap.TYPE_VER_UPDATE:
-					Log.d("offline", String.format("new offline map version"));
-					break;
-				}
-			}
-		});
-		int num = mOffline.scan();
-		
-		if (num == 0) {
-			// msg =
-			// "No offline map found. It may have been loaded already or misplaced.";
-		} else {
-			Toast.makeText(context, String.format("加载了%d个离线地图包", num), 
-					Toast.LENGTH_SHORT).show();
-		}
-		Log.d("offline", "inited");
-		
-	}
-
-	/**
 	 * Initialize location layer
 	 */
 	public void InitLocationOverlay() {
@@ -267,9 +229,9 @@ public class MapMaker {
 		InitLocationOverlay();
 		InitMyOverLay();
 		InitPopup();
-		//InitOfflineMap();
 		myBM = new Drawable[20];
 		initMyIcons();
+		preMapInfo = null;
 		// InitTouchListenr();
 	}
 
@@ -314,8 +276,8 @@ public class MapMaker {
 
 	boolean isInvalidLocation(GeoPoint point) {
 		if (point == null) return false;
-		if (point.getLatitudeE6() / 1E6 > 180.0 || point.getLatitudeE6() / 1E6 < -180.0
-				|| point.getLongitudeE6() > 180.0 || point.getLongitudeE6() / 1E6 < -180.0)
+		if (point.getLatitudeE6() / 1E6 > 180 || point.getLatitudeE6() / 1E6 < -180
+				|| point.getLongitudeE6() > 180 || point.getLongitudeE6() / 1E6 < -180)
 			return false;
 		return true;
 	}
@@ -331,24 +293,26 @@ public class MapMaker {
 			return;
 		}
 		freshManInfo = new Vector<UserInfo>();
+		
 		// first remove all old users that are not here now
-		if (preMapInfo != null) {
-			for (UserInfo i : preMapInfo.getVector()) {
-				if (i.uid == app.mapInfo.myInfo.uid)
-					continue;
-				if (mapInfo.getUserInfo(i.uid) == null) {
-					mOverlay.removeItem(hash.get(i.uid));
-					markerToInt.remove(hash.get(i.uid));
-					hash.remove(i.uid);
-				}
-				if (mapInfo.getUserInfo(i.uid) != null && isInvalidLocation(mapInfo.getUserInfo(i.uid).location)) {
-					mOverlay.removeItem(hash.get(i.uid));
-					markerToInt.remove(hash.get(i.uid));
-					hash.remove(i.uid);
-				}
+		
+		Vector<Integer> delList = new Vector<Integer>();
+		
+		for (java.util.Map.Entry<Integer, OverlayItem> i : hash.entrySet()) {
+			if (mapInfo.getUserInfo(i.getKey()) == null) {
+				delList.add(i.getKey());
 			}
 		}
+		for (int i : delList) {
+			mOverlay.removeItem(hash.get(i));
+			markerToInt.remove(hash.get(i));
+		}
+		for (int i : delList) {
+			hash.remove(i);
+		}
+		
 		mMapView.refresh();
+		
 		preMapInfo = mapInfo.copy();
 
 		// then update and add items
