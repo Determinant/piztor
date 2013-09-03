@@ -13,6 +13,7 @@ import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class Login extends PiztorAct {
@@ -90,12 +91,12 @@ public class Login extends PiztorAct {
 		id = "login";
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_login);
-		ImageView imageView = (ImageView) findViewById(R.id.login_img);
+		TextView textView = (TextView) findViewById(R.id.login_app_name);
 		AlphaAnimation alphaUp = new AlphaAnimation(0.0f, 1.0f);
 		alphaUp.setDuration(2000);
 		alphaUp.setStartOffset(500);
 		alphaUp.setFillAfter(true);
-		imageView.startAnimation(alphaUp);
+		textView.startAnimation(alphaUp);
 	}
 
 	@Override
