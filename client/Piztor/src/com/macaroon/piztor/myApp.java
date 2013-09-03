@@ -14,8 +14,8 @@ public class myApp extends Application {
 	BMapManager mBMapManager;
 	boolean isExiting = false;
 	boolean isLogout = false;
-	String ip = "202.120.7.4";
-//	static String ip = "69.85.86.42";
+//	String ip = "202.120.7.4";
+	static String ip = "69.85.86.42";
 //	static String ip = "192.168.1.171";
 	int port = 2224;
 	String token = null;

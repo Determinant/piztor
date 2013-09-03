@@ -79,6 +79,7 @@ public class AlertMaker {
 					public void onClick(DialogInterface dialog, int which) {
 						Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
 						context.startActivity(intent);
+						dialog.cancel();
 					}
 				});
 		gpsDialog.show();

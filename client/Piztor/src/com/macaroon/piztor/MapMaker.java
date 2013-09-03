@@ -137,8 +137,8 @@ public class MapMaker {
 				OverlayItem item = getItem(index);
 				UserInfo tmpInfo = app.mapInfo.getUserInfo(itemToUser
 						.get(item));
-				String itemInfo = tmpInfo.company + "连" + tmpInfo.section
-						+ "班 " + tmpInfo.nickname;
+				String itemInfo = tmpInfo.section
+						+ "队 " + tmpInfo.nickname;
 				popupText.setText(itemInfo);
 				Bitmap bitmap = BMapUtil.getBitmapFromView(popupInfo);
 				popLay.showPopup(bitmap, item.getPoint(), 32);

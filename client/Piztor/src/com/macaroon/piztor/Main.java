@@ -156,11 +156,11 @@ public class Main extends PiztorAct {
 				break;
 			case -1:
 				EException e = (EException) m.obj;
-				if (e.Etype == EException.EPushFailedException)
-					out.receiveMessage("网络不稳定～");
-				else if (e.Etype == EException.ECheckinFailedException)
+				if (e.Etype == EException.ECheckinFailedException)
 					out.receiveMessage("路点已过期！");
-				else out.actMgr.trigger(AppMgr.logout);
+				else if (e.Etype == EException.EStatusFailedException)
+					out.appMgr.trigger(AppMgr.logout);
+				else out.receiveMessage("网络不稳定～");
 			default:
 				break;
 			}
@@ -205,7 +205,7 @@ public class Main extends PiztorAct {
 
 	void receiveMessage(String msg) {
 		Toast toast = Toast.makeText(getApplicationContext(), msg, 5000);
-		toast.setGravity(Gravity.TOP, 0, 80);
+		toast.setGravity(Gravity.TOP, 0, 100);
 		toast.show();
 	}
 
@@ -252,19 +252,19 @@ public class Main extends PiztorAct {
 			int TMP = location.getLocType();
 			if (TMP == 61) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : 由GPS更新 (刷新时间" + GPSrefreshrate + "s)", 2000);
+						"Piztor : 由GPS更新 (刷新时间" + GPSrefreshrate + "s)", 1000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
 			}
 			if (TMP == 161) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : 由网络更新 (刷新时间" + GPSrefreshrate + "s)", 2000);
+						"Piztor : 由网络更新 (刷新时间" + GPSrefreshrate + "s)", 1000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
 			}
 			if (TMP == 65) {
 				Toast toast = Toast.makeText(Main.this,
-						"Piztor : 由缓存更新 (刷新时间" + GPSrefreshrate + "s)",2000);
+						"Piztor : 由缓存更新 (刷新时间" + GPSrefreshrate + "s)",1000);
 				toast.setGravity(Gravity.TOP, 0, 80);
 				toast.show();
 			}
@@ -334,8 +334,6 @@ public class Main extends PiztorAct {
 				mid = i.markerId;
 			}
 		}
-		//TODO
-		
 		if (minDis > 15.0 || mid == -1) {
 			Toast toast = Toast.makeText(Main.this,
 					String.format("请靠近路标,现在距离%.2f米",minDis), 4000);
@@ -425,7 +423,6 @@ public class Main extends PiztorAct {
 				if (app.mapInfo.myInfo.level >= 2 && !app.gameStarted) {
 					app.gameStarted = true;
 					settingsText.setText("得分");
-					//TODO
 					ReqGameStart req = new ReqGameStart(app.token, app.username, System.currentTimeMillis(), 10 * 1000);
 					transam.send(req);
 				}
